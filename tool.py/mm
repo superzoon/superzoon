@@ -1,0 +1,22 @@
+#!/usr/bin/python3
+
+import sys, os, re
+from sys import argv
+from os.path import (dirname,abspath, sep, realpath, isdir)
+sys.path.append(sep.join([dirname(realpath(abspath(__file__))), 'xhl', 'script']))
+from tool import Tool
+
+if __name__ == '__main__':
+    if len(argv) > 1:
+        module_path = Tool.getMmPath(argv[1])
+        if module_path and isdir(module_path):
+            argv[1] = module_path
+
+    if len(argv) >1 and isdir(argv[1]):
+        argv[0]='mm'
+    else:
+        del argv[0]
+    Tool.checkDriveList(True)
+    Tool.mm(argv)
+    if len(argv) == 0:
+        Tool.buildimage()
