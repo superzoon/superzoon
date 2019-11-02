@@ -5,21 +5,21 @@ from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
 os.environ['PATH'] = dirname(abspath(__file__)) + ':' + os.environ['PATH']
-from Tool.SystemLog import *
+from Tool import SystemLog
 from Tool.MainLog import *
 from Tool.ToolUtils import *
 from Tool import Anr
 
 if __name__ == '__main__':
-    fileName = getNextItem(argv, '-f', sep.join(['..','temp.zip']))
+    fileName = ToolUtils.getNextItem(argv, '-f', sep.join(['..','temp.zip']))
     if not zipfile.is_zipfile(fileName):
         exit(-1)
     tempDir = sep.join([dirname(fileName),'temp'])
     if isdir(tempDir):
         rmtree(tempDir)
     makedirs(tempDir)
-    unzip_single(fileName, tempDir)
-    allFiles = getAllFileName(tempDir)
+    ToolUtils.unzip_single(fileName, tempDir)
+    allFiles = ToolUtils.getAllFileName(tempDir)
     print(basename(fileName)+'\r\n')
     systemFiles = [file for file in allFiles if 'system.txt' in file]
     eventFiles = [file for file in allFiles if 'event.txt' in file]

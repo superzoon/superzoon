@@ -5,9 +5,9 @@ from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
 os.environ['PATH'] = dirname(abspath(__file__)) + ':' + os.environ['PATH']
-from Tool.SystemLog import *
+from Tool import SystemLog
 from Tool.MainLog import *
-from Tool.ToolUtils import *
+from Tool import ToolUtils
 from Tool.TracesLog import *
 from Tool import Anr
 
@@ -22,7 +22,7 @@ def parseWindowManager(allAnr :Anr, allLine:LogLine, line:LogLine):
         match2 = re.match(patternWindowManager2, line.msg)
         if match2:
             delay = float(match2.group(1))
-            line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
     return True
 
@@ -42,7 +42,7 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
         delay = int(match.group(1))
         for anr in allAnr:
             if isInTime(anr, line):
-                line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-delay/1000))
+                line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
                 allLine.append(line)
                 isParser = True
                 break
@@ -71,7 +71,7 @@ def parseLooper(allAnr :Anr, allLine:LogLine, line:LogLine):
         delay = int(match.group(1))
         for anr in allAnr:
             if delay > 2000 and isInTime(anr, line):
-                line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-delay/1000))
+                line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
                 allLine.append(line)
                 isParser = True
                 break
@@ -194,7 +194,7 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParser = False
     if math:
         delay = float(math.group(1))
-        line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-delay/1000))
+        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
         isParser = True
     return isParser
@@ -211,7 +211,7 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
         match = re.match(pattern_input2, line.msg)
     if match:
         delay = float(match.group(1))
-        line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-delay/1000))
+        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
         isParser = True
     if not isParser:
@@ -227,7 +227,7 @@ def parseOpenGLRenderer(allAnr :Anr, allLine:LogLine, line:LogLine):
     if match :
         duration = int(match.group(1))
         if (duration >500):
-            line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-duration/1000))
+            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-duration/1000))
             allLine.append(line)
 
     return True
@@ -245,14 +245,14 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
         if delay > 1000:
             for anr in allAnr:
                 if isInTime(anr, line):
-                    line.line = line.line+'\n\t\tstartTime:'+str(getTimeStamp(line.timeFloat-delay/1000))
+                    line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
                     allLine.append(line)
                     isParser = True
                     break
     return isParser
 
 
-def parLogZip(fileName, resonFile, packageName='com.android.systemui'):
+def parLogZip(fileName, resonFile, packageName='com.android.systemui', removeDir = True):
     ThreadName.PidName = {}
     if not zipfile.is_zipfile(fileName):
         exit(-1)
@@ -262,8 +262,8 @@ def parLogZip(fileName, resonFile, packageName='com.android.systemui'):
     if isdir(tempDir):
         rmtree(tempDir)
     makedirs(tempDir)
-    unzip_single(fileName, tempDir)
-    allFiles = getAllFileName(tempDir)
+    ToolUtils.unzip_single(fileName, tempDir)
+    allFiles = ToolUtils.getAllFileName(tempDir)
     systemFiles = [file for file in allFiles if 'system.txt' in file]
     eventFiles = [file for file in allFiles if 'event.txt' in file]
     mainFiles = [file for file in allFiles if 'main.txt' in file]
@@ -301,7 +301,7 @@ def parLogZip(fileName, resonFile, packageName='com.android.systemui'):
     mainLine = None
     for file in parperFiles:
         print('--' + file + '--')
-        with open(file, encoding=checkFileCode(file)) as mmFile:
+        with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
             isMainLine = True if ('main.txt' in file) else False
             lines = mmFile.readlines()
             for line in [line.strip() for line in lines]:
@@ -396,7 +396,7 @@ def parLogZip(fileName, resonFile, packageName='com.android.systemui'):
         print("未能解析")
     if mainLine!=None and (mainLine.timeFloat < anrTimeFloat):
         print("main log 不足")
-        resonFile.writelines("main log 不足 time:"+str(getTimeStamp(mainLine.timeFloat)))
+        resonFile.writelines("main log 不足 time:"+str(ToolUtils.getTimeStamp(mainLine.timeFloat)))
         resonFile.writelines('\n\n')
     if len(ThreadName.PidName)>0:
         print(ThreadName.PidName)
@@ -422,25 +422,26 @@ def parLogZip(fileName, resonFile, packageName='com.android.systemui'):
         resonFile.writelines("\t"+line.line.strip())
         resonFile.writelines('\n')
     print('####################end######################')
+    if removeDir:
+        rmtree(tempDir)
 
-
-def parserFold(foldPath):
+def parserFold(foldPath, removeDir = True):
     print(foldPath)
-    allZips = [file for file in getAllFileName(foldPath) if zipfile.is_zipfile(file)]
+    allZips = [file for file in ToolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
     resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
     point = 0
     for zipFile in allZips:
         point = point + 1
         writeName = str(point) + '.' + abspath(zipFile)[len(dirname(foldPath)) + 1:] + '\n\n'
         resonFile.writelines(writeName)
-        parLogZip(zipFile, resonFile)
+        parLogZip(zipFile, resonFile, removeDir)
         resonFile.writelines('\n\n')
 
     resonFile.flush()
     resonFile.close()
 
 def test():
-    fileName = getNextItem(argv, '-f', sep.join(['..', 'temp.zip']))
+    fileName = ToolUtils.getNextItem(argv, '-f', sep.join(['..', 'temp.zip']))
     filePath = dirname(abspath(fileName))
     resonFile = sep.join([filePath, 'reason.txt'])
     parLogZip(fileName, resonFile)
@@ -454,9 +455,8 @@ if __name__ == '__main__':
         papserPath = sep.join(['C:','Users','Administrator','Downloads','papser_30',current])
         parserFold(papserPath)
         exit(0)
-    for item in ['papser_28','papser_29','papser_30']:
-        papserPath = sep.join(['C:','Users','Administrator','Downloads',item])
-        for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
-            parserFold(foldPath)
+    papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser','log'])
+    for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
+        parserFold(foldPath)
 
 

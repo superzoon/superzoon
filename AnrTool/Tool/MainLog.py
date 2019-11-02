@@ -1,6 +1,7 @@
 from Tool.SystemLog import *
-from Tool import Anr
-
+from Tool.ToolUtils import *
+from Tool import *
+from Tool import ToolUtils
 class MainLine(LogLine):
     def __init__(self, line: str):
         super().__init__(line)
@@ -58,7 +59,7 @@ class MainLog:
     def parser(self):
         for file in self.files:
             print(file)
-            with open(file, encoding=checkFileCode(file)) as mmFile:
+            with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
                 lines = mmFile.readlines()
                 for line in [line.strip() for line in lines]:
                     temp = MainLine(line)

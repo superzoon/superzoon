@@ -1,4 +1,6 @@
-from Tool.ToolUtils import *
+from Tool import ToolUtils
+import re
+from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 class ThreadStack:
     def __init__(self, name, prio, tid, state, pid, top):
         self.name = name
@@ -70,7 +72,7 @@ class TracesLog():
         self.pid_stack:PidStack = []
 
     def parser(self):
-        with open(self.file, encoding=checkFileCode(self.file)) as mmFile:
+        with open(self.file, encoding=ToolUtils.checkFileCode(self.file)) as mmFile:
             lines = mmFile.readlines()
             tempPidStack = None
             for line in [line.strip() for line in lines]:

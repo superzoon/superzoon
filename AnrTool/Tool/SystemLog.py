@@ -1,7 +1,7 @@
-from Tool.ToolUtils import *
+from Tool import ToolUtils
 from Tool import LogLine
 from Tool import Anr
-
+import re
 class AnrLine(LogLine):
 
     anr_pattern = '^.*ANR in ([\w|\.]+).*'
@@ -93,7 +93,7 @@ class SystemLog():
         for file in self.files:
             print(file)
             systemAnr = None
-            with open(file, encoding=checkFileCode(file)) as mmFile:
+            with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
                 lines = mmFile.readlines()
                 for line in [line.strip() for line in lines]:
                     if systemAnr == None:
@@ -109,7 +109,7 @@ class SystemLog():
                             systemAnr.addLine(temp)
                         else:
                             systemAnr = None
-            with open(file, encoding=checkFileCode(file)) as mmFile:
+            with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
                 lines = mmFile.readlines()
                 for line in lines:
                     for anr in [anr for anr in self.allAnr if anr.anrType == Anr.ANR_TYPE_BROADCAST]:
