@@ -21,6 +21,8 @@ def unzip_single(src_file, dest_dir, password = None):
     zf = zipfile.ZipFile(src_file)
     cwd = os.getcwd()
     os.chdir(dest_dir)
+    root_path = None
+    min_name_leng = -1
     for name in zf.namelist():
         zinfo = zf.getinfo(name)
         if zinfo.flag_bits & 0x800:
@@ -29,6 +31,10 @@ def unzip_single(src_file, dest_dir, password = None):
             fname_str=name.encode('cp437').decode('gbk')
         try:
             print(fname_str)
+            name_leng = len(fname_str)
+            if min_name_leng == -1 or name_leng < min_name_leng:
+                min_name_leng = name_leng
+                root_path = name
             if not fname_str.endswith('/'):
                 if not isdir(dirname(fname_str)):
                     makedirs(dirname(fname_str))
@@ -39,6 +45,8 @@ def unzip_single(src_file, dest_dir, password = None):
                 makedirs(fname_str)
         except RuntimeError as e:
             print(e)
+        if root_path and isdir(root_path):
+            rmtree(root_path)
     zf.close()
     os.chdir(cwd)
 
