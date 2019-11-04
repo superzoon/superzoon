@@ -19,11 +19,28 @@ def unzip_single(src_file, dest_dir, password = None):
     if password:
         password = password.encode()
     zf = zipfile.ZipFile(src_file)
-    try:
-         zf.extractall(path=dest_dir, pwd=password)
-    except RuntimeError as e:
-         print(e)
+    cwd = os.getcwd()
+    os.chdir(dest_dir)
+    for name in zf.namelist():
+        zinfo = zf.getinfo(name)
+        if zinfo.flag_bits & 0x800:
+            fname_str=name
+        else:
+            fname_str=name.encode('cp437').decode('gbk')
+        try:
+            print(fname_str)
+            if not fname_str.endswith('/'):
+                if not isdir(dirname(fname_str)):
+                    makedirs(dirname(fname_str))
+                zf.extract(name, dest_dir, pwd=password)
+                if not isdir(name) and not isfile(fname_str):
+                    os.rename(name, fname_str)
+            elif not isdir(fname_str):
+                makedirs(fname_str)
+        except RuntimeError as e:
+            print(e)
     zf.close()
+    os.chdir(cwd)
 
 def encodeAndDecode(dest_dir:str):
     for root_path, dir_names, file_names in os.walk(dest_dir):
@@ -82,6 +99,9 @@ def checkFileCode(filename):
                 return None
 
 if __name__ == '__main__':
+    ddir = sep.join(['D:','workspace','整机monkey200万627V203-5DEE'])
+    unzip_single(sep.join([ddir,'整机monkey200万627V203-5DEE.zip']),ddir)
+    exit(0)
     ll = '09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}'
     pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([\w|\d|\/|\.]+)}'
     mat = re.match(pattern_executing_service, ll)
