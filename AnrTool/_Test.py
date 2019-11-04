@@ -32,13 +32,6 @@ def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
         if hasAnr:
             line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
-
-    if match:
-        delayStr = match.group(1)
-        delay = float(delayStr)
-        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
-        allLine.append(line)
-        isParser = True
     return True
 
 patternWindowManager1 = '^.*Input event dispatching timed out.*'
