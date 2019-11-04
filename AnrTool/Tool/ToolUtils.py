@@ -25,6 +25,20 @@ def unzip_single(src_file, dest_dir, password = None):
          print(e)
     zf.close()
 
+    for root_path, dir_names, file_names in os.walk(dest_dir):
+        # print("xx", file_names)
+        for fn in file_names:
+            path = os.path.join(root_path, fn)
+            if not zipfile.is_zipfile(path):
+                print("before:", fn)
+                try:
+                    fn = fn.encode('cp437').decode('utf-8')
+                    print("after:", fn)
+                    new_path = os.path.join(root_path, fn)
+                    os.rename(path, new_path)
+                except Exception as e:
+                    print('error:', e)
+
 def unzip_all(source_dir, dest_dir, password):
      if not os.path.isdir(source_dir):    # 如果是单一文件
          unzip_single(source_dir, dest_dir, password)
@@ -57,7 +71,7 @@ def checkFileCode(filename):
     :return: 字符编码格式
     '''
     import codecs
-    for encode in ['utf-8','gb2312','gb18030','gbk','ISO-8859-2','Error']:
+    for encode in ['utf-8','gb2312','gb18030','gbk','cp437','ISO-8859-2','Error']:
         try:
             f = codecs.open(filename, mode='r', encoding=encode)
             u = f.read()
@@ -68,12 +82,14 @@ def checkFileCode(filename):
                 return None
 
 if __name__ == '__main__':
-    for item in ['papser_28','papser_29','papser_30']:
-        papserPath = sep.join(['C:','Users','Administrator','Downloads',item])
-        for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
-            for versionFile in [sep.join([foldPath,version]) for version in listdir(foldPath)]:
-                if isdir(versionFile):
-                    for file in [sep.join([versionFile,idFile]) for idFile in listdir(versionFile)]:
-                        if isdir(file):
-                            rmtree(file)
-                            print(file)
+    if not '1':
+        print('xlan')
+        exit()
+    papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser', 'log'])
+    for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
+        for versionFile in [sep.join([foldPath,version]) for version in listdir(foldPath)]:
+            if isdir(versionFile):
+                for file in [sep.join([versionFile,idFile]) for idFile in listdir(versionFile)]:
+                    if isdir(file):
+                        rmtree(file)
+                        print(file)

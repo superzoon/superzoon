@@ -1,16 +1,16 @@
 import sys, re, os, datetime, configparser, tarfile, zipfile, socket, uuid
-from os import (walk, path, listdir, popen, remove, rename, makedirs)
+from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
-os.environ['PATH'] = dirname(abspath(__file__)) + ':' + os.environ['PATH']
-from Tool import SystemLog
+
 from Tool.MainLog import *
 from Tool import ToolUtils
+from Tool.ToolUtils import *
 from Tool.TracesLog import *
 from Tool import Anr
-
+from Tool.SystemLog import *
 
 class ThreadName:
     PidName = {}
@@ -252,7 +252,8 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
     return isParser
 
 
-def parLogZip(fileName, resonFile, packageName='com.android.systemui', removeDir = True):
+def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', removeDir = True):
+    print("parLogZip : fileName={}, resonFile={}, packageName={}".format(fileName, resonFile, packageName))
     ThreadName.PidName = {}
     if not zipfile.is_zipfile(fileName):
         exit(-1)
@@ -270,7 +271,7 @@ def parLogZip(fileName, resonFile, packageName='com.android.systemui', removeDir
     radioFiles = [file for file in allFiles if 'radio.txt' in file]
     kernelFiles = [file for file in allFiles if 'kernel.txt' in file]
     crashFiles = [file for file in allFiles if 'crash.txt' in file]
-    anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+packageName]) in file]
+    anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file]
     propFiles = [file for file in allFiles if 'system.prop' in file]
     blockStacks = []
     for file in anrFiles:
@@ -297,75 +298,80 @@ def parLogZip(fileName, resonFile, packageName='com.android.systemui', removeDir
 
     # 从systemui解析有多少个anr
     allAnr = []
-    SystemLog(systemFiles, allAnr, packageName).parser()
+    systemLog = SystemLog(systemFiles, allAnr, packageName)
+    systemLog.parser()
     mainLine = None
     for file in parperFiles:
         print('--' + file + '--')
-        with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
+        with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
             isMainLine = True if ('main.txt' in file) else False
-            lines = mmFile.readlines()
-            for line in [line.strip() for line in lines]:
-                temp = LogLine(line)
-                if temp.isLogLine :
-                    if isMainLine and (mainLine == None or temp.timeFloat > mainLine.timeFloat):
-                        mainLine = temp;
-                    isParser = False
-                    tag = temp.tag.lower()
-                    if not isParser and tag == 'nubialog'.lower():
-                        isParser = parseNubiaLog(allAnr, allLine, temp)
+            while True:
+                line = mFile.readline()
+                if not line:
+                    break
+                else:
+                    line = line.strip()
+                    temp = LogLine(line)
+                    if temp.isLogLine :
+                        if isMainLine and (mainLine == None or temp.timeFloat > mainLine.timeFloat):
+                            mainLine = temp;
+                        isParser = False
+                        tag = temp.tag.lower()
+                        if not isParser and tag == 'nubialog'.lower():
+                            isParser = parseNubiaLog(allAnr, allLine, temp)
 
-                    if not isParser and tag == 'OpenGLRenderer'.lower():
-                        isParser = parseOpenGLRenderer(allAnr, allLine, temp)
+                        if not isParser and tag == 'OpenGLRenderer'.lower():
+                            isParser = parseOpenGLRenderer(allAnr, allLine, temp)
 
-                    if not isParser and tag == 'InputDispatcher'.lower():
-                        isParser = parseInputDispatcher(allAnr, allLine, temp)
+                        if not isParser and tag == 'InputDispatcher'.lower():
+                            isParser = parseInputDispatcher(allAnr, allLine, temp)
 
-                    if not isParser and tag == 'BroadcastQueue'.lower():
-                        isParser = parseBroadcastQueue(allAnr, allLine, temp)
+                        if not isParser and tag == 'BroadcastQueue'.lower():
+                            isParser = parseBroadcastQueue(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip().startswith('kgsl-'):
-                        isParser = parseKgsl(allAnr, allLine, temp)
+                        if not isParser and tag.strip().startswith('kgsl-'):
+                            isParser = parseKgsl(allAnr, allLine, temp)
 
-                    if not isParser and tag == 'Adreno-GSL'.lower():
-                        isParser = parseAdreno(allAnr, allLine, temp)
+                        if not isParser and tag == 'Adreno-GSL'.lower():
+                            isParser = parseAdreno(allAnr, allLine, temp)
 
-                    if not isParser and tag == 'KeyguardViewMediator'.lower():
-                        isParser = parseKeyguardViewMediator(allAnr, allLine, temp)
+                        if not isParser and tag == 'KeyguardViewMediator'.lower():
+                            isParser = parseKeyguardViewMediator(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'vold    '.strip().lower():
-                        isParser = parseVold(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'vold    '.strip().lower():
+                            isParser = parseVold(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'binder_sample'.strip().lower():
-                        isParser = parseBinder(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'binder_sample'.strip().lower():
+                            isParser = parseBinder(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'content_query_sample'.strip().lower():
-                        isParser = parseQuery(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'content_query_sample'.strip().lower():
+                            isParser = parseQuery(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'dvm_lock_sample'.strip().lower():
-                        isParser = parseLock(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'dvm_lock_sample'.strip().lower():
+                            isParser = parseLock(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'am_activity_launch_time'.strip().lower():
-                        isParser = parseLauncher(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'am_activity_launch_time'.strip().lower():
+                            isParser = parseLauncher(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip().lower() == 'Looper'.strip().lower():
-                        isParser = parseLooper(allAnr, allLine, temp)
+                        if not isParser and tag.strip().lower() == 'Looper'.strip().lower():
+                            isParser = parseLooper(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'IPCThreadState'.strip().lower():
-                        isParser = parseIPCThreadState(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'IPCThreadState'.strip().lower():
+                            isParser = parseIPCThreadState(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'SurfaceFlinger'.strip().lower():
-                        isParser = parseSurfaceFlinger(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'SurfaceFlinger'.strip().lower():
+                            isParser = parseSurfaceFlinger(allAnr, allLine, temp)
 
-                    if not isParser and tag.strip() == 'WindowManager'.strip().lower():
-                        isParser = parseWindowManager(allAnr, allLine, temp)
+                        if not isParser and tag.strip() == 'WindowManager'.strip().lower():
+                            isParser = parseWindowManager(allAnr, allLine, temp)
 
-                    if isParser:
-                        print(temp.line)
-                    pattern_delay = '.*delay.*([\d]+)ms.*'
-                    if not isParser:
-                        math = re.match(pattern_delay,temp.msg)
-                        if math and int(math.group(1)) > 5000:
-                            allLine.append(temp)
+                        if isParser:
+                            print(temp.line)
+                        pattern_delay = '.*delay.*([\d]+)ms.*'
+                        if not isParser:
+                            math = re.match(pattern_delay,temp.msg)
+                            if math and int(math.group(1)) > 5000:
+                                allLine.append(temp)
 
 
     print('####################start######################')
@@ -434,7 +440,7 @@ def parserFold(foldPath, removeDir = True):
         point = point + 1
         writeName = str(point) + '.' + abspath(zipFile)[len(dirname(foldPath)) + 1:] + '\n\n'
         resonFile.writelines(writeName)
-        parLogZip(zipFile, resonFile, removeDir)
+        parLogZip(zipFile, resonFile, removeDir=removeDir)
         resonFile.writelines('\n\n')
 
     resonFile.flush()
@@ -450,13 +456,14 @@ def test():
 if __name__ == '__main__':
     test = False
     if test : test()
-    current = ''
+    #     D:\workspace\整机monkey
+    current = '整机monkey'
     if len(current) > 0:
-        papserPath = sep.join(['C:','Users','Administrator','Downloads','papser_30',current])
+        papserPath = sep.join(['D:','workspace',current])
         parserFold(papserPath)
         exit(0)
     papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser','log'])
     for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
-        parserFold(foldPath)
+        parserFold(foldPath, True)
 
 

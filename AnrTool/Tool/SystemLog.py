@@ -10,7 +10,7 @@ class AnrLine(LogLine):
         self.packageName = None
 
     def isAnrLine(self, packageName: str = 'com.android.systemui'):
-        if not self.tag or not self.msg :
+        if not self.isLogLine or not self.tag or not self.msg :
             return False
         match = re.match(AnrLine.anr_pattern, self.msg)
         if match:
@@ -86,6 +86,9 @@ class SystemLog():
     def __init__(self, files, anrs: Anr, packageName: str = 'com.android.systemui'):
         self.allAnr = anrs
         self.files = sorted(files,reverse=True)
+        firstFile = self.files[0]
+        self.files = self.files[1:]
+        self.files.append(firstFile)
         self.packageName = packageName
 
     @classmethod
@@ -93,27 +96,36 @@ class SystemLog():
         for file in self.files:
             print(file)
             systemAnr = None
-            with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
-                lines = mmFile.readlines()
-                for line in [line.strip() for line in lines]:
-                    if systemAnr == None:
-                        temp = AnrLine(line)
-                        if temp.isAnrLine(self.packageName):
-                            anr = Anr()
-                            systemAnr = SystemAnr(temp, anr)
-                            anr.systemAnr = systemAnr
-                            self.allAnr.append(anr)
+            with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+                while True:
+                    line = mFile.readline()
+                    if not line:
+                        break
                     else:
-                        temp = LogLine(line)
-                        if temp.tag == systemAnr.anrLine.tag:
-                            systemAnr.addLine(temp)
+                        line = line.strip()
+                        if systemAnr == None:
+                            temp = AnrLine(line)
+                            if temp.isAnrLine(self.packageName):
+                                anr = Anr()
+                                systemAnr = SystemAnr(temp, anr)
+                                anr.systemAnr = systemAnr
+                                self.allAnr.append(anr)
                         else:
-                            systemAnr = None
-            with open(file, encoding=ToolUtils.checkFileCode(file)) as mmFile:
-                lines = mmFile.readlines()
-                for line in lines:
-                    for anr in [anr for anr in self.allAnr if anr.anrType == Anr.ANR_TYPE_BROADCAST]:
-                        temp = LogLine(line)
-                        anr.findAnrStartTime(temp)
+                            temp = LogLine(line)
+                            if temp.isLogLine and temp.tag == systemAnr.anrLine.tag:
+                                systemAnr.addLine(temp)
+                            else:
+                                systemAnr = None
+            with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+                while True:
+                    line = mFile.readline()
+                    if not line:
+                        break
+                    else:
+                        line = line.strip()
+                        for anr in [anr for anr in self.allAnr if anr.anrType == Anr.ANR_TYPE_BROADCAST]:
+                            temp = LogLine(line)
+                            if temp.isLogLine:
+                                anr.findAnrStartTime(temp)
 
         return self.allAnr

@@ -4,7 +4,7 @@ from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, bas
 from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
-os.environ['PATH'] = dirname(abspath(__file__)) + ':' + os.environ['PATH']
+os.environ['PATH'] = sep.join([dirname(abspath(__file__)), 'Tool']) + ':' + os.environ['PATH']
 from Tool import SystemLog
 from Tool.MainLog import *
 from Tool.ToolUtils import *

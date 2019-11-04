@@ -4,10 +4,9 @@ from Tool import *
 from Tool import ToolUtils
 class LogLine():
     '''
-    line, time, pid, tid, level, tag, log
-    ###10-11 07:10:00.024  1303  1303 V SettingsProvider: Notifying for 0: content://settings/system/next_alarm_formatted###
+    10-11 07:10:00.024  1303  1303 V SettingsProvider: Notifying for 0: content://settings/system/next_alarm_formatted
+    (timeStr)[\ ]+(pid)[\ ]+(tid)[\ ]+(level)[\ ]+(tag)?:\ (msg)
     '''
-    ###(timeStr)[\ ]+(pid)[\ ]+(tid)[\ ]+(level)[\ ]+(tag)?:\ (msg)
     pattern= '^([\d]{2}-[\d]{2}[\ ]+[\d|:|\.]+)[\ ]+([\d|\ ]+)[\ ]+([\d|\ ]+)[\ ]+([\w])[\ ](.*)'
     def __init__(self, line: str):
         self.line = line
@@ -39,8 +38,9 @@ class LogLine():
         self.isGslIoctlFailed = False
 
     def setYear(self, year: str):
-        self.timeStr = year + '-' + self._timeStr_
-        self.timeFloat = ToolUtils.getTimeFloat(self.timeStr)
+        if self.isLogLine:
+            self.timeStr = year + '-' + self._timeStr_
+            self.timeFloat = ToolUtils.getTimeFloat(self.timeStr)
 
 
 class Anr():
