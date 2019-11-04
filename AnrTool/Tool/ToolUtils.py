@@ -25,9 +25,9 @@ def unzip_single(src_file, dest_dir, password = None):
          print(e)
     zf.close()
 
+def encodeAndDecode(dest_dir:str):
     for root_path, dir_names, file_names in os.walk(dest_dir):
-        # print("xx", file_names)
-        for fn in file_names:
+        for fn in dir_names:
             path = os.path.join(root_path, fn)
             if not zipfile.is_zipfile(path):
                 print("before:", fn)
@@ -82,7 +82,12 @@ def checkFileCode(filename):
                 return None
 
 if __name__ == '__main__':
-    if not '1':
+    ll = '09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}'
+    pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([\w|\d|\/|\.]+)}'
+    mat = re.match(pattern_executing_service, ll)
+    if mat:
+        print(mat.groups())
+    if  '123' in '13980123111':
         print('xlan')
         exit()
     papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser', 'log'])

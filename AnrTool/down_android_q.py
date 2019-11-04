@@ -5,15 +5,19 @@ from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from shutil import (copytree, rmtree, copyfile, move)
 if __name__ == '__main__':
-    makedirs('d:/android_source')
-    chdir('d:/android_source')
-    # popen('git clone https://android.googlesource.com/platform/manifest.git')
-    call('git clone https://aosp.tuna.tsinghua.edu.cn/platform/manifest.git')
-    chdir('d:/android_source/manifest')
-    call('git checkout android-q-preview-2.5')
+    isDownManifest = False
+    if isDownManifest:
+        print('down manifest')
+        makedirs('d:/android_source')
+        chdir('d:/android_source')
+        # popen('git clone https://android.googlesource.com/platform/manifest.git')
+        call('git clone https://aosp.tuna.tsinghua.edu.cn/platform/manifest.git')
+        chdir('d:/android_source/manifest')
+        call('git checkout android-q-preview-2.5')
 
-    exit(0)
+        exit(0)
     # 1. 修改为源码要保存的路径
+        print('down android source')
     rootdir = "d:/android_source/android_q"
 
     # 2. 设置 git 安装的路径
@@ -25,7 +29,7 @@ if __name__ == '__main__':
 
     prefix = git + " clone https://android.googlesource.com/"
     # 4. 没有梯子使用清华源下载
-    # prefix = git + " clone https://aosp.tuna.tsinghua.edu.cn/"
+    prefix = git + " clone https://aosp.tuna.tsinghua.edu.cn/"
     suffix = ".git"
 
     if not os.path.exists(rootdir):

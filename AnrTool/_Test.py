@@ -14,6 +14,33 @@ from Tool.SystemLog import *
 
 class ThreadName:
     PidName = {}
+
+# 09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}
+# executing service com.android.systemui/.light.LightEffectService
+pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([\w|\d|\/|\.]+)}'
+def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
+    match = re.match(pattern_executing_service, line.msg)
+    if match:
+        delay = 20*1000*1000
+        className = match.group(1)
+        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        hasAnr = False
+        for anr in [anr for anr in allAnr if anr.systemAnr]:
+            for l in [l for l in anr.systemAnr.lines if className in l.line]:
+                if l.timeFloat - line.timeFloat < 30:
+                    hasAnr = True
+        if hasAnr:
+            line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        allLine.append(line)
+
+    if match:
+        delayStr = match.group(1)
+        delay = float(delayStr)
+        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        allLine.append(line)
+        isParser = True
+    return True
+
 patternWindowManager1 = '^.*Input event dispatching timed out.*'
 patternWindowManager2 = '^.*Input event dispatching timed out.* ([\d|\.]+)ms ago.*'
 def parseWindowManager(allAnr :Anr, allLine:LogLine, line:LogLine):
@@ -193,8 +220,14 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
     math = re.match(pattern_broadcast, line.msg)
     isParser = False
     if math:
-        delay = float(math.group(1))
+        delayStr = math.group(1)
+        delay = float(delayStr)
         line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        hasAnr = False
+        for anr in [anr for anr in allAnr if anr.systemAnr]:
+            hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
+        if hasAnr:
+            line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
         isParser = True
     return isParser
@@ -210,8 +243,14 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not match:
         match = re.match(pattern_input2, line.msg)
     if match:
-        delay = float(match.group(1))
+        delayStr = match.group(1)
+        delay = float(delayStr)
         line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        hasAnr = False
+        for anr in [anr for anr in allAnr if anr.systemAnr]:
+            hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
+        if hasAnr:
+            line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
         isParser = True
     if not isParser:
@@ -322,6 +361,9 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
 
                         if not isParser and tag == 'OpenGLRenderer'.lower():
                             isParser = parseOpenGLRenderer(allAnr, allLine, temp)
+
+                        if not isParser and tag.strip() == 'ActivityManager'.strip().lower():
+                            isParser = parseActivityManager(allAnr, allLine, temp)
 
                         if not isParser and tag == 'InputDispatcher'.lower():
                             isParser = parseInputDispatcher(allAnr, allLine, temp)
