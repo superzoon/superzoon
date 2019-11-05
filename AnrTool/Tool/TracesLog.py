@@ -105,15 +105,19 @@ class TracesLog():
 if __name__ == '__main__':
     from Tool import LogLine
 
-    l = '10-15 10:09:26.363 28083 28083 V nubialog: draw takes 16312 ms: com.android.systemui.statusbar.phone.StatusBarWindowView{e4db537 V.ED..... ........ 0,0-1080,2340}'
+    l = '10-30 15:26:18.394 18461 18461 I binder_sample: [android.hardware.input.IInputManager,8,2509,com.android.commands.monkey,100]'
     line = LogLine(l)
     print(line.tag)
-    if line.tag.strip().lower() == 'nubialog'.lower():
+    if line.tag.strip().lower() == 'binder_sample'.lower():
         print(l)
-        pattern = '.*draw takes ([\d|\.]+) ms:.*'
-        math = re.match(pattern, line.msg)
-        if math:
-            delay = int(math.group(1))
+        pattern_binder = '^.*,[\ ]*([\d]+)]'
+        match = re.match(pattern_binder, line.msg)
+
+        if match and int(match.group(1)) == 100:
+            delay = int(match.group(1))
+            print(delay)
+        if match:
+            delay = int(match.group(1))
             print(delay)
             print(l)
     exit(0)

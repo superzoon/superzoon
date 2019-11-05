@@ -303,7 +303,7 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
     ToolUtils.unzip_single(fileName, tempDir)
     allFiles = ToolUtils.getAllFileName(tempDir)
     systemFiles = [file for file in allFiles if 'system.txt' in file]
-    eventFiles = [file for file in allFiles if 'event.txt' in file]
+    eventFiles = [file for file in allFiles if 'events.txt' in file]
     mainFiles = [file for file in allFiles if 'main.txt' in file]
     radioFiles = [file for file in allFiles if 'radio.txt' in file]
     kernelFiles = [file for file in allFiles if 'kernel.txt' in file]
