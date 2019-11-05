@@ -21,7 +21,7 @@ pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([
 def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_executing_service, line.msg)
     if match:
-        delay = 20*1000*1000
+        delay = 20*1000
         className = match.group(1)
         line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         hasAnr = False
