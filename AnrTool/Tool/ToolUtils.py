@@ -36,7 +36,7 @@ def unzip_single(src_file, dest_dir, password = None):
                 min_name_leng = name_leng
                 root_path = name
             if not fname_str.endswith('/'):
-                if not isdir(dirname(fname_str)):
+                if not isdir(dirname(fname_str)) and len(dirname(fname_str)) > 0:
                     makedirs(dirname(fname_str))
                 zf.extract(name, dest_dir, pwd=password)
                 if not isdir(name) and not isfile(fname_str):

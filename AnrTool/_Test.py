@@ -492,7 +492,7 @@ if __name__ == '__main__':
     test = False
     if test : test()
     #     D:\workspace\整机monkey
-    current = '整机monkey'
+    current = 'ROMUI80-2029'
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         parserFold(papserPath)
