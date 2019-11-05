@@ -22,7 +22,8 @@ pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([
 def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_executing_service, line.msg)
     if match:
-        delay = 20*1000
+        delay = 20*1000#前台服务
+        delay = 200*1000#后台服务
         className = match.group(1)
         hasAnr = False
         for anr in [anr for anr in allAnr if anr.systemAnr]:
@@ -215,6 +216,7 @@ pattern_broadcast = '.*Timeout of broadcast.*started ([\d}\.]+)ms ago.*'
 def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
     math = re.match(pattern_broadcast, line.msg)
     isParser = False
+    # 前台广播10s，后台广播60s
     if math:
         delayStr = math.group(1)
         delay = float(delayStr)
