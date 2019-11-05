@@ -30,7 +30,7 @@ def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
                 if l.timeFloat - line.timeFloat < 30:
                     hasAnr = True
         if hasAnr:
-            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+'; \tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+';\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         else:
             line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
 
@@ -222,7 +222,7 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
         if hasAnr:
-            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+'; \tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+';\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         else:
             line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
@@ -246,7 +246,7 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
         if hasAnr:
-            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+'; \tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+';\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         else:
             line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
