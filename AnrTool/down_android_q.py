@@ -5,22 +5,18 @@ from os import (popen,makedirs, chdir)
 from os.path import (isdir, isfile, sep)
 from shutil import rmtree
 def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_source']), manifest=False):
-    # 1. 检查 git 安装的路径
-    git = "C:/Program Files/Git/bin/git.exe"
-    if not isfile(git):
-        print('please install git')
-        exit(0)
     manifest_dir = sep.join([down_dir,'manifest'])
     android_source = sep.join([down_dir,'android_q'])
 
-    # 2. 修改为源码要保存的路径
+    # 1. 打印一句话
     print('down android source')
+    # 2. 修改为源码要保存的路径
     if not os.path.exists(android_source):
         os.mkdir(android_source)
 
-    # prefix = git + " clone https://android.googlesource.com/"
+    # prefix = "git clone https://android.googlesource.com/"
     # 3. 使用清华源下载地址
-    prefix = git + " clone https://aosp.tuna.tsinghua.edu.cn/"
+    prefix ="git clone https://aosp.tuna.tsinghua.edu.cn/"
     suffix = ".git"
 
     # 下载manifest函数
