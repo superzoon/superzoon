@@ -14,6 +14,7 @@ from Tool.SystemLog import *
 
 class ThreadName:
     PidName = {}
+    FileName = ''
 
 # 09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}
 # executing service com.android.systemui/.light.LightEffectService
@@ -23,14 +24,16 @@ def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
     if match:
         delay = 20*1000
         className = match.group(1)
-        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         hasAnr = False
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             for l in [l for l in anr.systemAnr.lines if className in l.line]:
                 if l.timeFloat - line.timeFloat < 30:
                     hasAnr = True
         if hasAnr:
-            line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+'; \tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        else:
+            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+
         allLine.append(line)
     return True
 
@@ -215,12 +218,13 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
     if math:
         delayStr = math.group(1)
         delay = float(delayStr)
-        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         hasAnr = False
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
         if hasAnr:
-            line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+'; \tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        else:
+            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
         isParser = True
     return isParser
@@ -238,12 +242,13 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
     if match:
         delayStr = match.group(1)
         delay = float(delayStr)
-        line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         hasAnr = False
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
         if hasAnr:
-            line.line = line.line+'\nANR 起始时间:startTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+'; \tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+        else:
+            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
         allLine.append(line)
         isParser = True
     if not isParser:
@@ -336,6 +341,7 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
     for file in parperFiles:
         print('--' + file + '--')
         with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+            ThreadName.FileName = file
             isMainLine = True if ('main.txt' in file) else False
             while True:
                 line = mFile.readline()
