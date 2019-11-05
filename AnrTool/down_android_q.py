@@ -1,9 +1,9 @@
 import xml.dom.minidom
 import os
 from subprocess import call
-from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
-from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
-from shutil import (copytree, rmtree, copyfile, move)
+from os import (popen,makedirs, chdir)
+from os.path import (isdir, isfile, sep)
+from shutil import rmtree
 def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_source']), manifest=False):
     # 1. 检查 git 安装的路径
     git = "C:/Program Files/Git/bin/git.exe"
@@ -66,6 +66,10 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
                 downloadMode(rootdir, node.getAttribute("path"), node.getAttribute("name"))
 
 if __name__ == '__main__':
-    path = 'frameworks/base'
-    name = 'platform/frameworks/base'
-    downloadAndroidSource(path=path, name=name)
+    email = popen('git config user.email').read().splitlines()[0]
+    if email == '303106251@qq.com':
+        path = 'frameworks/base'
+        name = 'platform/frameworks/base'
+        downloadAndroidSource(path=path, name=name)
+    else:
+        downloadAndroidSource()
