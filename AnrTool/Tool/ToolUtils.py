@@ -30,7 +30,7 @@ def unzip_single(src_file, dest_dir, password = None):
             fname_str=name.encode('cp437').decode('gbk')
         try:
             print(fname_str)
-            if fname_str.endswith('/') and len(fname_str)-len(fname_str.replace('/',""))==1 and fname_str!=name:
+            if fname_str.endswith('/') and fname_str.count('/')==1 and fname_str!=name:
                 root_path = name
             if not fname_str.endswith('/'):
                 if not isdir(dirname(fname_str)) and len(dirname(fname_str)) > 0:
@@ -42,8 +42,8 @@ def unzip_single(src_file, dest_dir, password = None):
                 makedirs(fname_str)
         except RuntimeError as e:
             print(e)
-        if root_path and isdir(root_path):
-            rmtree(root_path)
+    if root_path and isdir(root_path):
+        rmtree(root_path)
     zf.close()
     os.chdir(cwd)
 
