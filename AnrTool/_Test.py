@@ -504,11 +504,10 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
         exit()
     for line in allLine:
         if line.isAnrCore:
-            resonFile.writelines("My Anr core: in file "+line.file)
-        resonFile.writelines("\t"+line.line.strip())
+            resonFile.writelines("My Anr core: in file {} \n".format(line.file))
+        resonFile.writelines("\t{}\n".format(line.line.strip()))
         if line.isDelayLine:
-            resonFile.writelines("\t\t start time:"+line.delayStartTimeStr)
-        resonFile.writelines('\n')
+            resonFile.writelines("\t\t start time:{}\n".format(line.delayStartTimeStr))
     print('####################end######################')
     if removeDir:
         rmtree(tempDir)
