@@ -1,6 +1,6 @@
-from Tool import ToolUtils
+
 import re
-from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
+from os.path import sep
 class ThreadStack:
     def __init__(self, name, prio, tid, state, pid, top):
         self.name = name
@@ -104,22 +104,22 @@ class TracesLog():
 
 if __name__ == '__main__':
     from Tool import LogLine
-
+    propMsg=dict()
+    propMsg['1']='2'
+    propMsg['2']='3'
+    print(propMsg)
+    for (key, value) in propMsg.items():
+        print("{}:{}\n".format(key, value))
     l = '10-30 15:26:18.394 18461 18461 I binder_sample: [android.hardware.input.IInputManager,8,2509,com.android.commands.monkey,100]'
-    line = LogLine(l)
-    print(line.tag)
-    if line.tag.strip().lower() == 'binder_sample'.lower():
-        print(l)
-        pattern_binder = '^.*,[\ ]*([\d]+)]'
+    l1 = '10-30 15:26:18.394 18461 18461 I dvm_lock_sample: [com.android.settings, 1, main , 23,  ManageApplication.java, 1317,  ApplicationState.java, 323 , 5]'
+    l2 = '10-30 15:26:18.394 18461 18461 I binder_sample: [android.hardware.input.IInputManager,8,2509,com.android.commands.monkey,100]'
+    line = LogLine(l1)
+    if line.tag.strip().lower() == 'dvm_lock_sample'.lower():
+        print(line.line)
+        pattern_binder = '^.*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([\d]+)][\ ]*'
         match = re.match(pattern_binder, line.msg)
-
-        if match and int(match.group(1)) == 100:
-            delay = int(match.group(1))
-            print(delay)
         if match:
-            delay = int(match.group(1))
-            print(delay)
-            print(l)
+            print(match.groups())
     exit(0)
     f = sep.join(['C:','Users','Administrator','Downloads','anr_com.android.systemui_1856_2019-10-05-03-34-10-506'])
     tl = TracesLog(f)

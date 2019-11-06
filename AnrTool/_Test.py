@@ -11,32 +11,12 @@ from Tool.ToolUtils import *
 from Tool.TracesLog import *
 from Tool import Anr
 from Tool.SystemLog import *
+from Tool import DEF_MAX_DELAY_TIME
 
 class ThreadName:
     PidName = {}
     FileName = ''
 
-# 09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}
-# executing service com.android.systemui/.light.LightEffectService
-pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([\w|\d|\/|\.]+)}'
-def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
-    match = re.match(pattern_executing_service, line.msg)
-    if match:
-        delay = 20*1000#前台服务
-        delay = 200*1000#后台服务
-        className = match.group(1)
-        hasAnr = False
-        for anr in [anr for anr in allAnr if anr.systemAnr]:
-            for l in [l for l in anr.systemAnr.lines if className in l.line]:
-                if l.timeFloat - line.timeFloat < 30:
-                    hasAnr = True
-        if hasAnr:
-            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+';\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
-        else:
-            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
-
-        allLine.append(line)
-    return True
 
 patternWindowManager1 = '^.*Input event dispatching timed out.*'
 patternWindowManager2 = '^.*Input event dispatching timed out.* ([\d|\.]+)ms ago.*'
@@ -46,7 +26,7 @@ def parseWindowManager(allAnr :Anr, allLine:LogLine, line:LogLine):
         match2 = re.match(patternWindowManager2, line.msg)
         if match2:
             delay = float(match2.group(1))
-            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.addDelay(delay)
         allLine.append(line)
     return True
 
@@ -63,10 +43,10 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
     line.isIPCLine = True
     match = re.match(pattern_ipc1, line.msg)
     if match:
-        delay = int(match.group(1))
+        delay = float(match.group(1))
         for anr in allAnr:
-            if isInTime(anr, line):
-                line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            if line.isDoubtLine(anr):
+                line.addDelay(delay)
                 allLine.append(line)
                 isParser = True
                 break
@@ -79,7 +59,7 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
                 isParser = True
         if addLine:
             for anr in allAnr:
-                if isInTime(anr, line):
+                if line.isDoubtLine(anr):
                     allLine.append(line)
                     isParser = True
                     break
@@ -92,10 +72,10 @@ def parseLooper(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_loop, line.msg)
     isParser = False
     if match:
-        delay = int(match.group(1))
+        delay = float(match.group(1))
         for anr in allAnr:
-            if delay > 2000 and isInTime(anr, line):
-                line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            if delay > DEF_MAX_DELAY_TIME and line.isDoubtLine(anr):
+                line.addDelay(delay)
                 allLine.append(line)
                 isParser = True
                 break
@@ -108,33 +88,38 @@ def parseKgsl(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParser = False
     if match:
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
                 allLine.append(line)
                 isParser = True
                 break
     return isParser
 
 # content_update_sample: [content://com.android.contacts/data,insert, , 23,  com.example.sendmessagetest,   5]
-pattern_lock = '^.*,[\ ]*([\d]+)]'
+pattern_content_update = '^.*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]+)][\ ]*'
 def parseQuery(allAnr :Anr, allLine:LogLine, line:LogLine):
-    match = re.match(pattern_lock, line.msg)
+    match = re.match(pattern_content_update, line.msg)
     isParser = False
-    if match and int(match.group(1))==100:
+    if match and int(match.group(1)) > DEF_MAX_DELAY_TIME:
+        delay = float(match.group(1))
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
+                line.addDelay(delay)
                 allLine.append(line)
                 isParser = True
                 break
     return isParser
 
-# dvm_lock_sample: [com.android.settings, 1, main , 23,  ManageApplication.java, 1317,  ApplicationState.java, 323 , 5]
-pattern_lock = '^.*,[\ ]*([\d]+)]'
+# dvm_lock_sample: [com.android.settings, 1, (main) , (23),  ManageApplication.java, 1317,  ApplicationState.java, 323 , 5]
+pattern_lock = '^.*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([\d]+)][\ ]*'
 def parseLock(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_lock, line.msg)
     isParser = False
-    if match and int(match.group(1))>1000:
+    if match and int(match.group(2))>DEF_MAX_DELAY_TIME:
+        line.threadName = match.group(1)
+        delay = float(match.group(2))
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
+                line.addDelay(delay)
                 allLine.append(line)
                 isParser = True
                 break
@@ -145,22 +130,26 @@ pattern_launcher = '^.*[\ ]*([\d]+),[\ ]*([\d]+)]'
 def parseLauncher(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_launcher, line.msg)
     isParser = False
-    if match and int(match.group(1))>1000:
+    if match and int(match.group(1))>DEF_MAX_DELAY_TIME:
+        delay = float(match.group(1))
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
+                line.addDelay(delay)
                 allLine.append(line)
                 isParser = True
                 break
     return isParser
 
 # binder_sample: [ android.app.IActivityManager,  8,   227,    com.android.phone,    45]
-pattern_binder = '^.*,[\ ]*([\d]+)]'
+pattern_binder = '^.*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]+)][\ ]*'
 def parseBinder(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_binder, line.msg)
     isParser = False
-    if match and int(match.group(1))==100:
+    if match and int(match.group(1))>DEF_MAX_DELAY_TIME:
+        delay = float(match.group(1))
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
+                line.addDelay(delay)
                 allLine.append(line)
                 isParser = True
                 break
@@ -173,6 +162,8 @@ def parseVold(allAnr :Anr, allLine:LogLine, line:LogLine):
         ThreadName.PidName[line.pid] = 'vold'
     match = re.match(pattern_vold, line.msg)
     if match and int(match.group(1))>10000:
+        delay = float(match.group(1))
+        line.addDelay(delay)
         allLine.append(line)
     return True
 
@@ -181,7 +172,7 @@ def parseKeyguardViewMediator(allAnr :Anr, allLine:LogLine, line:LogLine):
         ThreadName.PidName[line.pid] = 'systemui'
     if line.msg.startswith('handleHide') or line.msg.startswith('handleShow'):
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
                 allLine.append(line)
                 break
     return True
@@ -206,11 +197,33 @@ def parseAdreno(allAnr :Anr, allLine:LogLine, line:LogLine):
                     break
     if not lastHasFailed:
         for anr in allAnr:
-            if isInTime(anr, line):
+            if line.isDoubtLine(anr):
                 allLine.append(line)
                 isParser = True
                 break
     return isParser
+
+# 09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}
+# executing service com.android.systemui/.light.LightEffectService
+pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([\w|\d|\/|\.]+)}'
+def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine):
+    match = re.match(pattern_executing_service, line.msg)
+    if match:
+        delay = 20*1000#前台服务
+        delay = 200*1000#后台服务
+        className = match.group(1)
+        line.addDelay(delay)
+        hasAnr = False
+        for anr in [anr for anr in allAnr if anr.systemAnr]:
+            for l in [l for l in anr.systemAnr.lines if className in l.line]:
+                if l.timeFloat - line.timeFloat < 30:
+                    hasAnr = True
+        if hasAnr:
+            line.isAnrCore = True
+            line.file = str(ThreadName.FileName)
+
+        allLine.append(line)
+    return True
 
 pattern_broadcast = '.*Timeout of broadcast.*started ([\d}\.]+)ms ago.*'
 def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
@@ -220,13 +233,13 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
     if math:
         delayStr = math.group(1)
         delay = float(delayStr)
+        line.addDelay(delay)
         hasAnr = False
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
         if hasAnr:
-            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+';\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
-        else:
-            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.isAnrCore = True
+            line.file = str(ThreadName.FileName)
         allLine.append(line)
         isParser = True
     return isParser
@@ -244,13 +257,13 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
     if match:
         delayStr = match.group(1)
         delay = float(delayStr)
+        line.addDelay(delay)
         hasAnr = False
         for anr in [anr for anr in allAnr if anr.systemAnr]:
             hasAnr = len([l for l in anr.systemAnr.lines if delayStr in l.line]) >0
         if hasAnr:
-            line.line = line.line + '\nMy ANR in file '+ str(ThreadName.FileName)+';\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
-        else:
-            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+            line.isAnrCore = True
+            line.file = str(ThreadName.FileName)
         allLine.append(line)
         isParser = True
     if not isParser:
@@ -264,14 +277,13 @@ pattern_gl = '^.*\ duration=([\d]+)ms;.*'
 def parseOpenGLRenderer(allAnr :Anr, allLine:LogLine, line:LogLine):
     match = re.match(pattern_gl, line.msg)
     if match :
-        duration = int(match.group(1))
-        if (duration >500):
-            line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-duration/1000))
+        delay = float(match.group(1))
+        line.addDelay(delay)
+        if (delay >DEF_MAX_DELAY_TIME):
             allLine.append(line)
 
     return True
 
-isInTime = lambda anr, temp: temp.timeFloat < (1000+ anr.anrTimeFloat) and  temp.timeFloat>(anr.anrTimeFloat - 300)
 pattern_nubialog = '^.*\ delay=([\d]+)ms\ .*'
 pattern_nubialog_draw = '.*draw takes ([\d|\.]+) ms:.*'
 def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
@@ -280,16 +292,35 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not match:
         match = re.match(pattern_nubialog_draw, line.msg)
     if match:
-        delay = int(match.group(1))
-        if delay > 1000:
+        delay = float(match.group(1))
+        line.addDelay(delay)
+        if delay > DEF_MAX_DELAY_TIME:
             for anr in allAnr:
-                if isInTime(anr, line):
-                    line.line = line.line+'\n\t\tstartTime:'+str(ToolUtils.getTimeStamp(line.timeFloat-delay/1000))
+                if line.isDoubtLine(anr):
                     allLine.append(line)
                     isParser = True
                     break
     return isParser
 
+def parseProp(propFiles):
+    allProp = {}
+    keys = [
+        'ro.build.date','ro.build.display.id',
+        'ro.build.rom.id','ro.build.version.sdk'
+            ]
+    for file in propFiles:
+        print(file)
+        with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+            while True:
+                line = mFile.readline()
+                if not line:
+                    break
+                else:
+                    line = line.strip()
+                    match = re.match( '^.*\[(.*)\].*\[(.*)\].*', line)
+                    if match and match.group(1) in keys:
+                        allProp[match.group(1)] = match.group(2)
+    return allProp
 
 def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', removeDir = True):
     print("parLogZip : fileName={}, resonFile={}, packageName={}".format(fileName, resonFile, packageName))
@@ -312,6 +343,7 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
     crashFiles = [file for file in allFiles if 'crash.txt' in file]
     anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file]
     propFiles = [file for file in allFiles if 'system.prop' in file]
+    propMsg = parseProp(propFiles)
     blockStacks = []
     for file in anrFiles:
         print(file)
@@ -321,17 +353,17 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
         if stack != None:
             blockStacks.append(stack)
 
-    parperFiles = []
+    parseFiles = []
     for f in systemFiles:
-        parperFiles.append(f)
+        parseFiles.append(f)
     for f in eventFiles:
-        parperFiles.append(f)
+        parseFiles.append(f)
     for f in mainFiles:
-        parperFiles.append(f)
+        parseFiles.append(f)
     for f in radioFiles:
-        parperFiles.append(f)
+        parseFiles.append(f)
     for f in kernelFiles:
-        parperFiles.append(f)
+        parseFiles.append(f)
     allLine = []
 
 
@@ -340,7 +372,7 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
     systemLog = SystemLog(systemFiles, allAnr, packageName)
     systemLog.parser()
     mainLine = None
-    for file in parperFiles:
+    for file in parseFiles:
         print('--' + file + '--')
         with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
             ThreadName.FileName = file
@@ -413,7 +445,7 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
                         pattern_delay = '.*delay.*([\d]+)ms.*'
                         if not isParser:
                             math = re.match(pattern_delay,temp.msg)
-                            if math and int(math.group(1)) > 5000:
+                            if math and int(math.group(1)) > DEF_MAX_DELAY_TIME:
                                 allLine.append(temp)
 
 
@@ -428,6 +460,8 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
         print(line.timeStr+"  "+line.line)
     pids = []
     anrTimeFloat = 0;
+    for (key, value) in propMsg.items():
+        resonFile.writelines("{}:{}\n".format(key, value))
     for anr in allAnr:
         pids.append(anr.pid)
         resonFile.writelines("pid:"+str(anr.pid))

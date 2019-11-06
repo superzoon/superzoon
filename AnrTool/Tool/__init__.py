@@ -2,6 +2,9 @@ import re
 import time
 from Tool import *
 from Tool import ToolUtils
+
+DEF_MAX_DELAY_TIME = 1000
+
 class LogLine():
     '''
     10-11 07:10:00.024  1303  1303 V SettingsProvider: Notifying for 0: content://settings/system/next_alarm_formatted
@@ -36,12 +39,41 @@ class LogLine():
         self.isIPCLine = False
         self.isGslMmapFailed = False
         self.isGslIoctlFailed = False
+        self.isAnrCore = False
+        self.file = ''
+        self.isDelayLine = False
+        self.delayFloat = 0;
+        self.delayStartTimeStr = ''
+        self.threadName=''
 
     def setYear(self, year: str):
         if self.isLogLine:
             self.timeStr = year + '-' + self._timeStr_
             self.timeFloat = ToolUtils.getTimeFloat(self.timeStr)
 
+    # 比传入的行阻塞晚,阻塞起始时间在它行时间中间
+    def afterDelay(self, other):
+        if self.isDelayLine and other.isDelayLine:
+            selfStartTime = self.timeFloat-self.delayFloat
+            otherStartTime = other.timeFloat-other.delayFloat
+            return (selfStartTime>otherStartTime) and (selfStartTime<other.timeFloat)
+        return False
+
+    # 比传入的行阻塞早，他行起始时间在改行的时间中间
+    def beforeDelay(self, other):
+        if self.isDelayLine and other.isDelayLine:
+            selfStartTime = self.timeFloat-self.delayFloat
+            otherStartTime = other.timeFloat-other.delayFloat
+            return (selfStartTime<otherStartTime) and (self.timeFloat> otherStartTime)
+        return False
+
+    def isDoubtLine(self, anr):
+        return self.timeFloat < (1000+ anr.anrTimeFloat) and  self.timeFloat>(anr.anrTimeFloat - 300)
+
+    def addDelay(self, delay:float):
+        self.isDelayLine = True
+        self.delayFloat = delay
+        self.delayStartTimeStr = str(ToolUtils.getTimeStamp(self.timeFloat-delay/1000))
 
 class Anr():
     ANR_TYPE_UNKNOWN = 0
