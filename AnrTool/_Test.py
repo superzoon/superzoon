@@ -462,6 +462,7 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
     anrTimeFloat = 0;
     for (key, value) in propMsg.items():
         resonFile.writelines("{}:{}\n".format(key, value))
+    resonFile.writelines('\n')
     for anr in allAnr:
         pids.append(anr.pid)
         resonFile.writelines("pid:"+str(anr.pid))
@@ -502,7 +503,11 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
         print(anrTimeFloat)
         exit()
     for line in allLine:
+        if line.isAnrCore:
+            resonFile.writelines("My Anr core: in file "+line.file)
         resonFile.writelines("\t"+line.line.strip())
+        if line.isDelayLine:
+            resonFile.writelines("\t\t start time:"+line.delayStartTimeStr)
         resonFile.writelines('\n')
     print('####################end######################')
     if removeDir:
