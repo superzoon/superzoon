@@ -11,6 +11,7 @@ class LogLine():
     (timeStr)[\ ]+(pid)[\ ]+(tid)[\ ]+(level)[\ ]+(tag)?:\ (msg)
     '''
     pattern= '^([\d]{2}-[\d]{2}[\ ]+[\d|:|\.]+)[\ ]+([\d|\ ]+)[\ ]+([\d|\ ]+)[\ ]+([\w])[\ ](.*)'
+
     def __init__(self, line: str):
         self.line = line
         match = re.match(LogLine.pattern, line+' ')
@@ -81,7 +82,9 @@ class Anr():
     ANR_TYPE_INPUT = 2
     ANR_TYPE_SERVICE = 3
     ANR_YEAR = '2000'
-    def __init__(self):
+
+    def __init__(self, line:LogLine):
+        self.anrIn = line
         self.anrType = Anr.ANR_TYPE_UNKNOWN;
         self.anrPackageName = None
         self.pid = 0
@@ -89,32 +92,29 @@ class Anr():
         self.anrTimeStr:str = None
         self.anrTimeFloat = 0 #ms
         self.systemAnr = None
-        self.mainAnr = None
-        self.eventAnr = None
-        self.anrBroadcast = None
-        self.anr_pattern = None
-        self.anr_perceive:LogLine = None
+        self.anr_broadcast_action = None
+        self.anr_class_name = None
+        self.anr_input_msg = None
+        self.anrCoreLine:LogLine = None
+        self.anrCoreReserveLine:LogLine = None
 
-    def setAnrType(self, type:int = (ANR_TYPE_UNKNOWN | ANR_TYPE_BROADCAST | ANR_TYPE_INPUT | ANR_TYPE_SERVICE)):
-        self.anrType = type;
+    def setCoreLine(self, line: LogLine):
+        self.anrCoreLine = line
+        if line.isDelayLine:
+            self.anrTimeFloat = line.timeFloat - line.delayFloat
+            self.anrTimeStr = line.delayStartTimeStr
+
+    def setCoreLineReserve(self, line: LogLine):
+        self.anrCoreReserveLine = line
 
     def setAnrBroadcast(self, action:str):
-        self.anrBroadcast = action
-        self.anr_pattern = Anr.broadcast_pattern.format(self.anrBroadcast)
+        self.anrType = Anr.ANR_TYPE_BROADCAST
+        self.anr_broadcast_action = action
 
-    '''BroadcastQueue: Timeout of broadcast BroadcastRecord{38e3ee3 u-1 android.intent.action.TIME_TICK} - receiver=android.os.BinderProxy@6916288, started 13067ms ago'''
-    broadcast_pattern = '^.*Timeout of broadcast BroadcastRecord.*{}.*started ([\d]+)ms ago.*'
-    def findAnrStartTime(self, line: LogLine):
-        line.setYear(Anr.ANR_YEAR)
-        if self.anrType == Anr.ANR_TYPE_BROADCAST and line.timeFloat < self.anrTimeFloat:
-            match = re.match(self.anr_pattern, line.msg)
-            if match:
-                self.anr_perceive = line
-                print(self.anrTimeStr)
-                print(self.anrTimeFloat)
-                ago = float(match.group(1))/1000
-                self.anrTimeFloat = self.anrTimeFloat - ago
-                self.anrTimeStr = ToolUtils.getTimeStamp(self.anrTimeFloat)
-                print('anr start time= '+str(self.anrTimeStr))
-                return True
-        return False
+    def setAnrService(self, class_name:str):
+        self.anrType = Anr.ANR_TYPE_SERVICE
+        self.anr_class_name = class_name
+
+    def setAnrInput(self, input_msg:str):
+        self.anrType = Anr.ANR_TYPE_INPUT
+        self.anr_input_msg = input_msg

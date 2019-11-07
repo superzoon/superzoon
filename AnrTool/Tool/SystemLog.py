@@ -19,11 +19,11 @@ class AnrLine(LogLine):
         else:
             return False
 
-
 class SystemAnr():
+
     def __init__(self, line: AnrLine,anr: Anr):
         self.anrLine = line
-        self.anr = anr
+        self.anr:Anr = anr
         self.anr.anrPackageName = line.packageName
         self.anr.pid = line.pid
         self.lines = []
@@ -41,12 +41,12 @@ class SystemAnr():
     def getYear(self):
         return self.anrLine.timeYear
 
-
     pid_pattern = '^PID:(.*)'
     '''Reason: Broadcast of Intent { act=android.intent.action.TIME_TICK flg=0x50200014 (has extras) }'''
     reason_pattern = '^Reason:(.*)'
     '''CPU usage from 0ms to 7411ms later (2019-10-11 12:29:13.178 to 2019-10-11 12:29:20.589):'''
     cpu_pattern = '^CPU usage from ([\d]+)ms to ([-|\d]+)ms.*\(([\d]{4}).*'
+
     def parser(self, msg: str):
         print(msg)
         match = re.match(SystemAnr.pid_pattern, msg)
@@ -71,18 +71,29 @@ class SystemAnr():
             return
 
 
-    '''Broadcast of Intent { act=android.intent.action.TIME_TICK flg=0x50200014 (has extras) }'''
+    '''Reason: Broadcast of Intent { act=android.intent.action.TIME_TICK flg=0x50200014 (has extras) }'''
     broadcast_pattern = '^.*Broadcast of Intent { act=([\w|\.]+).*'
+    '''Reason: executing service com.android.systemui/.light.LightEffectService'''
+    service_pattern = '^.*executing service ([^ ]+).*'
+    '''Reason: Input dispatching timed out (Waiting because no window has focus but there is a focused application that may eventually add a window when it finishes starting up.)'''
+    input_pattern = '^.*Input dispatching timed out \((.*)\).*'
+
     def parseReason(self, reson: str):
         match = re.match(SystemAnr.broadcast_pattern, reson)
         if match:
-            self.anr.setAnrType(Anr.ANR_TYPE_BROADCAST)
             self.anr.setAnrBroadcast(match.group(1))
-
+            return
+        match = re.match(SystemAnr.service_pattern, reson)
+        if match:
+            self.anr.setAnrService(match.group(1))
+            return
+        match = re.match(SystemAnr.input_pattern, reson)
+        if match:
+            self.anr.setAnrInput(match.group(1))
+            return
 
 class SystemLog():
 
-    @classmethod
     def __init__(self, files, anrs: Anr, packageName: str = 'com.android.systemui'):
         self.allAnr = anrs
         self.files = sorted(files,reverse=True)
@@ -91,8 +102,7 @@ class SystemLog():
         self.files.append(firstFile)
         self.packageName = packageName
 
-    @classmethod
-    def parser(self):
+    def findAllAnr(self):
         for file in self.files:
             print(file)
             systemAnr = None
@@ -106,7 +116,7 @@ class SystemLog():
                         if systemAnr == None:
                             temp = AnrLine(line)
                             if temp.isAnrLine(self.packageName):
-                                anr = Anr()
+                                anr = Anr(temp)
                                 systemAnr = SystemAnr(temp, anr)
                                 anr.systemAnr = systemAnr
                                 self.allAnr.append(anr)
@@ -116,16 +126,5 @@ class SystemLog():
                                 systemAnr.addLine(temp)
                             else:
                                 systemAnr = None
-            with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
-                while True:
-                    line = mFile.readline()
-                    if not line:
-                        break
-                    else:
-                        line = line.strip()
-                        for anr in [anr for anr in self.allAnr if anr.anrType == Anr.ANR_TYPE_BROADCAST]:
-                            temp = LogLine(line)
-                            if temp.isLogLine:
-                                anr.findAnrStartTime(temp)
 
         return self.allAnr
