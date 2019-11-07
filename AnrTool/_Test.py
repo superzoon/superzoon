@@ -4,6 +4,7 @@ from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, bas
 from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
+from _io import TextIOWrapper
 
 from Tool.MainLog import *
 from Tool import ToolUtils
@@ -302,57 +303,105 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
                     break
     return isParser
 
-def parseProp(propFiles):
-    allProp = {}
-    keys = [
-        'ro.build.date','ro.build.display.id',
-        'ro.build.rom.id','ro.build.version.sdk'
-            ]
-    for file in propFiles:
-        print(file)
-        with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
-            while True:
-                line = mFile.readline()
-                if not line:
-                    break
-                else:
-                    line = line.strip()
-                    match = re.match( '^.*\[(.*)\].*\[(.*)\].*', line)
-                    if match and match.group(1) in keys:
-                        allProp[match.group(1)] = match.group(2)
-    return allProp
 
-def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', removeDir = True):
-    print("parLogZip : fileName={}, resonFile={}, packageName={}".format(fileName, resonFile, packageName))
-    ThreadName.PidName = {}
-    if not zipfile.is_zipfile(fileName):
-        exit(-1)
-    (filepath, tempfilename) = os.path.split(fileName)
-    (name, extension) = os.path.splitext(tempfilename)
-    tempDir = sep.join([dirname(fileName), name])
-    if isdir(tempDir):
-        rmtree(tempDir)
-    makedirs(tempDir)
-    ToolUtils.unzip_single(fileName, tempDir)
-    allFiles = ToolUtils.getAllFileName(tempDir)
+def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine):
+    isParser = False
+    tag = line.tag.lower()
+    #根据log的tag进行解析
+    #nubia 自己加的延迟信息
+    if not isParser and tag == 'nubialog'.lower():
+        isParser = parseNubiaLog(allAnr, allLine, line)
+    #gl 卡顿信息
+    if not isParser and tag == 'OpenGLRenderer'.lower():
+        isParser = parseOpenGLRenderer(allAnr, allLine, line)
+    #服务执行超时
+    if not isParser and tag.strip() == 'ActivityManager'.strip().lower():
+        isParser = parseActivityManager(allAnr, allLine, line)
+    #输入时间超时
+    if not isParser and tag == 'InputDispatcher'.lower():
+        isParser = parseInputDispatcher(allAnr, allLine, line)
+    #广播超时
+    if not isParser and tag == 'BroadcastQueue'.lower():
+        isParser = parseBroadcastQueue(allAnr, allLine, line)
+    #kgsl内存问题
+    if not isParser and tag.strip().startswith('kgsl-'):
+        isParser = parseKgsl(allAnr, allLine, line)
+    #gsl内存问题
+    if not isParser and tag == 'Adreno-GSL'.lower():
+        isParser = parseAdreno(allAnr, allLine, line)
+    #锁屏是否显示
+    if not isParser and tag == 'KeyguardViewMediator'.lower():
+        isParser = parseKeyguardViewMediator(allAnr, allLine, line)
+    #vold磁盘耗时
+    if not isParser and tag.strip() == 'vold    '.strip().lower():
+        isParser = parseVold(allAnr, allLine, line)
+    #binder超时
+    if not isParser and tag.strip() == 'binder_sample'.strip().lower():
+        isParser = parseBinder(allAnr, allLine, line)
+    #查询超时
+    if not isParser and tag.strip() == 'content_query_sample'.strip().lower():
+        isParser = parseQuery(allAnr, allLine, line)
+    #锁超时
+    if not isParser and tag.strip() == 'dvm_lock_sample'.strip().lower():
+        isParser = parseLock(allAnr, allLine, line)
+    #启动activity超时
+    if not isParser and tag.strip() == 'am_activity_launch_time'.strip().lower():
+        isParser = parseLauncher(allAnr, allLine, line)
+    #looper缓慢的派遣
+    if not isParser and tag.strip().lower() == 'Looper'.strip().lower():
+        isParser = parseLooper(allAnr, allLine, line)
+    #线程池满
+    if not isParser and tag.strip() == 'IPCThreadState'.strip().lower():
+        isParser = parseIPCThreadState(allAnr, allLine, line)
+    #保存SF的pid
+    if not isParser and tag.strip() == 'SurfaceFlinger'.strip().lower():
+        isParser = parseSurfaceFlinger(allAnr, allLine, line)
+    #input回应超时
+    if not isParser and tag.strip() == 'WindowManager'.strip().lower():
+        isParser = parseWindowManager(allAnr, allLine, line)
+    #如果有解析则打印该行
+    if isParser:
+        print(line.line)
+    #有延时信息保存该行
+    pattern_delay = '.*delay.*([\d]+)[\ ]*ms.*'
+    if not isParser:
+        math = re.match(pattern_delay,line.msg)
+        if math and int(math.group(1)) > DEF_MAX_DELAY_TIME:
+            allLine.append(line)
+
+def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str='com.android.systemui'):
+    #获取目录下的所有文件
+    allFiles = ToolUtils.getAllFileName(destDir)
+    #获取所有的 system log文件
     systemFiles = [file for file in allFiles if 'system.txt' in file]
+    #获取所有的 events log文件
     eventFiles = [file for file in allFiles if 'events.txt' in file]
+    #获取所有的 main log文件
     mainFiles = [file for file in allFiles if 'main.txt' in file]
+    #获取所有的 radio log文件
     radioFiles = [file for file in allFiles if 'radio.txt' in file]
+    #获取所有的 kernel log文件
     kernelFiles = [file for file in allFiles if 'kernel.txt' in file]
+    #获取所有的 crash log文件
     crashFiles = [file for file in allFiles if 'crash.txt' in file]
+    #获取所有的 anr trace文件
     anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file]
+    #获取所有的 system.prop文件
     propFiles = [file for file in allFiles if 'system.prop' in file]
-    propMsg = parseProp(propFiles)
+    #解析prop文件获取手机信息
+    propMsg = ToolUtils.parseProp(propFiles)
+    #解析所有的anr trace
     blockStacks = []
     for file in anrFiles:
         print(file)
         trace = TracesLog(file, packageName)
         trace.parser()
         stack = trace.getBolckStack()
+        #如果堆栈出现两次相同则加入到数列中
         if stack != None:
             blockStacks.append(stack)
 
+    #添加所有需要需要解析的log文件
     parseFiles = []
     for f in systemFiles:
         parseFiles.append(f)
@@ -364,18 +413,24 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
         parseFiles.append(f)
     for f in kernelFiles:
         parseFiles.append(f)
+    #用于保存重要的信息行LogLine对象
     allLine = []
 
-
-    # 从systemui解析有多少个anr
+    #用于保存所有的Anr对象
     allAnr = []
+    # 从systemui解析有多少个anr
     systemLog = SystemLog(systemFiles, allAnr, packageName)
     systemLog.parser()
+    #最后一行main log，用于验证main log是否包含anr时间
     mainLine = None
+    #保存最后发生anr的时间，当mainLine时间小于anr时间则main log不全
+    anrTimeFloat = 0;
     for file in parseFiles:
         print('--' + file + '--')
         with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+            #全局变量，当前解析的文件
             ThreadName.FileName = file
+            #是否在解析main log
             isMainLine = True if ('main.txt' in file) else False
             while True:
                 line = mFile.readline()
@@ -385,84 +440,27 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
                     line = line.strip()
                     temp = LogLine(line)
                     if temp.isLogLine :
+                        #保存最后一行main log
                         if isMainLine and (mainLine == None or temp.timeFloat > mainLine.timeFloat):
                             mainLine = temp;
-                        isParser = False
-                        tag = temp.tag.lower()
-                        if not isParser and tag == 'nubialog'.lower():
-                            isParser = parseNubiaLog(allAnr, allLine, temp)
+                        #解析该行
+                        parseLine(allAnr, allLine, temp)
 
-                        if not isParser and tag == 'OpenGLRenderer'.lower():
-                            isParser = parseOpenGLRenderer(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'ActivityManager'.strip().lower():
-                            isParser = parseActivityManager(allAnr, allLine, temp)
-
-                        if not isParser and tag == 'InputDispatcher'.lower():
-                            isParser = parseInputDispatcher(allAnr, allLine, temp)
-
-                        if not isParser and tag == 'BroadcastQueue'.lower():
-                            isParser = parseBroadcastQueue(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip().startswith('kgsl-'):
-                            isParser = parseKgsl(allAnr, allLine, temp)
-
-                        if not isParser and tag == 'Adreno-GSL'.lower():
-                            isParser = parseAdreno(allAnr, allLine, temp)
-
-                        if not isParser and tag == 'KeyguardViewMediator'.lower():
-                            isParser = parseKeyguardViewMediator(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'vold    '.strip().lower():
-                            isParser = parseVold(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'binder_sample'.strip().lower():
-                            isParser = parseBinder(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'content_query_sample'.strip().lower():
-                            isParser = parseQuery(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'dvm_lock_sample'.strip().lower():
-                            isParser = parseLock(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'am_activity_launch_time'.strip().lower():
-                            isParser = parseLauncher(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip().lower() == 'Looper'.strip().lower():
-                            isParser = parseLooper(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'IPCThreadState'.strip().lower():
-                            isParser = parseIPCThreadState(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'SurfaceFlinger'.strip().lower():
-                            isParser = parseSurfaceFlinger(allAnr, allLine, temp)
-
-                        if not isParser and tag.strip() == 'WindowManager'.strip().lower():
-                            isParser = parseWindowManager(allAnr, allLine, temp)
-
-                        if isParser:
-                            print(temp.line)
-                        pattern_delay = '.*delay.*([\d]+)ms.*'
-                        if not isParser:
-                            math = re.match(pattern_delay,temp.msg)
-                            if math and int(math.group(1)) > DEF_MAX_DELAY_TIME:
-                                allLine.append(temp)
-
-
-    print('####################start######################')
+    print('####################start write######################')
+    #将手机的信息写入到文件
+    for (key, value) in propMsg.items():
+        resonFile.writelines("{}:{}\n".format(key, value))
+    resonFile.writelines('\n')
+    #讲对应的am anr添加到主要信息中
     for anr in allAnr:
         if len(anr.systemAnr.lines)>=8:
             for line in anr.systemAnr.lines[0:8]:
                 allLine.append(line)
-    print('####################start######################')
+    #将主要信息按时间排序
     allLine.sort(key=lambda line: line.timeFloat)
-    for line in allLine:
-        print(line.timeStr+"  "+line.line)
+    #保存发生anr的pid，从堆栈trace中查找对应的pid
     pids = []
-    anrTimeFloat = 0;
-    for (key, value) in propMsg.items():
-        resonFile.writelines("{}:{}\n".format(key, value))
-    resonFile.writelines('\n')
+    #将所有的anr信息输出到文件
     for anr in allAnr:
         pids.append(anr.pid)
         resonFile.writelines("pid:"+str(anr.pid))
@@ -473,19 +471,24 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
         resonFile.writelines('\n\n')
         print(anr.anrTimeStr)
         print(anr.anrTimeFloat)
+        #获取最后发生anr的时间，用于推断main log是否全
         if anr.anrTimeFloat>anrTimeFloat:
             anrTimeFloat = anr.anrTimeFloat
         print(anr.anrReason)
+    #判断是否有anr
     if len(allAnr) == 0:
         print("未能解析")
+    #判断是否main log不足
     if mainLine!=None and (mainLine.timeFloat < anrTimeFloat):
         print("main log 不足")
         resonFile.writelines("main log 不足 time:"+str(ToolUtils.getTimeStamp(mainLine.timeFloat)))
         resonFile.writelines('\n\n')
+    #输出pid和线程名称到文件
     if len(ThreadName.PidName)>0:
         print(ThreadName.PidName)
         resonFile.writelines("线程名称:"+str(ThreadName.PidName))
         resonFile.writelines('\n\n')
+    #输出阻塞的堆栈
     for item in blockStacks:
         if item.pid in pids:
             resonFile.writelines('\t\n java stack:')
@@ -498,53 +501,80 @@ def parLogZip(fileName, resonFile, packageName:str='com.android.systemui', remov
             resonFile.writelines('\n')
     resonFile.writelines('\n')
     print("len ==  "+str(len(allLine)))
+    #未找到相关log
     if(len(allLine)) == 0 and mainLine!=None:
         print(mainLine.timeFloat)
         print(anrTimeFloat)
-        exit()
-    for line in allLine:
-        if line.isAnrCore:
-            resonFile.writelines("My Anr core: in file {} \n".format(line.file))
-        resonFile.writelines("\t{}\n".format(line.line.strip()))
-        if line.isDelayLine:
-            resonFile.writelines("\t\t start time:{}\n".format(line.delayStartTimeStr))
-    print('####################end######################')
+    else:
+        #输出所有的分析行信息到文件
+        for line in allLine:
+            if line.isAnrCore:
+                resonFile.writelines("My Anr core: in file {} \n".format(line.file))
+            resonFile.writelines("\t{}\n".format(line.line.strip()))
+            if line.isDelayLine:
+                resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
+    print('####################end write######################')
+
+def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str='com.android.systemui', removeDir = True):
+    print("parLogZip : fileName={}, resonFile={}, packageName={}".format(fileName, resonFile, packageName))
+    #充值pid对应的进程名称
+    ThreadName.PidName = {}
+    #如果不是pid文件则不解析
+    if not zipfile.is_zipfile(fileName):
+        exit(-1)
+    #获取文件路径和文件全名
+    (filepath, tempfilename) = os.path.split(fileName)
+    #获取文件名和文件后缀
+    (name, extension) = os.path.splitext(tempfilename)
+    #获取解压的文件路径
+    tempDir = sep.join([dirname(fileName), name])
+    #解压的文件路径如果存在就删除
+    if isdir(tempDir):
+        rmtree(tempDir)
+    #创建解压路径
+    makedirs(tempDir)
+    #解压zip文件到指定路径
+    ToolUtils.unzip_single(fileName, tempDir)
+    #解析刚刚解压的文件
+    parseLogDir(tempDir, resonFile, packageName)
+    #删除刚刚解压的临时文件夹
     if removeDir:
         rmtree(tempDir)
 
-def parserFold(foldPath, removeDir = True):
+def parserZipLogDir(foldPath, removeDir = True):
+    #打印需要解析的路径
     print(foldPath)
+    #获取该路径下所有的zip文件
     allZips = [file for file in ToolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
+    #创建该路径下的reason文件，用于保存解析结果
     resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
-    point = 0
+    #用于标记在第几个zip
+    zipPoint = 0
+    #解析每一个zip
     for zipFile in allZips:
-        point = point + 1
-        writeName = str(point) + '.' + abspath(zipFile)[len(dirname(foldPath)) + 1:] + '\n\n'
-        resonFile.writelines(writeName)
-        parLogZip(zipFile, resonFile, removeDir=removeDir)
+        zipPoint = zipPoint + 1
+        #在文件输出解析zip的名称
+        resonFile.writelines('{}.{}\n\n'.format(str(zipPoint), abspath(zipFile)[len(dirname(foldPath)) + 1:]))
+        #解析zip log
+        parseZipLog(zipFile, resonFile, removeDir=removeDir)
+        #解析完后换行
         resonFile.writelines('\n\n')
-
+    #将解析的内容写入到文件
     resonFile.flush()
+    #关闭文件流
     resonFile.close()
 
-def test():
-    fileName = ToolUtils.getNextItem(argv, '-f', sep.join(['..', 'temp.zip']))
-    filePath = dirname(abspath(fileName))
-    resonFile = sep.join([filePath, 'reason.txt'])
-    parLogZip(fileName, resonFile)
-    exit(0)
-
 if __name__ == '__main__':
-    test = False
-    if test : test()
     #     D:\workspace\整机monkey
-    current = 'ROMUI80-2029'
+    # D:\workspace\anr_papser\log\LOG-36743
+    current = sep.join(['anr_papser','log','LOG-36743'])
+    current = 'NX627JV2B-1080'
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
-        parserFold(papserPath)
+        parserZipLogDir(papserPath, removeDir=True)
         exit(0)
-    papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser','log'])
+    papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser','nx629j'])
     for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
-        parserFold(foldPath, True)
+        parserZipLogDir(foldPath, True)
 
 

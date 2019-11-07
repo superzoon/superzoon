@@ -36,7 +36,8 @@ def unzip_single(src_file, dest_dir, password = None):
                 if not isdir(dirname(fname_str)) and len(dirname(fname_str)) > 0:
                     makedirs(dirname(fname_str))
                 zf.extract(name, dest_dir, pwd=password)
-                if not isdir(name) and not isfile(fname_str):
+                if name != fname_str:
+                    print('{} --> {}'.format(name, fname_str))
                     os.rename(name, fname_str)
             elif not isdir(fname_str):
                 makedirs(fname_str)
@@ -102,6 +103,26 @@ def checkFileCode(filename):
         except:
             if encode=='Error':
                 return None
+
+def parseProp(propFiles):
+    allProp = {}
+    keys = [
+        'ro.build.date','ro.build.display.id',
+        'ro.build.rom.id','ro.build.version.sdk'
+            ]
+    for file in propFiles:
+        print(file)
+        with open(file, encoding=checkFileCode(file)) as mFile:
+            while True:
+                line = mFile.readline()
+                if not line:
+                    break
+                else:
+                    line = line.strip()
+                    match = re.match( '^.*\[(.*)\].*\[(.*)\].*', line)
+                    if match and match.group(1) in keys:
+                        allProp[match.group(1)] = match.group(2)
+    return allProp
 
 if __name__ == '__main__':
     ddir = sep.join(['D:','workspace','NX659JV1A-813','test'])
