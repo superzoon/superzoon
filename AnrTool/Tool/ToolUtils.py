@@ -7,6 +7,10 @@ from zipfile import ZipFile
 import time
 
 getTime = lambda timeStr: time.mktime(time.strptime(timeStr, '%Y-%m-%d %H:%M:%S.%f'))
+BASE_TIME_FLOAT = time.mktime((2000,0,0,0,0,0,0,0,0))
+def getUsedTimeStr(startTime:float, endTime:float):
+    used = endTime-startTime
+    return  'time = {} , s = {}'.format(time.strftime("%H:%M:%S",time.localtime(BASE_TIME_FLOAT+used)),used)
 
 def getNextItem(array, item, defItem):
     index = array.index(item) if item in array else -1

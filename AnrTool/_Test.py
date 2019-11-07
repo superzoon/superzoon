@@ -608,6 +608,8 @@ def parserZipLogDir(foldPath, removeDir = True):
     resonFile.close()
 
 if __name__ == '__main__':
+
+    start = time.clock()
     #     D:\workspace\整机monkey
     # D:\workspace\anr_papser\log\LOG-36743
     current = sep.join(['anr_papser','log','LOG-36743'])
@@ -615,9 +617,14 @@ if __name__ == '__main__':
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         parserZipLogDir(papserPath, removeDir=True)
+        end = time.clock()
+        time.strftime("%b %d %Y %H:%M:%S",)
+        print('---used {}----'.format(ToolUtils.getUsedTimeStr(end,start)))
         exit(0)
     papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser','nx629j'])
     for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
         parserZipLogDir(foldPath, True)
+    end = time.clock()
+    print('---used {}----'.format(ToolUtils.getUsedTimeStr(end,start)))
 
 
