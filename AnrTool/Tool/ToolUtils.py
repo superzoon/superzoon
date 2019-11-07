@@ -123,24 +123,3 @@ def parseProp(propFiles):
                     if match and match.group(1) in keys:
                         allProp[match.group(1)] = match.group(2)
     return allProp
-
-if __name__ == '__main__':
-    ddir = sep.join(['D:','workspace','NX659JV1A-813','test'])
-    unzip_single(sep.join([ddir,'11-04_10-27-48.zip']),ddir)
-    exit(0)
-    ll = '09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}'
-    pattern_executing_service = '^.*Timeout executing service.*{[\w|\d]+ [\w|\d]+ ([\w|\d|\/|\.]+)}'
-    mat = re.match(pattern_executing_service, ll)
-    if mat:
-        print(mat.groups())
-    if  '123' in '13980123111':
-        print('xlan')
-        exit()
-    papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser', 'log'])
-    for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
-        for versionFile in [sep.join([foldPath,version]) for version in listdir(foldPath)]:
-            if isdir(versionFile):
-                for file in [sep.join([versionFile,idFile]) for idFile in listdir(versionFile)]:
-                    if isdir(file):
-                        rmtree(file)
-                        print(file)

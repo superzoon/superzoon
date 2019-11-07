@@ -5,8 +5,6 @@ from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
 from _io import TextIOWrapper
-
-from Tool.MainLog import *
 from Tool import ToolUtils
 from Tool.ToolUtils import *
 from Tool.TracesLog import *
@@ -416,21 +414,21 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #获取目录下的所有文件
     allFiles = ToolUtils.getAllFileName(destDir)
     #获取所有的 system log文件
-    systemFiles = [file for file in allFiles if 'system.txt' in file]
+    systemFiles = [file for file in allFiles if 'system.txt' in file].reverse()
     #获取所有的 events log文件
-    eventFiles = [file for file in allFiles if 'events.txt' in file]
+    eventFiles = [file for file in allFiles if 'events.txt' in file].reverse()
     #获取所有的 main log文件
-    mainFiles = [file for file in allFiles if 'main.txt' in file]
+    mainFiles = [file for file in allFiles if 'main.txt' in file].reverse()
     #获取所有的 radio log文件
-    radioFiles = [file for file in allFiles if 'radio.txt' in file]
+    radioFiles = [file for file in allFiles if 'radio.txt' in file].reverse()
     #获取所有的 kernel log文件
-    kernelFiles = [file for file in allFiles if 'kernel.txt' in file]
+    kernelFiles = [file for file in allFiles if 'kernel.txt' in file].reverse()
     #获取所有的 crash log文件
-    crashFiles = [file for file in allFiles if 'crash.txt' in file]
+    crashFiles = [file for file in allFiles if 'crash.txt' in file].reverse()
     #获取所有的 anr trace文件
-    anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file]
+    anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file].reverse()
     #获取所有的 system.prop文件
-    propFiles = [file for file in allFiles if 'system.prop' in file]
+    propFiles = [file for file in allFiles if 'system.prop' in file].reverse()
     #解析prop文件获取手机信息
     propMsg = ToolUtils.parseProp(propFiles)
     #解析所有的anr trace

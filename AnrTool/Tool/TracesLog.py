@@ -102,27 +102,3 @@ class TracesLog():
 
 
 
-
-if __name__ == '__main__':
-    from Tool import LogLine
-    propMsg=dict()
-    propMsg['1']='2'
-    propMsg['2']='3'
-    print(propMsg)
-    for (key, value) in propMsg.items():
-        print("{}:{}\n".format(key, value))
-    l = '10-30 15:26:18.394 18461 18461 I binder_sample: [android.hardware.input.IInputManager,8,2509,com.android.commands.monkey,100]'
-    l1 = '10-30 15:26:18.394 18461 18461 I dvm_lock_sample: [com.android.settings, 1, main , 23,  ManageApplication.java, 1317,  ApplicationState.java, 323 , 5]'
-    l2 = '10-30 15:26:18.394 18461 18461 I binder_sample: [android.hardware.input.IInputManager,8,2509,com.android.commands.monkey,100]'
-    line = LogLine(l1)
-    if line.tag.strip().lower() == 'dvm_lock_sample'.lower():
-        print(line.line)
-        pattern_binder = '^.*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([^,]*)[\ ]*,[\ ]*([\d]*)[\ ]*,[\ ]*([\d]+)][\ ]*'
-        match = re.match(pattern_binder, line.msg)
-        if match:
-            print(match.groups())
-    exit(0)
-    f = sep.join(['C:','Users','Administrator','Downloads','anr_com.android.systemui_1856_2019-10-05-03-34-10-506'])
-    tl = TracesLog(f)
-    tl.parser()
-    print(tl.getBolckStack())
