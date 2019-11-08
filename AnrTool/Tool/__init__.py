@@ -20,8 +20,8 @@ class LogLine():
             self._timeStr_ = match.group(1)
             self.timeStr = Anr.ANR_YEAR + '-' +self._timeStr_
             self.timeFloat = ToolUtils.getTimeFloat(Anr.ANR_YEAR + '-' + self._timeStr_+'000')
-            self.pid = match.group(2).strip()
-            self.tid = match.group(3).strip()
+            self.pid = int(match.group(2).strip())
+            self.tid = int(match.group(3).strip())
             self.level = match.group(4).strip()
             other = match.group(5)
             index = other.index(': ') if other.__contains__(': ') else -1
@@ -45,6 +45,7 @@ class LogLine():
         self.isDelayLine = False
         self.delayFloat = 0;
         self.delayStartTimeStr = ''
+        self.delayStartTimeFloat = ''
         self.threadName=''
 
     def setYear(self, year: str):
@@ -71,10 +72,15 @@ class LogLine():
     def isDoubtLine(self, anr):
         return self.timeFloat < (300+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 1000)
 
+    def addAnrMainLog(self, anr):
+        if anr.pid == self.pid and self.timeFloat < (300+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 300):
+            anr.main_logs.append(self)
+
     def addDelay(self, delay:float):
         self.isDelayLine = True
         self.delayFloat = delay
-        self.delayStartTimeStr = str(ToolUtils.getTimeStamp(self.timeFloat-delay/1000))
+        self.delayStartTimeFloat = self.timeFloat-delay/1000
+        self.delayStartTimeStr = str(ToolUtils.getTimeStamp(self.delayStartTimeFloat))
 
 class Anr():
     ANR_TYPE_UNKNOWN = 0
@@ -87,23 +93,60 @@ class Anr():
         self.anrIn = line
         self.anrType = Anr.ANR_TYPE_UNKNOWN;
         self.anrPackageName = None
-        self.pid = 0
+        self.pid:int = 0
         self.anrReason = None
         self.anrTimeStr:str = None
-        self.anrTimeFloat = 0 #ms
+        self.anrTimeFloat:float = 0 #ms
         self.systemAnr = None
-        self.anr_broadcast_action = None
-        self.anr_class_name = None
-        self.anr_input_msg = None
+        self.anr_broadcast_action:str = None
+        self.anr_class_name:str = None
+        self.anr_input_msg:str = None
         self.anrCoreLine:LogLine = None
         self.anrCoreReserveLine:LogLine = None
+        self.main_logs:LogLine = []
+        self.font_main_log:LogLine = None
+        self.back_main_log:LogLine = None
+
+    def getMainLogBlockMsg(self):
+        if len(self.main_logs) == 0:
+            return None
+        font_line = None
+        back_line = None
+        time_space = 0
+        for line in self.main_logs:
+            if not font_line:
+                font_line = line
+            else:
+                back_line = line
+                current_time_space = back_line.timeFloat - font_line.timeFloat
+                if current_time_space > time_space and font_line.timeFloat < self.anrTimeFloat+1 and self.anrTimeFloat< back_line.timeFloat+1:
+                    time_space = current_time_space
+                    self.font_main_log = font_line
+                    self.back_main_log = back_line
+                font_line = back_line
+
+        if self.font_main_log and self.back_main_log:
+            delay = self.back_main_log.timeFloat - self.font_main_log.timeFloat
+            isMainAnr = False
+            if self.anrType == Anr.ANR_TYPE_BROADCAST:
+                isMainAnr = delay>10
+            elif self.anrType == Anr.ANR_TYPE_INPUT:
+                isMainAnr = delay>5
+            elif self.anrType == Anr.ANR_TYPE_SERVICE:
+                isMainAnr = delay>20
+            if isMainAnr:
+                font_main_time = self.font_main_log.timeStr
+                back_main_time = self.back_main_log.timeStr
+                return '{}  ==>  {}\n{}\n{}'.format(font_main_time, back_main_time, self.font_main_log.line, self.back_main_log.line)
+            else:
+                return None
 
     def computerAnrTime(self):
         if self.anrCoreLine and self.anrCoreLine.isDelayLine:
-            self.anrTimeFloat = self.anrCoreLine.timeFloat - self.anrCoreLine.delayFloat
+            self.anrTimeFloat = self.anrCoreLine.delayStartTimeFloat
             self.anrTimeStr = self.anrCoreLine.delayStartTimeStr
         elif self.anrCoreReserveLine and self.anrCoreReserveLine.isDelayLine:
-            self.anrTimeFloat = self.anrCoreReserveLine.timeFloat - self.anrCoreReserveLine.delayFloat
+            self.anrTimeFloat = self.anrCoreReserveLine.delayStartTimeFloat
             self.anrTimeStr = self.anrCoreReserveLine.delayStartTimeStr
 
     def setCoreLine(self, line: LogLine):

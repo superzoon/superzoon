@@ -52,7 +52,6 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
                     allLine.append(line)
                     isParsed = True
                     break
-    print(isParsed)
     return isParsed
 
 # Slow dispatch took 12050ms main h=com.android.server.job.JobSchedulerService$JobHandler c=null m=1
@@ -497,8 +496,12 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
                     temp = LogLine(line)
                     if temp.isLogLine :
                         #保存最后一行main log
-                        if isMainLine and (mainLine == None or temp.timeFloat > mainLine.timeFloat):
-                            mainLine = temp;
+                        if isMainLine:
+                            if (mainLine == None or temp.timeFloat > mainLine.timeFloat):
+                                mainLine = temp;
+                            if temp.pid == temp.tid:
+                                for anr in allAnr:
+                                    temp.addAnrMainLog(anr)
                         #解析该行
                         parseLine(allAnr, allLine, temp, packageName)
 
@@ -515,6 +518,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         if len(anr.systemAnr.lines)>=8:
             for line in anr.systemAnr.lines[0:8]:
                 allLine.append(line)
+
     #将主要信息按时间排序
     allLine.sort(key=lambda line: line.timeFloat)
     #保存发生anr的pid，从堆栈trace中查找对应的pid
@@ -528,6 +532,10 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         resonFile.writelines('\n')
         resonFile.writelines("发生原因:"+anr.anrReason)
         resonFile.writelines('\n\n')
+        mainMsg = anr.getMainLogBlockMsg()
+        if mainMsg:
+            resonFile.writelines("主线程阻塞:"+mainMsg)
+            resonFile.writelines('\n\n')
         print(anr.anrTimeStr)
         print(anr.anrTimeFloat)
         #获取最后发生anr的时间，用于推断main log是否全
