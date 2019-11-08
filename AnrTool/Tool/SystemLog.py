@@ -96,10 +96,10 @@ class SystemLog():
 
     def __init__(self, files, anrs: Anr, packageName: str = 'com.android.systemui'):
         self.allAnr = anrs
-        # self.files = sorted(files,reverse=True)
-        # firstFile = self.files[0]
-        # self.files = self.files[1:]
-        # self.files.append(firstFile)
+        self.files = sorted(files,reverse=True)
+        firstFile = self.files[0]
+        self.files = self.files[1:]
+        self.files.append(firstFile)
         self.packageName = packageName
 
     def findAllAnr(self):

@@ -28,20 +28,22 @@ pattern_ipc2 = '^.*IPCThreadState, Waiting.*mExecutingThreadsCount=([\d]+) mMaxT
 def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParsed = False
     line.isIPCLine = True
+    print(line.line)
     match = re.match(pattern_ipc1, line.msg)
     if match:
         delay = float(match.group(1))
         for anr in allAnr:
+            print(str(line.isDoubtLine(anr))+'  '+str(anr.anrTimeStr)+'-'+str(line.timeStr))
             if line.isDoubtLine(anr):
                 line.addDelay(delay)
                 allLine.append(line)
                 isParsed = True
                 break
     if not isParsed and re.match(pattern_ipc2, line.msg):
-        lastLine = allLine[-1] if len(allLine)>0 else None
         addLine = True
+        lastLine = allLine[-1] if len(allLine)>0 else None
         if lastLine != None and lastLine.isIPCLine:
-            if (line.timeFloat - lastLine.timeFloat) < 1:
+            if (line.timeFloat - lastLine.timeFloat) < 3:
                 addLine = False
                 isParsed = True
         if addLine:
@@ -50,7 +52,7 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
                     allLine.append(line)
                     isParsed = True
                     break
-
+    print(isParsed)
     return isParsed
 
 # Slow dispatch took 12050ms main h=com.android.server.job.JobSchedulerService$JobHandler c=null m=1
@@ -423,21 +425,26 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #获取目录下的所有文件
     allFiles = ToolUtils.getAllFileName(destDir)
     #获取所有的 system log文件
-    systemFiles = [file for file in allFiles if 'system.txt' in file].reverse()
+    systemFiles = [file for file in allFiles if 'system.txt' in file]
+    systemFiles.sort(reverse = True)
     #获取所有的 events log文件
-    eventFiles = [file for file in allFiles if 'events.txt' in file].reverse()
+    eventFiles = [file for file in allFiles if 'events.txt' in file]
+    eventFiles.sort(reverse = True)
     #获取所有的 main log文件
-    mainFiles = [file for file in allFiles if 'main.txt' in file].reverse()
+    mainFiles = [file for file in allFiles if 'main.txt' in file]
+    mainFiles.sort(reverse = True)
     #获取所有的 radio log文件
-    radioFiles = [file for file in allFiles if 'radio.txt' in file].reverse()
+    radioFiles = [file for file in allFiles if 'radio.txt' in file]
+    radioFiles.sort(reverse = True)
     #获取所有的 kernel log文件
-    kernelFiles = [file for file in allFiles if 'kernel.txt' in file].reverse()
+    kernelFiles = [file for file in allFiles if 'kernel.txt' in file]
+    kernelFiles.sort(reverse = True)
     #获取所有的 crash log文件
-    crashFiles = [file for file in allFiles if 'crash.txt' in file].reverse()
+    crashFiles = [file for file in allFiles if 'crash.txt' in file]
     #获取所有的 anr trace文件
-    anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file].reverse()
+    anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file]
     #获取所有的 system.prop文件
-    propFiles = [file for file in allFiles if 'system.prop' in file].reverse()
+    propFiles = [file for file in allFiles if 'system.prop' in file]
     #解析prop文件获取手机信息
     propMsg = ToolUtils.parseProp(propFiles)
     #解析所有的anr trace
@@ -465,7 +472,6 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         parseFiles.append(f)
     #用于保存重要的信息行LogLine对象
     allLine = []
-
     #用于保存所有的Anr对象
     allAnr = []
     # 从systemui解析有多少个anr
@@ -505,6 +511,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     for anr in allAnr:
         if not anr.anrCoreLine and anr.anrCoreReserveLine:
             anr.setCoreLine(anr.anrCoreReserveLine)
+        anr.computerAnrTime()
         if len(anr.systemAnr.lines)>=8:
             for line in anr.systemAnr.lines[0:8]:
                 allLine.append(line)
@@ -568,7 +575,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     print('####################end write######################')
 
 def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True):
-    print("parLogZip : fileName={}, resonFile={}, packageName={}".format(fileName, resonFile, packageName))
+    print("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
     #充值pid对应的进程名称
     ThreadName.PidName = {}
     #如果不是pid文件则不解析
@@ -621,8 +628,8 @@ if __name__ == '__main__':
     start = time.clock()
     #     D:\workspace\整机monkey
     # D:\workspace\anr_papser\log\LOG-36743
-    current = sep.join(['anr_papser','log','LOG-36743'])
     current = 'NX627JV2B-1080'
+    current = sep.join(['anr_papser','NX629J','LOG-36743'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         parserZipLogDir(papserPath, removeDir=True)

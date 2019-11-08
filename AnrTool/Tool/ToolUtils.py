@@ -109,6 +109,7 @@ def checkFileCode(filename):
                 return None
 
 def parseProp(propFiles):
+    print(propFiles)
     allProp = {}
     keys = [
         'ro.build.date','ro.build.display.id',

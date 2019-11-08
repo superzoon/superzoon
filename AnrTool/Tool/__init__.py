@@ -69,7 +69,7 @@ class LogLine():
         return False
 
     def isDoubtLine(self, anr):
-        return self.timeFloat < (1000+ anr.anrTimeFloat) and  self.timeFloat>(anr.anrTimeFloat - 300)
+        return self.timeFloat < (300+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 1000)
 
     def addDelay(self, delay:float):
         self.isDelayLine = True
@@ -98,11 +98,16 @@ class Anr():
         self.anrCoreLine:LogLine = None
         self.anrCoreReserveLine:LogLine = None
 
+    def computerAnrTime(self):
+        if self.anrCoreLine and self.anrCoreLine.isDelayLine:
+            self.anrTimeFloat = self.anrCoreLine.timeFloat - self.anrCoreLine.delayFloat
+            self.anrTimeStr = self.anrCoreLine.delayStartTimeStr
+        elif self.anrCoreReserveLine and self.anrCoreReserveLine.isDelayLine:
+            self.anrTimeFloat = self.anrCoreReserveLine.timeFloat - self.anrCoreReserveLine.delayFloat
+            self.anrTimeStr = self.anrCoreReserveLine.delayStartTimeStr
+
     def setCoreLine(self, line: LogLine):
         self.anrCoreLine = line
-        if line.isDelayLine:
-            self.anrTimeFloat = line.timeFloat - line.delayFloat
-            self.anrTimeStr = line.delayStartTimeStr
 
     def setCoreLineReserve(self, line: LogLine):
         self.anrCoreReserveLine = line
