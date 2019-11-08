@@ -534,7 +534,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         if mainMsg:
             font = mainMsg[0]
             back = mainMsg[1]
-            resonFile.writelines('主线程阻塞:{}  ==>  {}\n{}\n{}'.format(font.timeStr, back.timeStr,  font.line, back.line))
+            resonFile.writelines('主线程阻塞:{}  ==>  {}\n\t{}\n\t{}'.format(font.timeStr, back.timeStr,  font.line, back.line))
             resonFile.writelines('\n\n')
         if anr.anrCoreLines:
             resonFile.writelines('核心log:\n')
