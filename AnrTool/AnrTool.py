@@ -347,7 +347,6 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
                     break
     return isParsed
 
-
 def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_PACKAGE):
     isParsed = False
     tag = line.tag.lower()
@@ -515,12 +514,11 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         if not anr.anrCoreLine and anr.anrCoreReserveLine:
             anr.setCoreLine(anr.anrCoreReserveLine)
         anr.computerAnrTime()
+        anr.findAllCoreLine(allLine)
         if len(anr.systemAnr.lines)>=8:
             for line in anr.systemAnr.lines[0:8]:
                 allLine.append(line)
 
-    #将主要信息按时间排序
-    allLine.sort(key=lambda line: line.timeFloat)
     #保存发生anr的pid，从堆栈trace中查找对应的pid
     pids = []
     #将所有的anr信息输出到文件
@@ -532,16 +530,28 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         resonFile.writelines('\n')
         resonFile.writelines("发生原因:"+anr.anrReason)
         resonFile.writelines('\n\n')
-        mainMsg = anr.getMainLogBlockMsg()
+        mainMsg:[] = anr.addMainLogBlock(allLine)
         if mainMsg:
-            resonFile.writelines("主线程阻塞:"+mainMsg)
+            font = mainMsg[0]
+            back = mainMsg[1]
+            resonFile.writelines('主线程阻塞:{}  ==>  {}\n{}\n{}'.format(font.timeStr, back.timeStr,  font.line, back.line))
             resonFile.writelines('\n\n')
+        if anr.anrCoreLines:
+            resonFile.writelines('核心log:\n')
+            for line in anr.anrCoreLines:
+                resonFile.writelines('\t'+line.line)
+                resonFile.writelines('\n')
+                if line.isDelayLine:
+                    resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
+            resonFile.writelines('\n')
         print(anr.anrTimeStr)
         print(anr.anrTimeFloat)
         #获取最后发生anr的时间，用于推断main log是否全
         if anr.anrTimeFloat>anrTimeFloat:
             anrTimeFloat = anr.anrTimeFloat
         print(anr.anrReason)
+    # 将主要信息按时间排序
+    allLine.sort(key=lambda line: line.timeFloat)
     #判断是否有anr
     if len(allAnr) == 0:
         print("未能解析")
@@ -574,9 +584,10 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         print(anrTimeFloat)
     else:
         #输出所有的分析行信息到文件
+        resonFile.writelines("\n关键log:\n")
         for line in allLine:
             if line.isAnrCore:
-                resonFile.writelines("My Anr core: in file {} \n".format(line.file))
+                resonFile.writelines("  My Anr core: in file {} \n".format(line.file))
             resonFile.writelines("\t{}\n".format(line.line.strip()))
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
@@ -637,18 +648,19 @@ if __name__ == '__main__':
     #     D:\workspace\整机monkey
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
+    current = ''
     current = sep.join(['anr_papser','NX629J','LOG-36743'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         parserZipLogDir(papserPath, removeDir=True)
         end = time.clock()
         time.strftime("%b %d %Y %H:%M:%S",)
-        print('---used {}----'.format(ToolUtils.getUsedTimeStr(end,start)))
-        exit(0)
-    papserPath = sep.join(['C:','Users','Administrator','Downloads','anr_papser','nx629j'])
-    for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
-        parserZipLogDir(foldPath, True)
-    end = time.clock()
-    print('---used {}----'.format(ToolUtils.getUsedTimeStr(end,start)))
+        print('---used {}----'.format(ToolUtils.getUsedTimeStr(start,end)))
+    else:
+        papserPath = sep.join(['C:','Users','Administrator','Downloads','parse'])
+        for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
+            parserZipLogDir(foldPath, True)
+        end = time.clock()
+        print('---used {}----'.format(ToolUtils.getUsedTimeStr(start,end)))
 
 

@@ -54,20 +54,40 @@ class LogLine():
             self.timeFloat = ToolUtils.getTimeFloat(self.timeStr)
 
     # 比传入的行阻塞晚,阻塞起始时间在它行时间中间
-    def afterDelay(self, other):
+    def isAfterDelay(self, other):
         if self.isDelayLine and other.isDelayLine:
             selfStartTime = self.timeFloat-self.delayFloat
             otherStartTime = other.timeFloat-other.delayFloat
             return (selfStartTime>otherStartTime) and (selfStartTime<other.timeFloat)
         return False
 
+    def findFontLine(self, all):
+        temp = None
+        for line in all:
+            if self.isAfterDelay(line):
+                if 't='  in line.msg and line.delayFloat > 2000:
+                    return line
+                elif not temp or temp.delayFloat <  line.delayFloat:
+                    temp = line
+        return temp
+
     # 比传入的行阻塞早，他行起始时间在改行的时间中间
-    def beforeDelay(self, other):
+    def isBeforeDelay(self, other):
         if self.isDelayLine and other.isDelayLine:
             selfStartTime = self.timeFloat-self.delayFloat
             otherStartTime = other.timeFloat-other.delayFloat
             return (selfStartTime<otherStartTime) and (self.timeFloat> otherStartTime)
         return False
+
+    def findBackLine(self, all):
+        temp = None
+        for line in all:
+            if self.isBeforeDelay(line):
+                if 't='  in line.msg and line.delayFloat > 2000:
+                    return line
+                elif not temp or temp.delayFloat <  line.delayFloat:
+                    temp = line
+        return temp
 
     def isDoubtLine(self, anr):
         return self.timeFloat < (60+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 500)
@@ -102,12 +122,13 @@ class Anr():
         self.anr_class_name:str = None
         self.anr_input_msg:str = None
         self.anrCoreLine:LogLine = None
+        self.anrCoreLines:LogLine = []
         self.anrCoreReserveLine:LogLine = None
         self.main_logs:LogLine = []
         self.font_main_log:LogLine = None
         self.back_main_log:LogLine = None
 
-    def getMainLogBlockMsg(self):
+    def addMainLogBlock(self, allLine:LogLine):
         if len(self.main_logs) == 0:
             return None
         font_line = None
@@ -119,26 +140,30 @@ class Anr():
             else:
                 back_line = line
                 current_time_space = back_line.timeFloat - font_line.timeFloat
-                if current_time_space > time_space and font_line.timeFloat < self.anrTimeFloat+1 and self.anrTimeFloat< back_line.timeFloat+1:
+                if current_time_space > time_space and font_line.timeFloat < self.anrTimeFloat+1 and self.anrTimeFloat+1 < back_line.timeFloat:
                     time_space = current_time_space
                     self.font_main_log = font_line
                     self.back_main_log = back_line
                 font_line = back_line
 
         if self.font_main_log and self.back_main_log:
+            if not self.font_main_log in allLine:
+                allLine.append(self.font_main_log)
+            if not self.back_main_log in allLine:
+                allLine.append(self.back_main_log)
             delay = self.back_main_log.timeFloat - self.font_main_log.timeFloat
             isMainAnr = False
             if self.anrType == Anr.ANR_TYPE_BROADCAST:
-                isMainAnr = delay>10
+                isMainAnr = delay>=10
             elif self.anrType == Anr.ANR_TYPE_INPUT:
-                isMainAnr = delay>5
+                isMainAnr = delay>=5
             elif self.anrType == Anr.ANR_TYPE_SERVICE:
-                isMainAnr = delay>20
+                isMainAnr = delay>=20
             if isMainAnr:
-                font_main_time = self.font_main_log.timeStr
-                back_main_time = self.back_main_log.timeStr
-                return '{}  ==>  {}\n{}\n{}'.format(font_main_time, back_main_time, self.font_main_log.line, self.back_main_log.line)
+                return [self.font_main_log, self.back_main_log]
             else:
+                print(self.font_main_log.line)
+                print(self.back_main_log.line)
                 return None
 
     def computerAnrTime(self):
@@ -148,6 +173,22 @@ class Anr():
         elif self.anrCoreReserveLine and self.anrCoreReserveLine.isDelayLine:
             self.anrTimeFloat = self.anrCoreReserveLine.delayStartTimeFloat
             self.anrTimeStr = self.anrCoreReserveLine.delayStartTimeStr
+
+
+    def findAllFontLine(self, line:LogLine, allLine: LogLine):
+        fontLine = line.findFontLine(allLine)
+        if fontLine:
+            self.anrCoreLines.append(fontLine)
+            self.findAllFontLine(fontLine, allLine)
+
+    def findAllCoreLine(self, allLine: LogLine):
+        if self.anrCoreLine:
+            self.anrCoreLines.append(self.anrCoreLine)
+            backLine = self.anrCoreLine.findBackLine(allLine)
+            if backLine:
+                self.anrCoreLines.append(backLine)
+            self.findAllFontLine(self.anrCoreLine, allLine)
+            self.anrCoreLines.sort(key=lambda line: line.timeFloat)
 
     def setCoreLine(self, line: LogLine):
         self.anrCoreLine = line
