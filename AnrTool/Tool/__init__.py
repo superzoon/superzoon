@@ -65,9 +65,9 @@ class LogLine():
         temp = None
         for line in all:
             if self.isAfterDelay(line):
-                if 't='  in line.msg and line.delayFloat > 2000:
+                if 't='  in line.msg and line.delayFloat > 5000 and line.isBeforeDelay(self):
                     return line
-                elif not temp or temp.delayFloat <  line.delayFloat:
+                elif not temp or temp.delayFloat >  line.delayFloat:
                     temp = line
         return temp
 
