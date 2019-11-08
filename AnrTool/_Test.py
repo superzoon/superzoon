@@ -209,9 +209,13 @@ def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine, package_nam
             elif anr.anrIn.timeFloat < myAnr.anrIn.timeFloat:
                 myAnr = anr
         if myAnr:
-            myAnr.setCoreLine(line)
-            line.isAnrCore = True
-            line.file = str(ThreadName.FileName)
+            oldLine = myAnr.anrCoreLine
+            if not (oldLine and oldLine.timeFloat > line.timeFloat):
+                if oldLine:
+                    oldLine.isAnrCore = False
+                myAnr.setCoreLine(line)
+                line.isAnrCore = True
+                line.file = str(ThreadName.FileName)
 
         allLine.append(line)
     return True
@@ -233,10 +237,15 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
                 myAnr = anr
             elif anr.anrIn.timeFloat < myAnr.anrIn.timeFloat:
                 myAnr = anr
+
         if myAnr:
-            myAnr.setCoreLine(line)
-            line.isAnrCore = True
-            line.file = str(ThreadName.FileName)
+            oldLine = myAnr.anrCoreLine
+            if not (oldLine and oldLine.timeFloat > line.timeFloat):
+                if oldLine:
+                    oldLine.isAnrCore = False
+                myAnr.setCoreLine(line)
+                line.isAnrCore = True
+                line.file = str(ThreadName.FileName)
         allLine.append(line)
         isParsed = True
     return isParsed

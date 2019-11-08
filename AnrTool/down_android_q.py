@@ -41,8 +41,11 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
         if not isdir(manifest_dir):
             chdir(down_dir)
             call('git clone {}'.format(android_manifest_git))
-            chdir(manifest_dir)
-            call('git checkout android-q-preview-2.5')
+            if exists(manifest_dir):
+                chdir(manifest_dir)
+                call('git checkout android-q-preview-2.5')
+            else:
+                print('git clone {} error'.format(android_manifest_git))
         else:
             chdir(manifest_dir)
             call('git pull')
@@ -54,8 +57,11 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
         if not isdir(goldfish_dir):
             chdir(down_dir)
             call('git clone {}'.format(kernel_goldfish_git))
-            chdir(goldfish_dir)
-            call('git checkout android-q-preview-2.5')
+            if exists(goldfish_dir):
+                chdir(goldfish_dir)
+                call('git checkout android-q-preview-2.5')
+            else:
+                print('git clone {} error'.format(kernel_goldfish_git))
         else:
             chdir(goldfish_dir)
             call('git pull')
