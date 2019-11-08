@@ -70,7 +70,7 @@ class LogLine():
         return False
 
     def isDoubtLine(self, anr):
-        return self.timeFloat < (300+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 1000)
+        return self.timeFloat < (60+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 500)
 
     def addAnrMainLog(self, anr):
         if anr.pid == self.pid and self.timeFloat < (300+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 300):
