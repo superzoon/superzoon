@@ -58,16 +58,14 @@ class LogLine():
         if self.isDelayLine and other.isDelayLine:
             selfStartTime = self.timeFloat-self.delayFloat
             otherStartTime = other.timeFloat-other.delayFloat
-            return (selfStartTime>otherStartTime) and (selfStartTime<other.timeFloat)
+            return (selfStartTime>otherStartTime) and (selfStartTime<=other.timeFloat)
         return False
 
     def findFontLine(self, all):
         temp = None
-        for line in all:
+        for line in [line for line in all if line.isDelayLine]:
             if self.isAfterDelay(line):
-                if 't='  in line.msg and line.delayFloat > 5000 and line.isBeforeDelay(self):
-                    return line
-                elif not temp or temp.delayFloat >  line.delayFloat:
+                if not temp or temp.delayFloat >  line.delayFloat:
                     temp = line
         return temp
 
@@ -76,16 +74,14 @@ class LogLine():
         if self.isDelayLine and other.isDelayLine:
             selfStartTime = self.timeFloat-self.delayFloat
             otherStartTime = other.timeFloat-other.delayFloat
-            return (selfStartTime<otherStartTime) and (self.timeFloat> otherStartTime)
+            return (self.timeFloat<other.timeFloat) and (self.timeFloat>= otherStartTime)
         return False
 
     def findBackLine(self, all):
         temp = None
-        for line in all:
+        for line in [line for line in all if line.isDelayLine]:
             if self.isBeforeDelay(line):
-                if 't='  in line.msg and line.delayFloat > 2000:
-                    return line
-                elif not temp or temp.delayFloat <  line.delayFloat:
+                if not temp or temp.delayFloat <  line.delayFloat:
                     temp = line
         return temp
 
@@ -177,15 +173,16 @@ class Anr():
 
     def findAllFontLine(self, line:LogLine, allLine: LogLine):
         fontLine = line.findFontLine(allLine)
-        if fontLine:
-            self.anrCoreLines.append(fontLine)
+        if fontLine and len(self.anrCoreLines) < 6:
+            if not fontLine in self.anrCoreLines:
+                self.anrCoreLines.append(fontLine)
             self.findAllFontLine(fontLine, allLine)
 
     def findAllCoreLine(self, allLine: LogLine):
         if self.anrCoreLine:
             self.anrCoreLines.append(self.anrCoreLine)
             backLine = self.anrCoreLine.findBackLine(allLine)
-            if backLine:
+            if backLine and not backLine in self.anrCoreLines:
                 self.anrCoreLines.append(backLine)
             self.findAllFontLine(self.anrCoreLine, allLine)
             self.anrCoreLines.sort(key=lambda line: line.timeFloat)
