@@ -70,6 +70,7 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
     # 下载某一个模块函数
     def downloadMode(rootdir, path, name):
         chdir(rootdir)
+        print('downloadMode path={} -> name={}'.format(path, name))
         if not exists(path):
             last = path.rfind("/")
             if last != -1:
