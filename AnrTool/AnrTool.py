@@ -648,8 +648,8 @@ if __name__ == '__main__':
     #     D:\workspace\整机monkey
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
-    current = ''
     current = sep.join(['anr_papser','NX629J','LOG-36743'])
+    current = ''
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         parserZipLogDir(papserPath, removeDir=True)

@@ -59,7 +59,7 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
             call('git clone {}'.format(kernel_goldfish_git))
             if exists(goldfish_dir):
                 chdir(goldfish_dir)
-                call('git checkout android-q-preview-2.5')
+                call('git checkout android-goldfish-4.9-dev')
             else:
                 print('git clone {} error'.format(kernel_goldfish_git))
         else:
@@ -86,7 +86,7 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
      # 4. 下载goldfish
     if goldfish:
         downloadGoldfish()
-    exit(0)
+
      # 5. 下载manifest
     if manifest or not isdir(manifest_dir):
         downloadManifest()
@@ -109,9 +109,10 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
     if isdir(goldfish_dir):
         src = goldfish_dir
         dst = sep.join([android_source,'kernel','goldfish'])
-        if not isdir(dirname(dst)):
-            makedirs(dirname(dst))
-        symlink(src, dst)
+        if not exists(dst):
+            if not isdir(dirname(dst)):
+                makedirs(dirname(dst))
+            symlink(src, dst)
 if __name__ == '__main__':
     email = popen('git config user.email').read().splitlines()[0]
     if email == '303106251@qq.com':
