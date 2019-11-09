@@ -1,7 +1,7 @@
-import xml.dom.minidom
 import os
 from subprocess import call
 from os import (popen,makedirs, chdir, symlink)
+from xml.dom import (Node,minidom)
 from os.path import (isdir, sep, dirname, exists)
 google_addr='https://android.googlesource.com/'
 tsinghua_addr='https://aosp.tuna.tsinghua.edu.cn/'
@@ -26,7 +26,7 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
     android_source = sep.join([down_dir,'android_q'])
 
     # 1. 打印一句话
-    print('down android source')
+    print('down start ')
     # 2. 修改为源码要保存的路径
     if not os.path.exists(android_source):
         os.mkdir(android_source)
@@ -82,6 +82,20 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
             chdir(rootdir+'/'+path)
             call('git pull')
 
+    #拷贝文件
+    def copyfile(src, dest):
+        if not exists(dest):
+            print('copyfile src={} -> dest={}'.format(src, dest))
+            if not isdir(dirname(dest)):
+                makedirs(dirname(dest))
+            copyfile(src, dest)
+    #创建连接文件
+    def linkfile(src, dest):
+        if not exists(dest):
+            print('linkfile src={} -> dest={}'.format(src, dest))
+            if not isdir(dirname(dest)):
+                makedirs(dirname(dest))
+            symlink(src, dest)
 
      # 4. 下载goldfish
     if goldfish:
@@ -91,33 +105,42 @@ def downloadAndroidSource(path='', name='',down_dir=sep.join(['d:','android_sour
     if manifest or not isdir(manifest_dir):
         downloadManifest()
 
-
     rootdir = android_source
     if path and name:
         # 6.可以根据manifest文件中的path和namne下载单个模块
         downloadMode(rootdir, path, name)
     else:
         # 6.根据 manifest 中 default.xml 下载所有模块
-        dom = xml.dom.minidom.parse(sep.join([manifest_dir,'default.xml']))
+        dom = minidom.parse(sep.join([manifest_dir,'default.xml']))
         root = dom.documentElement
         for node in root.getElementsByTagName("project"):
             path = node.getAttribute("path")
             name = node.getAttribute("name")
             if path and name:
-                downloadMode(rootdir, node.getAttribute("path"), node.getAttribute("name"))
-    #创建软连接goldfish -> android_q/kernel/goldfish
+                pass#print(path+' -> '+name)
+                #downloadMode(rootdir, node.getAttribute("path"), node.getAttribute("name"))
+            for child in [child for child in node.childNodes if child.nodeType == Node.ELEMENT_NODE]:
+                print(child)
+                src = child.getAttribute("src")
+                dest = child.getAttribute("dest")
+                if child.tagName == 'copyfile':
+                    copyfile(src, dest)
+                elif child.tagName == 'linkfile':
+                    linkfile(src, dest)
+
+    #创建驱动软连接goldfish -> android_q/kernel/goldfish
     if isdir(goldfish_dir):
-        src = goldfish_dir
-        dst = sep.join([android_source,'kernel','goldfish'])
-        if not exists(dst):
-            if not isdir(dirname(dst)):
-                makedirs(dirname(dst))
-            symlink(src, dst)
+        linkfile(goldfish_dir,sep.join([android_source,'kernel','goldfish']))
+
 if __name__ == '__main__':
     email = popen('git config user.email').read().splitlines()[0]
-    if email == '303106251@qq.com':
-        path = 'frameworks/base'
-        name = 'platform/frameworks/base'
-        downloadAndroidSource(path=path, name=name, goldfish=True)
+    if email == '303106251@qq.com':#下载框架代码
+        download_dict = {
+            'frameworks/base':'platform/frameworks/base',
+            'hardware/libhardware':'platform/hardware/libhardware',
+            'hardware/interfaces':'platform/hardware/interfaces'
+        }
+        for (path, name) in download_dict.items():
+            downloadAndroidSource(path=path, name=name, goldfish=False)
     else:
         downloadAndroidSource()
