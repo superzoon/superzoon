@@ -554,7 +554,9 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
 
         if startDelayLine:
             resonFile.writelines('起始阻塞log:\n')
-            resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
+            resonFile.writelines('\t'+startDelayLine.line)
+            resonFile.writelines('\n')
+            resonFile.writelines("\t\tstartTime:{}\n".format(startDelayLine.delayStartTimeStr))
             resonFile.writelines('\n')
 
         print(anr.anrTimeStr)
