@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 tip.config(text='解析完成{}')
                 if len(GlobalValue.ShowMessage) > 0:
                     text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
-
+                GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择anr的zip包！')
         elif value == 1:
@@ -102,6 +102,7 @@ if __name__ == '__main__':
                 tip.config(text='解析完成{}')
                 if len(GlobalValue.ShowMessage) > 0:
                     text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
 
@@ -114,6 +115,7 @@ if __name__ == '__main__':
                 tip.config(text='解析完成{}')
                 if len(GlobalValue.ShowMessage) > 0:
                     text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
         print(entry.get())
