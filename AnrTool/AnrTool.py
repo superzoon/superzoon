@@ -16,6 +16,7 @@ class GlobalValue:
     PidName = {}
     FileName = ''
     LineNumber = 0
+    ShowMessage = []
 
 DEFAULT_PACKAGE = 'com.android.systemui'
 def parseSurfaceFlinger(allAnr :Anr, allLine:LogLine, line:LogLine):
@@ -509,9 +510,14 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
 
     print('####################start write######################')
     #将手机的信息写入到文件
+
     for (key, value) in propMsg.items():
-        resonFile.writelines("{}:{}\n".format(key, value))
-    resonFile.writelines('\n')
+        temp = "{}:{}\n".format(key, value)
+        GlobalValue.ShowMessage.append(temp)
+        resonFile.writelines(temp)
+    temp = '\n'
+    GlobalValue.ShowMessage.append(temp)
+    resonFile.writelines(temp)
     #讲对应的am anr添加到主要信息中
     for anr in allAnr:
         if not anr.anrCoreLine and anr.anrCoreReserveLine:
@@ -527,37 +533,40 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #将所有的anr信息输出到文件
     for anr in allAnr:
         pids.append(anr.pid)
-        resonFile.writelines("pid:"+str(anr.pid))
-        resonFile.writelines('\n')
-        resonFile.writelines("发生时间:"+str(anr.anrTimeStr))
-        resonFile.writelines('\n')
-        resonFile.writelines("发生原因:"+anr.anrReason)
-        resonFile.writelines('\n\n')
+        temp = "pid:"+str(anr.pid)+'\n'+"发生时间:"+str(anr.anrTimeStr)+'\n'+"发生原因:"+anr.anrReason+'\n\n'
+        GlobalValue.ShowMessage.append(temp)
+        resonFile.writelines(temp)
         mainMsg:[] = anr.addMainLogBlock(allLine)
         if mainMsg:
             font = mainMsg[0]
             back = mainMsg[1]
-            resonFile.writelines('主线程阻塞:{}  ==>  {}\n\t{}\n\t{}'.format(font.timeStr, back.timeStr,  font.line, back.line))
-            resonFile.writelines('\n\n')
+            temp = ('主线程阻塞:{}  ==>  {}\n\t{}\n\t{}'.format(font.timeStr, back.timeStr,  font.line, back.line))+'\n\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
 
         startDelayLine = None
         if anr.anrCoreLines:
-            resonFile.writelines('核心log:\n')
+            temp = '核心log:\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
             for line in anr.anrCoreLines:
-                resonFile.writelines('\t'+line.line)
-                resonFile.writelines('\n')
+                temp ='\t'+line.line+'\n'
+                GlobalValue.ShowMessage.append(temp)
+                resonFile.writelines(temp)
                 if line.isDelayLine:
-                    resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
+                    temp = "\t\tstartTime:{}\n".format(line.delayStartTimeStr)
+                    GlobalValue.ShowMessage.append(temp)
+                    resonFile.writelines(temp)
                     if not startDelayLine or line.delayStartTimeFloat < startDelayLine.delayStartTimeFloat:
                         startDelayLine = line
-            resonFile.writelines('\n')
+            temp = '\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
 
         if startDelayLine:
-            resonFile.writelines('起始阻塞log:\n')
-            resonFile.writelines('\t'+startDelayLine.line)
-            resonFile.writelines('\n')
-            resonFile.writelines("\t\tstartTime:{}\n".format(startDelayLine.delayStartTimeStr))
-            resonFile.writelines('\n')
+            temp = '起始阻塞log:\n'+'\t'+startDelayLine.line+"\n\t\tstartTime:{}\n".format(startDelayLine.delayStartTimeStr)+'\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
 
         print(anr.anrTimeStr)
         print(anr.anrTimeFloat)
@@ -573,25 +582,32 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #判断是否main log不足
     if mainLine!=None and (mainLine.timeFloat < anrTimeFloat):
         print("main log 不足")
-        resonFile.writelines("main log 不足 time:"+str(ToolUtils.getTimeStamp(mainLine.timeFloat)))
-        resonFile.writelines('\n\n')
+        temp ="main log 不足 time:"+str(ToolUtils.getTimeStamp(mainLine.timeFloat))+'\n\n'
+        GlobalValue.ShowMessage.append(temp)
+        resonFile.writelines(temp)
     #输出pid和线程名称到文件
     if len(GlobalValue.PidName)>0:
         print(GlobalValue.PidName)
-        resonFile.writelines("线程名称:" + str(GlobalValue.PidName))
-        resonFile.writelines('\n\n')
+        temp ="线程名称:" + str(GlobalValue.PidName)+'\n\n'
+        GlobalValue.ShowMessage.append(temp)
+        resonFile.writelines(temp)
     #输出阻塞的堆栈
     for item in blockStacks:
         if item.pid in pids:
-            resonFile.writelines('\t\n java stack:')
-            resonFile.writelines('\t\n'+item.top)
-            resonFile.writelines('\n')
+            temp = '\t\n java stack:'+'\t\n'+item.top+'\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
             lines = item.javaStacks if len(item.javaStacks) < 10 else item.javaStacks[0:10]
             for line in lines:
-                resonFile.writelines('\t'+line)
-                resonFile.writelines('\n')
-            resonFile.writelines('\n')
-    resonFile.writelines('\n')
+                temp = '\t'+line+'\n'
+                GlobalValue.ShowMessage.append(temp)
+                resonFile.writelines(temp)
+            temp = '\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
+    temp = '\n'
+    GlobalValue.ShowMessage.append(temp)
+    resonFile.writelines(temp)
     print("len ==  "+str(len(allLine)))
     #未找到相关log
     if(len(allLine)) == 0 and mainLine!=None:
@@ -658,7 +674,6 @@ def parserZipLogDir(foldPath, removeDir = True):
     resonFile.close()
 
 if __name__ == '__main__':
-
     start = time.clock()
     #     D:\workspace\整机monkey
     # D:\workspace\anr_papser\log\LOG-36743
