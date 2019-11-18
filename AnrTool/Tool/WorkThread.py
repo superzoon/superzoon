@@ -16,7 +16,7 @@ class LockUtil:
 class WorkThread(Thread):
     THREAD_ID = 1000
     THREAD_NAME = "Work Thread {}"
-    def __init__(self, threadId:int = -1, name:str = None, action = None):
+    def __init__(self, threadId:int = -1, name:str = None, action = None, daemon=True):
         Thread.__init__(self)
         if threadId == -1:
             self.threadId = WorkThread.THREAD_ID+1
@@ -28,6 +28,7 @@ class WorkThread(Thread):
         else:
             self.name = name
         self.action = action
+        self.setDaemon(daemon)
 
     def run(self):
         if callable(self.action):

@@ -7,13 +7,37 @@ from subprocess import call
 from zipfile import ZipFile
 import threading
 from AnrTool import parseZipLog, parserZipLogDir, GlobalValue
-from tkinter import messagebox
+from tkinter import messagebox, Toplevel, Label
 import zipfile
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 
 current_dir = dirname(abspath(__file__))
 
 #    call('pyinstaller -w -F -i res\anr.ico AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool')
+
+class GressBar():
+
+	def start(self):
+		top = Toplevel()
+		self.master = top
+		top.overrideredirect(True)
+		top.title("进度条")
+		Label(top, text="任务正在运行中,请稍等……", fg="green").pack(pady=2)
+		prog = tk.Progressbar(top, mode='indeterminate', length=200)
+		prog.pack(pady=10, padx=35)
+		prog.start()
+		top.resizable(False, False)
+		top.update()
+		curWidth = top.winfo_width()
+		curHeight = top.winfo_height()
+		scnWidth, scnHeight = top.maxsize()
+		tmpcnf = '+%d+%d' % ((scnWidth - curWidth) / 2, (scnHeight - curHeight) / 2)
+		top.geometry(tmpcnf)
+		top.mainloop()
+
+	def quit(self):
+		if self.master:
+			self.master.destroy()
 
 if __name__ == '__main__':
     height = 600
@@ -143,7 +167,6 @@ if __name__ == '__main__':
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)
     parser_button.place(x=width-140, y=h, anchor='nw')
     select_radio()
-
     window.mainloop()
 
 def testImage():
