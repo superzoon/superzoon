@@ -224,7 +224,7 @@ def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine, package_nam
     return True
 
 '''BroadcastQueue: Timeout of broadcast BroadcastRecord{2afa62c u-1 android.intent.action.TIME_TICK} - receiver=android.os.BinderProxy@182e848, started 11845ms ago'''
-pattern_broadcast = '.*Timeout of broadcast.* ([^ ]+)}.*started ([\d}\.]+)ms ago.*'
+pattern_broadcast = '.*Timeout of broadcast.* ([^ ]+)}.*started ([\d|\.]+)ms ago.*'
 def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
     math = re.match(pattern_broadcast, line.msg)
     isParsed = False
@@ -551,21 +551,24 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             GlobalValue.ShowMessage.append(temp)
             resonFile.writelines(temp)
 
-        startDelayLine = None
+        startDelayLine = anr.anrCoreLine
+        key = lambda line:line.delayStartTimeFloat
         if anr.anrCoreLines:
             temp = '核心log:\n'
             GlobalValue.ShowMessage.append(temp)
             resonFile.writelines(temp)
-            for line in anr.anrCoreLines:
+            delayLines = sorted([delayLine for delayLine in anr.anrCoreLines if delayLine.isDelayLine], key=key, reverse=True)
+            for line in delayLines:
                 temp ='\t'+line.line+'\n'
+                print(line.line)
                 GlobalValue.ShowMessage.append(temp)
                 resonFile.writelines(temp)
-                if line.isDelayLine:
-                    temp = "\t\tstartTime:{}\n".format(line.delayStartTimeStr)
-                    GlobalValue.ShowMessage.append(temp)
-                    resonFile.writelines(temp)
-                    if not startDelayLine or line.delayStartTimeFloat < startDelayLine.delayStartTimeFloat:
-                        startDelayLine = line
+                temp = "\t\tstartTime:{}\n".format(line.delayStartTimeStr)
+                GlobalValue.ShowMessage.append(temp)
+                resonFile.writelines(temp)
+                print(line.line)
+                if startDelayLine==None or (line.delayStartTimeFloat < startDelayLine.delayStartTimeFloat and line.timeFloat > startDelayLine.delayStartTimeFloat):
+                    startDelayLine = line
             temp = '\n'
             GlobalValue.ShowMessage.append(temp)
             resonFile.writelines(temp)
@@ -686,10 +689,19 @@ if __name__ == '__main__':
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
     current = ''
+    current = sep.join(['anr_papser','papser','LOG-494715','NX629J_Z0_CN_VLF0P_V235','ObkMgc.RgZkoMz.zip'])
     current = sep.join(['anr_papser','papser','LOG-494715'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
-        parserZipLogDir(papserPath, removeDir=True)
+        if isfile(papserPath):
+            foldPath = dirname(abspath(papserPath))
+            resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
+            resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(papserPath)[len(dirname(foldPath)) + 1:]))
+            parseZipLog(papserPath, resonFile, removeDir=True)
+
+            resonFile.writelines('\n\n')
+        else:
+            parserZipLogDir(papserPath, removeDir=True)
         end = time.clock()
         time.strftime("%b %d %Y %H:%M:%S",)
         print('---used {}----'.format(ToolUtils.getUsedTimeStr(start,end)))
