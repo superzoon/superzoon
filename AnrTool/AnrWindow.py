@@ -5,10 +5,15 @@ from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
 import base64
 from subprocess import call
 from zipfile import ZipFile
+import threading
+from AnrTool import parseZipLog, parserZipLogDir, GlobalValue
+from tkinter import messagebox
 import zipfile
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 
 current_dir = dirname(abspath(__file__))
+
+#    call('pyinstaller -w -F -i res\anr.ico AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool')
 
 if __name__ == '__main__':
     height = 600
@@ -16,7 +21,9 @@ if __name__ == '__main__':
     window = tk.Tk()
     window.title('Anr 工具')
     window.resizable(0, 0)
-    window.iconbitmap(sep.join(['res',"anr.ico"]))
+    ico = sep.join(['res',"anr.ico"])
+    if isfile(ico):
+        window.iconbitmap(ico)
     sw = window.winfo_screenwidth()
     sh = window.winfo_screenheight()
     ww = width
@@ -25,10 +32,12 @@ if __name__ == '__main__':
     y = (sh - wh) / 2
     window.geometry("%dx%d+%d+%d" % (ww, wh, x, y))
 
-    canvas = tk.Canvas(window, height=height, width=width)
-    image_file = tk.PhotoImage(file=sep.join(['res','window_bg.png']))
-    image = canvas.create_image(width/2, height/2, anchor='center', image=image_file)  # n 北方，s 南方， w西方，e东方，center中间
-    canvas.pack(side='top')
+    bg = sep.join(['res','window_bg.png'])
+    if isfile(bg):
+        canvas = tk.Canvas(window, height=height, width=width)
+        image_file = tk.PhotoImage(file=bg)
+        image = canvas.create_image(width/2, height/2, anchor='center', image=image_file)  # n 北方，s 南方， w西方，e东方，center中间
+        canvas.pack(side='top')
     h = 10
     title = tk.Label(window, text='今天的ANR你努力了吗?', bg='green', font=('Arial', 12), width=30, height=2)
     title.place(x=width/2, y=h, anchor='n')
@@ -44,10 +53,13 @@ if __name__ == '__main__':
         value = select.get()
         print()
         if value == 0:
+            selse_button.config(text='文件')
             tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
         if value == 1:
+            selse_button.config(text='文件夹')
             tip.config(text='解析解析目录下所有anr文件(例如:项目/Jira号)')
         if value == 2:
+            selse_button.config(text='文件夹')
             tip.config(text='解析解析目录下所有anr文件(例如:/项目)')
 
     rb1 = tk.Radiobutton(window, text="单个Anr", variable=select, value=0 , command=select_radio)
@@ -56,7 +68,6 @@ if __name__ == '__main__':
     rb2.place(x=width/2, y=h, anchor='n')
     rb3 = tk.Radiobutton(window, text="多个Jira", variable=select, value=2, command=select_radio)
     rb3.place(x=width/2+w, y=h, anchor='ne')
-    select_radio()
 
     h = h+50
     text_view = tk.Text(window)
@@ -72,36 +83,43 @@ if __name__ == '__main__':
             file_path = askopenfilename()
         if value == 1 or value==2:
             file_path = askdirectory()
-        print(type(file_path))
         if file_path:
+            if len(entry.get())>0:
+                entry.delete(0, len(entry.get()))
+
             entry.insert('insert', file_path)
     def parserAnr():
         value = select.get()
         file_path = entry.get()
-        from AnrTool import parseZipLog, parserZipLogDir, GlobalValue
-        from tkinter import messagebox
         if value == 0 :
             # tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
             if zipfile.is_zipfile(file_path):
-                tip.config(text='正在解析{}'.format(file_path))
+                text_view.insert('insert','正在解析')
                 foldPath = dirname(abspath(file_path))
                 resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
-                parseZipLog(file_path, resonFile, removeDir=True)
-                tip.config(text='解析完成{}')
+                try:
+                    threading.start_new_thread(parseZipLog, (file_path, resonFile))
+                    # parseZipLog(file_path, resonFile, removeDir=True)
+                except:
+                    print("Error: unable to start thread")
+
                 if len(GlobalValue.ShowMessage) > 0:
                     text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                else:
+                    text_view.insert('insert','解析完成')
                 GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择anr的zip包！')
         elif value == 1:
             # tip.config(text='解析解析目录下所有anr文件(例如:项目/Jira号)')
             if isdir(file_path):
-                tip.config(text='正在解析{}'.format(file_path))
+                text_view.insert('insert','正在解析')
                 parserZipLogDir(file_path, removeDir=True)
-                tip.config(text='解析完成{}')
                 if len(GlobalValue.ShowMessage) > 0:
                     text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                else:
+                    text_view.insert('insert','解析完成')
                 GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
@@ -110,11 +128,12 @@ if __name__ == '__main__':
             # tip.config(text='解析解析目录下所有anr文件(例如:/项目)')
             if isdir(file_path):
                 for foldPath in [sep.join([file_path, child]) for child in listdir(file_path)]:
-                    tip.config(text='正在解析{}'.format(foldPath))
+                    text_view.insert('insert','正在解析{}'.format(foldPath))
                     parserZipLogDir(foldPath, True)
-                tip.config(text='解析完成{}')
                 if len(GlobalValue.ShowMessage) > 0:
                     text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                else:
+                    text_view.insert('insert','解析完成')
                 GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
@@ -123,6 +142,7 @@ if __name__ == '__main__':
     selse_button.place(x=width/10-30, y=h, anchor='nw')
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)
     parser_button.place(x=width-140, y=h, anchor='nw')
+    select_radio()
 
     window.mainloop()
 

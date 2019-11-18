@@ -296,12 +296,19 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
 
 pattern_window_manager1 = '^.*Input event dispatching timed out.*Reason:(.*)'
 pattern_window_manager2 = '^.*Input event dispatching timed out.* ([\d|\.]+)ms ago.*'
+pattern_window_manager3 = '^.*Input event dispatching timed out.* Wait queue.* ([\d|\.]+)ms.*'
 def parseWindowManager(allAnr :Anr, allLine:LogLine, line:LogLine):
     delay = 5000
     match = re.match(pattern_window_manager1, line.msg)
     if match:
         reason = match.group(1).strip()
-        match = re.match(pattern_window_manager2, line.msg)
+        match = None
+        match1 = re.match(pattern_window_manager2, line.msg)
+        if match1:
+            match = match1
+        match2 = re.match(pattern_window_manager3, line.msg)
+        if match2:
+            match = match2
         if match:
             delay = float(match.group(1))
             line.addDelay(delay)
@@ -618,7 +625,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         resonFile.writelines("\n关键log:\n")
         for line in allLine:
             if line.isAnrCore:
-                resonFile.writelines("  My Anr core: in file {} -> line={}\n".format(line.file, GlobalValue.LineNumber))
+                resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file, GlobalValue.LineNumber))
             resonFile.writelines("\t{}\n".format(line.line.strip()))
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
@@ -679,7 +686,7 @@ if __name__ == '__main__':
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
     current = ''
-    current = sep.join(['anr_papser','papser','LOG-494171'])
+    current = sep.join(['anr_papser','papser','LOG-494715'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         parserZipLogDir(papserPath, removeDir=True)
