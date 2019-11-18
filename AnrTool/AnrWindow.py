@@ -7,7 +7,8 @@ from subprocess import call
 from zipfile import ZipFile
 import threading
 from AnrTool import parseZipLog, parserZipLogDir, GlobalValue
-from tkinter import messagebox, Toplevel, Label
+from Tool.WorkThread import WorkThread
+from tkinter import messagebox, Toplevel, Label, ttk
 import zipfile
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 
@@ -21,9 +22,9 @@ class GressBar():
 		top = Toplevel()
 		self.master = top
 		top.overrideredirect(True)
-		top.title("进度条")
+		top.title("解析ANR")
 		Label(top, text="任务正在运行中,请稍等……", fg="green").pack(pady=2)
-		prog = tk.Progressbar(top, mode='indeterminate', length=200)
+		prog = ttk.Progressbar(top, mode='indeterminate', length=200)
 		prog.pack(pady=10, padx=35)
 		prog.start()
 		top.resizable(False, False)
@@ -115,53 +116,74 @@ if __name__ == '__main__':
     def parserAnr():
         value = select.get()
         file_path = entry.get()
+        bar = GressBar()
+        print("parserAnr start")
         if value == 0 :
             # tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
             if zipfile.is_zipfile(file_path):
-                text_view.insert('insert','正在解析')
+                text_view.delete('1.0','end')
                 foldPath = dirname(abspath(file_path))
                 resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
-                    threading.start_new_thread(parseZipLog, (file_path, resonFile))
-                    # parseZipLog(file_path, resonFile, removeDir=True)
+                    def parse():
+                        parseZipLog(file_path, resonFile, removeDir=True)
+                        if len(GlobalValue.ShowMessage) > 0:
+                            text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                        else:
+                            text_view.insert('insert','解析完成')
+                        GlobalValue.ShowMessage = []
+                        bar.quit()
+                    WorkThread(action=parse).start()
                 except:
+                    bar.quit()
                     print("Error: unable to start thread")
-
-                if len(GlobalValue.ShowMessage) > 0:
-                    text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
-                else:
-                    text_view.insert('insert','解析完成')
-                GlobalValue.ShowMessage = []
             else:
                 messagebox.showwarning(title='错误', message='请选择anr的zip包！')
         elif value == 1:
             # tip.config(text='解析解析目录下所有anr文件(例如:项目/Jira号)')
             if isdir(file_path):
-                text_view.insert('insert','正在解析')
-                parserZipLogDir(file_path, removeDir=True)
-                if len(GlobalValue.ShowMessage) > 0:
-                    text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
-                else:
-                    text_view.insert('insert','解析完成')
-                GlobalValue.ShowMessage = []
+                text_view.delete('1.0','end')
+                try:
+                    def parse():
+                        parserZipLogDir(file_path, removeDir=True)
+                        bar.quit()
+                        if len(GlobalValue.ShowMessage) > 0:
+                            text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                        else:
+                            text_view.insert('insert','解析完成')
+                        GlobalValue.ShowMessage = []
+                    WorkThread(action=parse).start()
+                except:
+                    bar.quit()
+                    print("Error: unable to start thread")
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
 
         if value == 2:
             # tip.config(text='解析解析目录下所有anr文件(例如:/项目)')
             if isdir(file_path):
-                for foldPath in [sep.join([file_path, child]) for child in listdir(file_path)]:
-                    text_view.insert('insert','正在解析{}'.format(foldPath))
-                    parserZipLogDir(foldPath, True)
-                if len(GlobalValue.ShowMessage) > 0:
-                    text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
-                else:
-                    text_view.insert('insert','解析完成')
-                GlobalValue.ShowMessage = []
+                text_view.delete('1.0','end')
+                def parse():
+                    for foldPath in [sep.join([file_path, child]) for child in listdir(file_path)]:
+                        parserZipLogDir(foldPath, True)
+                    if len(GlobalValue.ShowMessage) > 0:
+                        text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                    else:
+                        text_view.insert('insert','解析完成')
+                    GlobalValue.ShowMessage = []
+                    bar.quit()
+
+                try:
+                    WorkThread(action=parse).start()
+                except:
+                    bar.quit()
+                    print("Error: unable to start thread")
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
         print(entry.get())
+        print("parserAnr end")
+        bar.start()
     selse_button = tk.Button(window, text='文件/文件夹', font=('Arial', 10), width=10, height=2, command=selectPath)
     selse_button.place(x=width/10-30, y=h, anchor='nw')
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)
