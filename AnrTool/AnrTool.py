@@ -590,7 +590,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             anrTimeFloat = anr.anrTimeFloat
         log(anr.anrReason)
     # 将主要信息按时间排序
-    # allLine.sort(key=lambda line: line.timeFloat)
+    allLine.sort(key=lambda line: line.timeFloat)
     #判断是否有anr
     if len(allAnr) == 0:
         print("未能解析")
