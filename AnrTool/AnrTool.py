@@ -12,6 +12,11 @@ from Tool import Anr
 from Tool.SystemLog import *
 from Tool import DEF_MAX_DELAY_TIME
 
+SHOW_LOG = False
+def log(msg):
+    if SHOW_LOG:
+        print(msg)
+
 class GlobalValue:
     PidName = {}
     FileName = ''
@@ -30,12 +35,12 @@ pattern_ipc2 = '^.*IPCThreadState, Waiting.*mExecutingThreadsCount=([\d]+) mMaxT
 def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParsed = False
     line.isIPCLine = True
-    print(line.line)
+    log(line.line)
     match = re.match(pattern_ipc1, line.msg)
     if match:
         delay = float(match.group(1))
         for anr in allAnr:
-            print(str(line.isDoubtLine(anr))+'  '+str(anr.anrTimeStr)+'-'+str(line.timeStr))
+            log(str(line.isDoubtLine(anr))+'  '+str(anr.anrTimeStr)+'-'+str(line.timeStr))
             if line.isDoubtLine(anr):
                 line.addDelay(delay)
                 allLine.append(line)
@@ -457,7 +462,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #解析所有的anr trace
     blockStacks = []
     for file in anrFiles:
-        print(file)
+        log(file)
         trace = TracesLog(file, packageName)
         trace.parser()
         stack = trace.getBolckStack()
@@ -489,7 +494,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #保存最后发生anr的时间，当mainLine时间小于anr时间则main log不全
     anrTimeFloat = 0;
     for file in parseFiles:
-        print('--' + file + '--')
+        log('--' + file + '--')
         with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
             #全局变量，当前解析的文件
             GlobalValue.FileName = file
@@ -515,7 +520,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
                         #解析该行
                         parseLine(allAnr, allLine, temp, packageName)
 
-    print('####################start write######################')
+    log('####################start write######################')
     #将手机的信息写入到文件
 
     for (key, value) in propMsg.items():
@@ -557,16 +562,16 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             temp = '核心log:\n'
             GlobalValue.ShowMessage.append(temp)
             resonFile.writelines(temp)
-            delayLines = sorted([delayLine for delayLine in anr.anrCoreLines if delayLine.isDelayLine], key=key, reverse=True)
+            delayLines = [delayLine for delayLine in anr.anrCoreLines if delayLine.isDelayLine]
             for line in delayLines:
                 temp ='\t'+line.line+'\n'
-                print(line.line)
                 GlobalValue.ShowMessage.append(temp)
                 resonFile.writelines(temp)
                 temp = "\t\tstartTime:{}\n".format(line.delayStartTimeStr)
                 GlobalValue.ShowMessage.append(temp)
                 resonFile.writelines(temp)
-                print(line.line)
+            delayLines = sorted(delayLines, key=key, reverse=True)
+            for line in delayLines:
                 if startDelayLine==None or (line.delayStartTimeFloat < startDelayLine.delayStartTimeFloat and line.timeFloat > startDelayLine.delayStartTimeFloat):
                     startDelayLine = line
             temp = '\n'
@@ -578,14 +583,14 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             GlobalValue.ShowMessage.append(temp)
             resonFile.writelines(temp)
 
-        print(anr.anrTimeStr)
-        print(anr.anrTimeFloat)
+        log(anr.anrTimeStr)
+        log(anr.anrTimeFloat)
         #获取最后发生anr的时间，用于推断main log是否全
         if anr.anrTimeFloat>anrTimeFloat:
             anrTimeFloat = anr.anrTimeFloat
-        print(anr.anrReason)
+        log(anr.anrReason)
     # 将主要信息按时间排序
-    allLine.sort(key=lambda line: line.timeFloat)
+    # allLine.sort(key=lambda line: line.timeFloat)
     #判断是否有anr
     if len(allAnr) == 0:
         print("未能解析")
@@ -618,11 +623,11 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     temp = '\n'
     GlobalValue.ShowMessage.append(temp)
     resonFile.writelines(temp)
-    print("len ==  "+str(len(allLine)))
+    log("len ==  "+str(len(allLine)))
     #未找到相关log
     if(len(allLine)) == 0 and mainLine!=None:
-        print(mainLine.timeFloat)
-        print(anrTimeFloat)
+        log(mainLine.timeFloat)
+        log(anrTimeFloat)
     else:
         #输出所有的分析行信息到文件
         resonFile.writelines("\n关键log:\n")
@@ -632,7 +637,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             resonFile.writelines("\t{}\n".format(line.line.strip()))
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
-    print('####################end write######################')
+    log('####################end write######################')
 
 def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True):
     print("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
