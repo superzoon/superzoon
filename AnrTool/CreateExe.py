@@ -1,6 +1,7 @@
 
 from subprocess import call
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
+
 def create_decorator(func):
     def decorator(ico_path, *args, **kwargs):
         if ico_path and isfile(ico_path) and ico_path.endswith('.ico'):
@@ -15,7 +16,7 @@ def createAnrWindowExe(ico:str = None):
 
 if __name__ == '__main__':
     createAnrWindowExe(sep.join(['res','anr.ico']))
-
+    exit()
 
 
 

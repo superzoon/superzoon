@@ -12,8 +12,9 @@ class LogLine():
     '''
     pattern= '^([\d]{2}-[\d]{2}[\ ]+[\d|:|\.]+)[\ ]+([\d|\ ]+)[\ ]+([\d|\ ]+)[\ ]+([\w])[\ ](.*)'
 
-    def __init__(self, line: str):
+    def __init__(self, line: str, linenum:int):
         self.line = line
+        self.linenum = linenum
         match = re.match(LogLine.pattern, line+' ')
         if match:
             self.isLogLine = True

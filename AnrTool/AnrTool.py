@@ -20,7 +20,6 @@ def log(msg):
 class GlobalValue:
     PidName = {}
     FileName = ''
-    LineNumber = 0
     ShowMessage = []
 
 DEFAULT_PACKAGE = 'com.android.systemui'
@@ -501,17 +500,17 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
             #全局变量，当前解析的文件
             GlobalValue.FileName = file
-            GlobalValue.LineNumber = 0
+            linenum = 0
             #是否在解析main log
             isMainLine = True if ('main.txt' in file) else False
             while True:
                 line = mFile.readline()
-                GlobalValue.LineNumber = GlobalValue.LineNumber + 1
+                linenum = linenum + 1
                 if not line:
                     break
                 else:
                     line = line.strip()
-                    temp = LogLine(line)
+                    temp = LogLine(line, linenum)
                     if temp.isLogLine :
                         #保存最后一行main log
                         if isMainLine:
@@ -636,7 +635,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         resonFile.writelines("\n关键log:\n")
         for line in allLine:
             if line.isAnrCore:
-                resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file, GlobalValue.LineNumber))
+                resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file, line.linenum))
             resonFile.writelines("\t{}\n".format(line.line.strip()))
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
@@ -698,7 +697,7 @@ if __name__ == '__main__':
     current = 'NX627JV2B-1080'
     current = ''
     current = sep.join(['anr_papser','papser','LOG-494715','NX629J_Z0_CN_VLF0P_V235','ObkMgc.RgZkoMz.zip'])
-    current = sep.join(['anr_papser','papser','LOG-494798'])
+    current = sep.join(['anr_papser','papser','LOG-495785'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):

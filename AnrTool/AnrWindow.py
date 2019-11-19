@@ -121,13 +121,15 @@ if __name__ == '__main__':
         if value == 0 :
             # tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
             if zipfile.is_zipfile(file_path):
-                text_view.delete('1.0','end')
+                text_view.delete('1.0', 'end')
                 foldPath = dirname(abspath(file_path))
                 resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
                     def parse():
                         parseZipLog(file_path, resonFile, removeDir=True)
+                        resonFile.flush()
+                        resonFile.close()
                         if len(GlobalValue.ShowMessage) > 0:
                             text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
                         else:

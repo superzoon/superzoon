@@ -5,8 +5,8 @@ import re
 class AnrLine(LogLine):
 
     anr_pattern = '^.*ANR in ([\w|\.]+).*'
-    def __init__(self, line: str):
-        super().__init__(line)
+    def __init__(self, line: str, linenum:int):
+        super().__init__(line, linenum)
         self.packageName = None
 
     def isAnrLine(self, packageName: str = 'com.android.systemui'):
@@ -107,21 +107,23 @@ class SystemLog():
             print(file)
             systemAnr = None
             with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+                linenum = 0
                 while True:
+                    linenum = linenum+1
                     line = mFile.readline()
                     if not line:
                         break
                     else:
                         line = line.strip()
                         if systemAnr == None:
-                            temp = AnrLine(line)
+                            temp = AnrLine(line, linenum)
                             if temp.isAnrLine(self.packageName):
                                 anr = Anr(temp)
                                 systemAnr = SystemAnr(temp, anr)
                                 anr.systemAnr = systemAnr
                                 self.allAnr.append(anr)
                         else:
-                            temp = LogLine(line)
+                            temp = LogLine(line, linenum)
                             if temp.isLogLine and temp.tag == systemAnr.anrLine.tag:
                                 systemAnr.addLine(temp)
                             else:
