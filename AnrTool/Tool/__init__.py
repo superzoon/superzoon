@@ -89,7 +89,7 @@ class LogLine():
         return self.timeFloat < (60+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 500)
 
     def addAnrMainLog(self, anr):
-        if anr.pid == self.pid and self.timeFloat < (300+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 300):
+        if anr.pid == self.pid and self.timeFloat < (500+ anr.anrTimeFloat) and  self.timeFloat > (anr.anrTimeFloat - 1000):
             anr.main_logs.append(self)
 
     def addDelay(self, delay:float):

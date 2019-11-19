@@ -260,7 +260,8 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
 
 pattern_input = '^.*Application is not responding.*Reason:(.*)'
 pattern_input1 = '^.*Application is not responding.*It has been ([\d|\.]+)ms since event.*'
-pattern_input2 = '^.*Application is not responding.*Reason:.*age: ([\d|\.]+)ms.*'
+pattern_input2 = '^.*Application is not responding.*It has been .*Wait queue head age: ([\d|\.]+)ms.'
+pattern_input3 = '^.*Application is not responding.*Reason:.*age: ([\d|\.]+)ms.*'
 def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not GlobalValue.PidName.__contains__(line.pid):
         GlobalValue.PidName[line.pid] = 'system_server'
@@ -271,8 +272,10 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
     if match:
         reason = match.group(1)
     match = re.match(pattern_input1, line.msg)
-    if not match:
+    if match:
         match = re.match(pattern_input2, line.msg)
+    if not match:
+        match = re.match(pattern_input3, line.msg)
     if match:
         delayStr = match.group(1)
         delay = float(delayStr)
@@ -695,7 +698,7 @@ if __name__ == '__main__':
     current = 'NX627JV2B-1080'
     current = ''
     current = sep.join(['anr_papser','papser','LOG-494715','NX629J_Z0_CN_VLF0P_V235','ObkMgc.RgZkoMz.zip'])
-    current = sep.join(['anr_papser','papser','LOG-494715'])
+    current = sep.join(['anr_papser','papser','LOG-494798'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):
