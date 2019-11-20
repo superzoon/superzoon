@@ -37,12 +37,12 @@ class PidStack:
             if threadStack.name == 'main':
                 return threadStack
 
-    pattern_cmd = '.*Cmd line: ([\w|\.]+).*'
+    pattern_cmd = '.*Cmd line: (.*)'
     pattern_thread = '"([\w|\ ]+)".*prio=([\d]+) tid=([\d]+) ([\w]+).*'
     def addLine(self, line:str):
         match = re.match(PidStack.pattern_cmd, line)
         if match:
-            self.packageName = match.group(1)
+            self.packageName = match.group(1).strip()
 
         match = re.match(PidStack.pattern_thread, line)
         isParser = False
@@ -55,6 +55,8 @@ class PidStack:
 
         if self.tempThreadStack != None:
             self.tempThreadStack.addLine(line)
+
+        return isParser
 
     pattern_pid = '----- pid ([\d]+) at ([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}) -----'
     @staticmethod
@@ -89,15 +91,7 @@ class TracesLog():
         for stack in [stack for stack in self.pid_stack if stack.packageName == self.packageName]:
             threadStack.append(stack.getMainStack())
         if len(threadStack)>=2 and threadStack[0].javaStacks == threadStack[1].javaStacks:
-            print(threadStack[0].javaStacks)
             return threadStack[0]
-        if len(threadStack)>0:
-            javaStack = threadStack[0].javaStacks
-            print(javaStack)
-            if len(javaStack)>0 and 'android.view.ThreadedRenderer.nSetStopped' in javaStack[0]:
-                threadStack[0].javaStacks.append('********has nSetStopped********')
-                return threadStack[0]
-
         return None
 
 

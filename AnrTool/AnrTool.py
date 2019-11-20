@@ -467,7 +467,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         log(file)
         trace = TracesLog(file, packageName)
         trace.parser()
-        stack = trace.getBolckStack()
+        stack:ThreadStack = trace.getBolckStack()
         #如果堆栈出现两次相同则加入到数列中
         if stack != None:
             blockStacks.append(stack)
@@ -580,6 +580,18 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             GlobalValue.ShowMessage.append(temp)
             resonFile.writelines(temp)
 
+            # 输出阻塞的堆栈
+        for stack in [ stack for item in blockStacks if str(item.pid) == str(anr.pid)]:
+            temp = '\t\njava栈:' + '\t\n\t' + stack.top + '\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
+            temp = '\t\t' + '\n\t\t'.join(stack.javaStacks if len(stack.javaStacks) < 10 else stack.javaStacks[0:10])
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
+            temp = '\n\n'
+            GlobalValue.ShowMessage.append(temp)
+            resonFile.writelines(temp)
+
         if startDelayLine:
             temp = '起始阻塞log:\n'+'\t'+startDelayLine.line+"\n\t\tstartTime:{}\n".format(startDelayLine.delayStartTimeStr)+'\n'
             GlobalValue.ShowMessage.append(temp)
@@ -605,23 +617,9 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #输出pid和线程名称到文件
     if len(GlobalValue.PidName)>0:
         print(GlobalValue.PidName)
-        temp ="线程名称:" + str(GlobalValue.PidName)+'\n\n'
+        temp ="线程名称:" + str(GlobalValue.PidName)+'\n'
         GlobalValue.ShowMessage.append(temp)
         resonFile.writelines(temp)
-    #输出阻塞的堆栈
-    for item in blockStacks:
-        if item.pid in pids:
-            temp = '\t\n java stack:'+'\t\n'+item.top+'\n'
-            GlobalValue.ShowMessage.append(temp)
-            resonFile.writelines(temp)
-            lines = item.javaStacks if len(item.javaStacks) < 10 else item.javaStacks[0:10]
-            for line in lines:
-                temp = '\t'+line+'\n'
-                GlobalValue.ShowMessage.append(temp)
-                resonFile.writelines(temp)
-            temp = '\n'
-            GlobalValue.ShowMessage.append(temp)
-            resonFile.writelines(temp)
     temp = '\n'
     GlobalValue.ShowMessage.append(temp)
     resonFile.writelines(temp)
@@ -696,8 +694,8 @@ if __name__ == '__main__':
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
     current = ''
-    current = sep.join(['anr_papser','papser','LOG-494715','NX629J_Z0_CN_VLF0P_V235','ObkMgc.RgZkoMz.zip'])
     current = sep.join(['anr_papser','papser','LOG-495785'])
+    current = sep.join(['anr_papser','papser','LOG-495785','NX627J_Z0_CN_WQM0P_V217','uzrUka.RhPN3hW.zip'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):
