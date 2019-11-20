@@ -1,12 +1,13 @@
-from Tool import ToolUtils
+from Tool import toolUtils
 from Tool import LogLine
 from Tool import Anr
+from Tool import GlobalValues
 import re
 class AnrLine(LogLine):
 
     anr_pattern = '^.*ANR in ([\w|\.]+).*'
-    def __init__(self, line: str, linenum:int):
-        super().__init__(line, linenum)
+    def __init__(self, line: str, linenum:int, globalValues:GlobalValues):
+        super().__init__(line, linenum, globalValues)
         self.packageName = None
 
     def isAnrLine(self, packageName: str = 'com.android.systemui'):
@@ -48,7 +49,6 @@ class SystemAnr():
     cpu_pattern = '^CPU usage from ([\d]+)ms to ([-|\d]+)ms.*\(([\d]{4}).*'
 
     def parser(self, msg: str):
-        print(msg)
         match = re.match(SystemAnr.pid_pattern, msg)
         if match:
             self.pid = int(match.group(1).strip())
@@ -62,12 +62,12 @@ class SystemAnr():
         match = re.match(SystemAnr.cpu_pattern, msg)
         if match:
             self.usage_time = int(match.group(2).strip())-int(match.group(1).strip())
-            Anr.ANR_YEAR = match.group(3)
-            self.anrLine.setYear(Anr.ANR_YEAR)
+            self.anrLine.globalValues.year = match.group(3)
+            self.anrLine.updateYear()
             self.anr.anrTimeStr = self.anrLine.timeStr
             self.anr.anrTimeFloat = self.anrLine.timeFloat
             for line in self.lines:
-                line.setYear(Anr.ANR_YEAR)
+                line.updateYear()
             return
 
 
@@ -94,7 +94,8 @@ class SystemAnr():
 
 class SystemLog():
 
-    def __init__(self, files, anrs: Anr, packageName: str = 'com.android.systemui'):
+    def __init__(self, files, anrs: Anr, globalValues : GlobalValues, packageName: str = 'com.android.systemui'):
+        self.globalValues = globalValues
         self.allAnr = anrs
         self.files = sorted(files,reverse=True)
         firstFile = self.files[0]
@@ -104,9 +105,8 @@ class SystemLog():
 
     def findAllAnr(self):
         for file in self.files:
-            print(file)
             systemAnr = None
-            with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+            with open(file, encoding=toolUtils.checkFileCode(file)) as mFile:
                 linenum = 0
                 while True:
                     linenum = linenum+1
@@ -116,14 +116,14 @@ class SystemLog():
                     else:
                         line = line.strip()
                         if systemAnr == None:
-                            temp = AnrLine(line, linenum)
+                            temp = AnrLine(line, linenum, self.globalValues)
                             if temp.isAnrLine(self.packageName):
                                 anr = Anr(temp)
                                 systemAnr = SystemAnr(temp, anr)
                                 anr.systemAnr = systemAnr
                                 self.allAnr.append(anr)
                         else:
-                            temp = LogLine(line, linenum)
+                            temp = LogLine(line, linenum, self.globalValues)
                             if temp.isLogLine and temp.tag == systemAnr.anrLine.tag:
                                 systemAnr.addLine(temp)
                             else:

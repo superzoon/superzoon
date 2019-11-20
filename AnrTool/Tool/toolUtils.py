@@ -4,7 +4,11 @@ from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, bas
 from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
+from Tool.workThread import LockUtil
 import time
+from threading import current_thread
+
+UNZIP_LOCK = LockUtil.createThreadLock()
 
 getTime = lambda timeStr: time.mktime(time.strptime(timeStr, '%Y-%m-%d %H:%M:%S.%f'))
 BASE_TIME_FLOAT = time.mktime((2000,0,0,0,0,0,0,0,0))
@@ -20,6 +24,7 @@ def getNextItem(array, item, defItem):
 
 def unzip_single(src_file, dest_dir, password = None):
     ''' 解压单个文件到目标文件夹。'''
+    LockUtil.acquire(UNZIP_LOCK)
     if password:
         password = password.encode()
     zf = zipfile.ZipFile(src_file)
@@ -33,7 +38,6 @@ def unzip_single(src_file, dest_dir, password = None):
         else:
             fname_str=name.encode('cp437').decode('gbk')
         try:
-            print(fname_str)
             if fname_str.endswith('/') and fname_str.count('/')==1 and fname_str!=name:
                 root_path = name
             if not fname_str.endswith('/'):
@@ -51,16 +55,15 @@ def unzip_single(src_file, dest_dir, password = None):
         rmtree(root_path)
     zf.close()
     os.chdir(cwd)
+    LockUtil.release(UNZIP_LOCK)
 
 def encodeAndDecode(dest_dir:str):
     for root_path, dir_names, file_names in os.walk(dest_dir):
         for fn in dir_names:
             path = os.path.join(root_path, fn)
             if not zipfile.is_zipfile(path):
-                print("before:", fn)
                 try:
                     fn = fn.encode('cp437').decode('utf-8')
-                    print("after:", fn)
                     new_path = os.path.join(root_path, fn)
                     os.rename(path, new_path)
                 except Exception as e:
@@ -109,14 +112,12 @@ def checkFileCode(filename):
                 return None
 
 def parseProp(propFiles):
-    print(propFiles)
     allProp = {}
     keys = [
         'ro.build.date','ro.build.display.id',
         'ro.build.rom.id','ro.build.version.sdk'
             ]
     for file in propFiles:
-        print(file)
         with open(file, encoding=checkFileCode(file)) as mFile:
             while True:
                 line = mFile.readline()

@@ -1,9 +1,22 @@
 import re
 import time
 from Tool import *
-from Tool import ToolUtils
+from Tool import toolUtils
 
 DEF_MAX_DELAY_TIME = 1000
+
+SHOW_LOG = False
+
+def log(msg):
+    if SHOW_LOG:
+        print(msg)
+
+class GlobalValues:
+    def __init__(self):
+        self.pidMap = dict()
+        self.currentFile = ''
+        self.showMessage = list()
+        self.year = '2000'
 
 class LogLine():
     '''
@@ -12,15 +25,16 @@ class LogLine():
     '''
     pattern= '^([\d]{2}-[\d]{2}[\ ]+[\d|:|\.]+)[\ ]+([\d|\ ]+)[\ ]+([\d|\ ]+)[\ ]+([\w])[\ ](.*)'
 
-    def __init__(self, line: str, linenum:int):
+    def __init__(self, line: str, linenum:int, globalValues:GlobalValues):
+        self.globalValues = globalValues
         self.line = line
         self.linenum = linenum
         match = re.match(LogLine.pattern, line+' ')
         if match:
             self.isLogLine = True
             self._timeStr_ = match.group(1)
-            self.timeStr = Anr.ANR_YEAR + '-' +self._timeStr_
-            self.timeFloat = ToolUtils.getTimeFloat(Anr.ANR_YEAR + '-' + self._timeStr_+'000')
+            self.timeStr = self.globalValues.year + '-' +self._timeStr_
+            self.timeFloat = toolUtils.getTimeFloat(self.globalValues.year + '-' + self._timeStr_ + '000')
             self.pid = int(match.group(2).strip())
             self.tid = int(match.group(3).strip())
             self.level = match.group(4).strip()
@@ -49,10 +63,10 @@ class LogLine():
         self.delayStartTimeFloat = ''
         self.threadName=''
 
-    def setYear(self, year: str):
+    def updateYear(self):
         if self.isLogLine:
-            self.timeStr = year + '-' + self._timeStr_
-            self.timeFloat = ToolUtils.getTimeFloat(self.timeStr)
+            self.timeStr = self.globalValues.year + '-' + self._timeStr_
+            self.timeFloat = toolUtils.getTimeFloat(self.timeStr)
 
     # 比传入的行阻塞晚,阻塞起始时间在它行时间中间
     def isAfterDelay(self, other):
@@ -97,14 +111,13 @@ class LogLine():
         self.isDelayLine = True
         self.delayFloat = delay
         self.delayStartTimeFloat = self.timeFloat-delay/1000
-        self.delayStartTimeStr = str(ToolUtils.getTimeStamp(self.delayStartTimeFloat))
+        self.delayStartTimeStr = str(toolUtils.getTimeStamp(self.delayStartTimeFloat))
 
 class Anr():
     ANR_TYPE_UNKNOWN = 0
     ANR_TYPE_BROADCAST = 1
     ANR_TYPE_INPUT = 2
     ANR_TYPE_SERVICE = 3
-    ANR_YEAR = '2000'
 
     def __init__(self, line:LogLine):
         self.anrIn = line
@@ -119,9 +132,9 @@ class Anr():
         self.anr_class_name:str = None
         self.anr_input_msg:str = None
         self.anrCoreLine:LogLine = None
-        self.anrCoreLines:LogLine = []
+        self.anrCoreLines:LogLine = list()
         self.anrCoreReserveLine:LogLine = None
-        self.main_logs:LogLine = []
+        self.main_logs:LogLine = list()
         self.font_main_log:LogLine = None
         self.back_main_log:LogLine = None
 
@@ -159,8 +172,8 @@ class Anr():
             if isMainAnr:
                 return [self.font_main_log, self.back_main_log]
             else:
-                print(self.font_main_log.line)
-                print(self.back_main_log.line)
+                log(self.font_main_log.line)
+                log(self.back_main_log.line)
                 return None
 
     def computerAnrTime(self):

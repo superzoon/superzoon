@@ -1,7 +1,8 @@
 
 import re
 from os.path import sep
-from Tool import ToolUtils
+from Tool import toolUtils
+from Tool import GlobalValues
 class ThreadStack:
     def __init__(self, name, prio, tid, state, pid, top):
         self.name = name
@@ -68,14 +69,15 @@ class PidStack:
 
 class TracesLog():
     @classmethod
-    def __init__(self, file, packageName: str = 'com.android.systemui'):
+    def __init__(self, file, globalValues:GlobalValues, packageName: str = 'com.android.systemui'):
+        self.globalValues = globalValues
         self.file = file
         self.packageName = packageName
         self.cmd_line= 'Cmd line: '+packageName
-        self.pid_stack:PidStack = []
+        self.pid_stack:PidStack = list()
 
     def parser(self):
-        with open(self.file, encoding=ToolUtils.checkFileCode(self.file)) as mmFile:
+        with open(self.file, encoding=toolUtils.checkFileCode(self.file)) as mmFile:
             lines = mmFile.readlines()
             tempPidStack = None
             for line in [line.strip() for line in lines]:

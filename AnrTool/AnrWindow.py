@@ -6,8 +6,9 @@ import base64
 from subprocess import call
 from zipfile import ZipFile
 import threading
-from AnrTool import parseZipLog, parserZipLogDir, GlobalValue
-from Tool.WorkThread import WorkThread
+from AnrTool import parseZipLog, parserZipLogDir, GlobalValues
+from Tool.workThread import WorkThread
+from Tool.workThread import (postAction, addWorkDoneCallback)
 from tkinter import messagebox, Toplevel, Label, ttk
 import zipfile
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
@@ -117,6 +118,7 @@ if __name__ == '__main__':
         value = select.get()
         file_path = entry.get()
         bar = GressBar()
+        addWorkDoneCallback(lambda :bar.quit())
         print("parserAnr start")
         if value == 0 :
             # tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
@@ -127,18 +129,16 @@ if __name__ == '__main__':
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
                     def parse():
-                        parseZipLog(file_path, resonFile, removeDir=True)
+                        globalValue = parseZipLog(file_path, resonFile, removeDir=True)
                         resonFile.flush()
                         resonFile.close()
-                        if len(GlobalValue.ShowMessage) > 0:
-                            text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                        if len(globalValue.showMessage) > 0:
+                            text_view.insert('insert','\n'.join(globalValue.showMessage))
                         else:
                             text_view.insert('insert','解析完成')
-                        GlobalValue.ShowMessage = []
-                        bar.quit()
-                    WorkThread(action=parse).start()
+                    postAction(action=parse)
+                    # WorkThread(action=parse).start()
                 except:
-                    bar.quit()
                     print("Error: unable to start thread")
             else:
                 messagebox.showwarning(title='错误', message='请选择anr的zip包！')
@@ -148,16 +148,15 @@ if __name__ == '__main__':
                 text_view.delete('1.0','end')
                 try:
                     def parse():
-                        parserZipLogDir(file_path, removeDir=True)
-                        bar.quit()
-                        if len(GlobalValue.ShowMessage) > 0:
-                            text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
+                        globalValuesList = parserZipLogDir(file_path, removeDir=True)
+                        showMessages = ['\n'.join(globalValues.showMessage) for globalValues in globalValuesList if len(globalValues.showMessage)>0 ]
+                        if len(showMessages) > 0:
+                            text_view.insert('insert','\n'.join(showMessages))
                         else:
                             text_view.insert('insert','解析完成')
-                        GlobalValue.ShowMessage = []
-                    WorkThread(action=parse).start()
+                    postAction(action=parse)
+                    # WorkThread(action=parse).start()
                 except:
-                    bar.quit()
                     print("Error: unable to start thread")
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
@@ -166,21 +165,20 @@ if __name__ == '__main__':
             # tip.config(text='解析解析目录下所有anr文件(例如:/项目)')
             if isdir(file_path):
                 text_view.delete('1.0','end')
-                def parse():
-                    for foldPath in [sep.join([file_path, child]) for child in listdir(file_path)]:
-                        parserZipLogDir(foldPath, True)
-                    if len(GlobalValue.ShowMessage) > 0:
-                        text_view.insert('insert','\n'.join(GlobalValue.ShowMessage))
-                    else:
-                        text_view.insert('insert','解析完成')
-                    GlobalValue.ShowMessage = []
-                    bar.quit()
-
-                try:
-                    WorkThread(action=parse).start()
-                except:
-                    bar.quit()
-                    print("Error: unable to start thread")
+                for foldPath in [sep.join([file_path, child]) for child in listdir(file_path)]:
+                    def getAction(path):
+                        def action():
+                            if isdir(path):
+                                globalValuesList = parserZipLogDir(path, True)
+                                showMessages = ['\n'.join(globalValues.showMessage) for globalValues in globalValuesList if len(globalValues.showMessage)>0 ]
+                                if len(showMessages) > 0:
+                                    text_view.insert('insert','\n'.join(showMessages))
+                        return action
+                    try:
+                        postAction(getAction(foldPath))
+                        # WorkThread(action=parse).start()
+                    except:
+                        print("Error: unable to start thread")
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
         print(entry.get())

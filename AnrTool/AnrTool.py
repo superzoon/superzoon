@@ -5,27 +5,19 @@ from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
 from _io import TextIOWrapper
-from Tool import ToolUtils
-from Tool.ToolUtils import *
-from Tool.TracesLog import *
+from Tool import toolUtils
+from Tool.toolUtils import *
+from Tool.tracesLog import *
 from Tool import Anr
-from Tool.SystemLog import *
+from Tool import GlobalValues
+from Tool import log
+from Tool.systemLog import *
 from Tool import DEF_MAX_DELAY_TIME
-
-SHOW_LOG = False
-def log(msg):
-    if SHOW_LOG:
-        print(msg)
-
-class GlobalValue:
-    PidName = {}
-    FileName = ''
-    ShowMessage = []
 
 DEFAULT_PACKAGE = 'com.android.systemui'
 def parseSurfaceFlinger(allAnr :Anr, allLine:LogLine, line:LogLine):
-    if not GlobalValue.PidName.__contains__(line.pid):
-        GlobalValue.PidName[line.pid] = line.tag
+    if not line.globalValues.pidMap.__contains__(line.pid):
+        line.globalValues.pidMap[line.pid] = line.tag
 
 # IPCThreadState: IPCThreadState, binder thread pool (4 threads) starved for 9276 ms
 # IPCThreadState: IPCThreadState, Waiting for thread to be free. mExecutingThreadsCount=32 mMaxThreads=31
@@ -152,8 +144,8 @@ def parseBinder(allAnr :Anr, allLine:LogLine, line:LogLine):
 
 pattern_vold = '^.*Trimmed.* ([\d]+)ms.*'
 def parseVold(allAnr :Anr, allLine:LogLine, line:LogLine):
-    if not GlobalValue.PidName.__contains__(line.pid):
-        GlobalValue.PidName[line.pid] = 'vold'
+    if not line.globalValues.pidMap.__contains__(line.pid):
+        line.globalValues.pidMap[line.pid] = 'vold'
     match = re.match(pattern_vold, line.msg)
     if match and int(match.group(1))>10000:
         delay = float(match.group(1))
@@ -162,8 +154,8 @@ def parseVold(allAnr :Anr, allLine:LogLine, line:LogLine):
     return True
 
 def parseKeyguardViewMediator(allAnr :Anr, allLine:LogLine, line:LogLine):
-    if not GlobalValue.PidName.__contains__(line.pid):
-        GlobalValue.PidName[line.pid] = 'systemui'
+    if not line.globalValues.pidMap.__contains__(line.pid):
+        line.globalValues.pidMap[line.pid] = 'systemui'
     if line.msg.startswith('handleHide') or line.msg.startswith('handleShow'):
         for anr in allAnr:
             if line.isDoubtLine(anr):
@@ -222,7 +214,7 @@ def parseActivityManager(allAnr :Anr, allLine:LogLine, line:LogLine, package_nam
                     oldLine.isAnrCore = False
                 myAnr.setCoreLine(line)
                 line.isAnrCore = True
-                line.file = str(GlobalValue.FileName)
+                line.file = str(line.globalValues.currentFile)
 
         allLine.append(line)
     return True
@@ -252,7 +244,7 @@ def parseBroadcastQueue(allAnr :Anr, allLine:LogLine, line:LogLine):
                     oldLine.isAnrCore = False
                 myAnr.setCoreLine(line)
                 line.isAnrCore = True
-                line.file = str(GlobalValue.FileName)
+                line.file = str(line.globalValues.currentFile)
         allLine.append(line)
         isParsed = True
     return isParsed
@@ -262,8 +254,8 @@ pattern_input1 = '^.*Application is not responding.*It has been ([\d|\.]+)ms sin
 pattern_input2 = '^.*Application is not responding.*It has been .*Wait queue head age: ([\d|\.]+)ms.'
 pattern_input3 = '^.*Application is not responding.*Reason:.*age: ([\d|\.]+)ms.*'
 def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
-    if not GlobalValue.PidName.__contains__(line.pid):
-        GlobalValue.PidName[line.pid] = 'system_server'
+    if not line.globalValues.pidMap.__contains__(line.pid):
+        line.globalValues.pidMap[line.pid] = 'system_server'
     isParsed = False
     delay = 5000
     reason = None
@@ -297,7 +289,7 @@ def parseInputDispatcher(allAnr :Anr, allLine:LogLine, line:LogLine):
                     oldLine.isAnrCore = False
                 myAnr.setCoreLine(line)
                 line.isAnrCore = True
-                line.file = str(GlobalValue.FileName)
+                line.file = str(line.globalValues.currentFile)
     return isParsed
 
 
@@ -331,7 +323,7 @@ def parseWindowManager(allAnr :Anr, allLine:LogLine, line:LogLine):
             oldLine = myAnr.anrCoreReserveLine
             if not (oldLine and oldLine.timeFloat > line.timeFloat):
                 myAnr.setCoreLineReserve(line)
-                line.file = str(GlobalValue.FileName)
+                line.file = str(line.globalValues.currentFile)
     return True
 
 pattern_gl = '^.*\ duration=([\d]+)ms;.*'
@@ -427,7 +419,7 @@ def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_
     ##########################解析完成###########################
     #如果有解析则打印该行
     if isParsed:
-        print(line.line)
+        log(line.line)
     #有延时信息保存该行
     pattern_delay = '.*delay.*([\d]+)[\ ]*ms.*'
     if not isParsed:
@@ -436,8 +428,10 @@ def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_
             allLine.append(line)
 
 def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE):
+    #保存所有公共变量
+    globalValues = GlobalValues()
     #获取目录下的所有文件
-    allFiles = ToolUtils.getAllFileName(destDir)
+    allFiles = toolUtils.getAllFileName(destDir)
     #获取所有的 system log文件
     systemFiles = [file for file in allFiles if 'system.txt' in file]
     systemFiles.sort(reverse = True)
@@ -460,12 +454,12 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #获取所有的 system.prop文件
     propFiles = [file for file in allFiles if 'system.prop' in file]
     #解析prop文件获取手机信息
-    propMsg = ToolUtils.parseProp(propFiles)
+    propMsg = toolUtils.parseProp(propFiles)
     #解析所有的anr trace
     blockStacks = []
     for file in anrFiles:
         log(file)
-        trace = TracesLog(file, packageName)
+        trace = TracesLog(file, globalValues, packageName)
         trace.parser()
         stack:ThreadStack = trace.getBolckStack()
         #如果堆栈出现两次相同则加入到数列中
@@ -489,7 +483,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #用于保存所有的Anr对象
     allAnr = []
     # 从systemui解析有多少个anr
-    systemLog = SystemLog(systemFiles, allAnr, packageName)
+    systemLog = SystemLog(systemFiles, allAnr, globalValues, packageName)
     systemLog.findAllAnr()
     #最后一行main log，用于验证main log是否包含anr时间
     mainLine = None
@@ -497,9 +491,9 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     anrTimeFloat = 0;
     for file in parseFiles:
         log('--' + file + '--')
-        with open(file, encoding=ToolUtils.checkFileCode(file)) as mFile:
+        with open(file, encoding=toolUtils.checkFileCode(file)) as mFile:
             #全局变量，当前解析的文件
-            GlobalValue.FileName = file
+            globalValues.currentFile = file
             linenum = 0
             #是否在解析main log
             isMainLine = True if ('main.txt' in file) else False
@@ -510,7 +504,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
                     break
                 else:
                     line = line.strip()
-                    temp = LogLine(line, linenum)
+                    temp = LogLine(line, linenum, globalValues)
                     if temp.isLogLine :
                         #保存最后一行main log
                         if isMainLine:
@@ -527,10 +521,10 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
 
     for (key, value) in propMsg.items():
         temp = "{}:{}\n".format(key, value)
-        GlobalValue.ShowMessage.append(temp)
+        globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
     temp = '\n'
-    GlobalValue.ShowMessage.append(temp)
+    globalValues.showMessage.append(temp)
     resonFile.writelines(temp)
     #讲对应的am anr添加到主要信息中
     for anr in allAnr:
@@ -548,53 +542,54 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     for anr in allAnr:
         pids.append(anr.pid)
         temp = "pid:"+str(anr.pid)+'\n'+"发生时间:"+str(anr.anrTimeStr)+'\n'+"发生原因:"+anr.anrReason+'\n\n'
-        GlobalValue.ShowMessage.append(temp)
+        globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
         mainMsg:[] = anr.addMainLogBlock(allLine)
         if mainMsg:
             font = mainMsg[0]
             back = mainMsg[1]
             temp = ('主线程阻塞:{}  ==>  {}\n\t{}\n\t{}'.format(font.timeStr, back.timeStr,  font.line, back.line))+'\n\n'
-            GlobalValue.ShowMessage.append(temp)
+            globalValues.showMessage.append(temp)
             resonFile.writelines(temp)
 
         startDelayLine = anr.anrCoreLine
         key = lambda line:line.delayStartTimeFloat
         if anr.anrCoreLines:
             temp = '核心log:\n'
-            GlobalValue.ShowMessage.append(temp)
+            globalValues.showMessage.append(temp)
             resonFile.writelines(temp)
             delayLines = [delayLine for delayLine in anr.anrCoreLines if delayLine.isDelayLine]
             for line in delayLines:
                 temp ='\t'+line.line+'\n'
-                GlobalValue.ShowMessage.append(temp)
+                globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
                 temp = "\t\tstartTime:{}\n".format(line.delayStartTimeStr)
-                GlobalValue.ShowMessage.append(temp)
+                globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
             delayLines = sorted(delayLines, key=key, reverse=True)
             for line in delayLines:
                 if startDelayLine==None or (line.delayStartTimeFloat < startDelayLine.delayStartTimeFloat and line.timeFloat > startDelayLine.delayStartTimeFloat):
                     startDelayLine = line
             temp = '\n'
-            GlobalValue.ShowMessage.append(temp)
+            globalValues.showMessage.append(temp)
             resonFile.writelines(temp)
 
             # 输出阻塞的堆栈
-        for stack in [ stack for item in blockStacks if str(item.pid) == str(anr.pid)]:
-            temp = '\t\njava栈:' + '\t\n\t' + stack.top + '\n'
-            GlobalValue.ShowMessage.append(temp)
-            resonFile.writelines(temp)
-            temp = '\t\t' + '\n\t\t'.join(stack.javaStacks if len(stack.javaStacks) < 10 else stack.javaStacks[0:10])
-            GlobalValue.ShowMessage.append(temp)
-            resonFile.writelines(temp)
-            temp = '\n\n'
-            GlobalValue.ShowMessage.append(temp)
-            resonFile.writelines(temp)
+        for stack in [stack for item in blockStacks if str(item.pid) == str(anr.pid)]:
+            if stack:
+                temp = '\t\njava栈:' + '\t\n\t' + stack.top + '\n'
+                globalValues.showMessage.append(temp)
+                resonFile.writelines(temp)
+                temp = '\t\t' + '\n\t\t'.join(stack.javaStacks if len(stack.javaStacks) < 10 else stack.javaStacks[0:10])
+                globalValues.showMessage.append(temp)
+                resonFile.writelines(temp)
+                temp = '\n\n'
+                globalValues.showMessage.append(temp)
+                resonFile.writelines(temp)
 
         if startDelayLine:
             temp = '起始阻塞log:\n'+'\t'+startDelayLine.line+"\n\t\tstartTime:{}\n".format(startDelayLine.delayStartTimeStr)+'\n'
-            GlobalValue.ShowMessage.append(temp)
+            globalValues.showMessage.append(temp)
             resonFile.writelines(temp)
 
         log(anr.anrTimeStr)
@@ -607,21 +602,20 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     allLine.sort(key=lambda line: line.timeFloat)
     #判断是否有anr
     if len(allAnr) == 0:
-        print("未能解析")
+        log("未能解析")
     #判断是否main log不足
     if mainLine!=None and (mainLine.timeFloat < anrTimeFloat):
-        print("main log 不足")
-        temp ="main log 不足 time:"+str(ToolUtils.getTimeStamp(mainLine.timeFloat))+'\n\n'
-        GlobalValue.ShowMessage.append(temp)
+        log("main log 不足")
+        temp ="main log 不足 time:" + str(toolUtils.getTimeStamp(mainLine.timeFloat)) + '\n\n'
+        globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
     #输出pid和线程名称到文件
-    if len(GlobalValue.PidName)>0:
-        print(GlobalValue.PidName)
-        temp ="线程名称:" + str(GlobalValue.PidName)+'\n'
-        GlobalValue.ShowMessage.append(temp)
+    if len(globalValues.pidMap)>0:
+        temp ="线程名称:" + str(globalValues.pidMap) + '\n'
+        globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
     temp = '\n'
-    GlobalValue.ShowMessage.append(temp)
+    globalValues.showMessage.append(temp)
     resonFile.writelines(temp)
     log("len ==  "+str(len(allLine)))
     #未找到相关log
@@ -638,11 +632,10 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
     log('####################end write######################')
+    return globalValues
 
 def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True):
     print("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
-    #充值pid对应的进程名称
-    GlobalValue.PidName = {}
     #如果不是pid文件则不解析
     if not zipfile.is_zipfile(fileName):
         exit(-1)
@@ -658,35 +651,38 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
     #创建解压路径
     makedirs(tempDir)
     #解压zip文件到指定路径
-    ToolUtils.unzip_single(fileName, tempDir)
+    toolUtils.unzip_single(fileName, tempDir)
     #解析刚刚解压的文件
-    parseLogDir(tempDir, resonFile, packageName)
+    globalValues:GlobalValues =parseLogDir(tempDir, resonFile, packageName)
     #删除刚刚解压的临时文件夹
     if removeDir:
         rmtree(tempDir)
+    return globalValues
 
 def parserZipLogDir(foldPath, removeDir = True):
     #打印需要解析的路径
-    print(foldPath)
+    print("-----parserZipLogDir foldPath={}".format(foldPath))
     #获取该路径下所有的zip文件
-    allZips = [file for file in ToolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
+    allZips = [file for file in toolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
     #创建该路径下的reason文件，用于保存解析结果
     resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
     #用于标记在第几个zip
     zipPoint = 0
     #解析每一个zip
+    globalValuesList:GlobalValues = list()
     for zipFile in allZips:
         zipPoint = zipPoint + 1
         #在文件输出解析zip的名称
         resonFile.writelines('{}.{}\n\n'.format(str(zipPoint), abspath(zipFile)[len(dirname(foldPath)) + 1:]))
         #解析zip log
-        parseZipLog(zipFile, resonFile, removeDir=removeDir)
+        globalValuesList.append(parseZipLog(zipFile, resonFile, removeDir=removeDir))
         #解析完后换行
         resonFile.writelines('\n\n')
     #将解析的内容写入到文件
     resonFile.flush()
     #关闭文件流
     resonFile.close()
+    return globalValuesList
 
 if __name__ == '__main__':
     start = time.clock()
@@ -694,8 +690,8 @@ if __name__ == '__main__':
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
     current = ''
-    current = sep.join(['anr_papser','papser','LOG-495785'])
     current = sep.join(['anr_papser','papser','LOG-495785','NX627J_Z0_CN_WQM0P_V217','uzrUka.RhPN3hW.zip'])
+    current = sep.join(['anr_papser','papser','LOG-494973'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):
@@ -709,12 +705,12 @@ if __name__ == '__main__':
             parserZipLogDir(papserPath, removeDir=True)
         end = time.clock()
         time.strftime("%b %d %Y %H:%M:%S",)
-        print('---used {}----'.format(ToolUtils.getUsedTimeStr(start,end)))
+        print('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))
     else:
         papserPath = sep.join(['C:','Users','Administrator','Downloads','parse'])
         for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
             parserZipLogDir(foldPath, True)
         end = time.clock()
-        print('---used {}----'.format(ToolUtils.getUsedTimeStr(start,end)))
+        print('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))
 
 

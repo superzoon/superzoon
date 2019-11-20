@@ -1,4 +1,4 @@
-from threading import Thread, Lock
+from threading import (Thread, Lock, current_thread)
 from queue import Queue
 import time
 #用于线程同步
@@ -60,6 +60,45 @@ class LooperThread(WorkThread):
                 action = self.queue.get()
                 if action and callable(action):
                     action()
+
+
+__MAX_WORK_LOOPER__ = 4
+__WORK_THREADS__:LooperThread = list()
+__allWork__ = Queue(999)
+__Work_Done__ = Queue(999)
+
+if not __WORK_THREADS__:
+    for i in range(__MAX_WORK_LOOPER__):
+        thread:LooperThread = LooperThread()
+        thread.start()
+        __WORK_THREADS__.append(thread)
+
+def __doAction__(action):
+    def work():
+        print('working start in thread name : {}'.format(current_thread().getName()))
+        action()
+        print('working end in thread name : {}'.format(current_thread().getName()))
+        if not __allWork__.empty():
+            for work in __WORK_THREADS__:
+                if work.queue.empty():
+                    work.post(__allWork__.get())
+                    return
+        else:
+            while not __Work_Done__.empty():
+                callback = __Work_Done__.get()
+                callback()
+    return work
+
+def addWorkDoneCallback(callback):
+    __Work_Done__.put(callback)
+
+def postAction(action):
+    __allWork__.put(__doAction__(action))
+    for work in __WORK_THREADS__:
+        if work.queue.empty():
+            work.post(__allWork__.get())
+            return
+
 
 xx = lambda : not print('hello') and  time.sleep(0.1)
 
