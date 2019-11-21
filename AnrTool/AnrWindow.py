@@ -14,6 +14,7 @@ from tkinter import messagebox, Toplevel, Label, ttk
 import zipfile, time
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from datetime import datetime
+from AnrTool import DEFAULT_PACKAGE
 from configparser import ConfigParser
 current_dir = dirname(abspath(__file__))
 
@@ -23,7 +24,7 @@ VERSION_INI_FILE = EXE_PATH+'version.ini'
 
 CURRENT_VERSION = '1.0.000'
 CURRENT_UPDATE_CONTENT = '第一个版本'
-window = tk.Tk()
+
 class GressBar():
 
 	def start(self, title='解析ANR',lableTxt='任务正在运行中,请稍等……'):
@@ -93,6 +94,7 @@ def updateExe():
 if __name__ == '__main__':
     height = 600
     width = 800
+    window = tk.Tk()
     window.title('Anr 工具')
     window.resizable(0, 0)
     ico = sep.join(['res',"anr.ico"])
@@ -118,11 +120,18 @@ if __name__ == '__main__':
 
     select = tk.IntVar()
     select.set(0)
-    tip = tk.Label(window, font=('Arial', 12), height=2)
     h = h+50
-    tip.place(x=width/2, y=h, anchor='n')
-    w = width/4
-    h = h+55
+    packageLabel = tk.Label(window, text='包名:', font=('Arial', 14))
+    packageLabel.place(x=160, y=h, anchor='nw',width=80, height=40)
+    packageEntry = tk.Entry(window, show='',  font=('Arial', 14))
+    packageEntry.place(x=250, y=h, anchor='nw',width=400, height=40)
+    packageEntry.insert('insert', DEFAULT_PACKAGE)
+
+    w = 360
+    h = h+50
+    tip = tk.Label(window, font=('Arial', 12), height=2)
+    tip.place(x=w, y=h, anchor='nw')
+    h = h+5
     def select_radio():
         value = select.get()
         print()
@@ -136,12 +145,16 @@ if __name__ == '__main__':
             selse_button.config(text='文件夹')
             tip.config(text='解析解析目录下所有anr文件(例如:/项目)')
 
+
+    w = w-100
     rb1 = tk.Radiobutton(window, text="单个Anr", variable=select, value=0 , command=select_radio)
-    rb1.place(x=width/2-w, y=h, anchor='nw')
+    rb1.place(x=w, y=h, anchor='nw')
+    w = w-100
     rb2 = tk.Radiobutton(window, text="多个Anr", variable=select, value=1, command=select_radio)
-    rb2.place(x=width/2, y=h, anchor='n')
+    rb2.place(x=w, y=h, anchor='nw')
+    w = w-100
     rb3 = tk.Radiobutton(window, text="多个Jira", variable=select, value=2, command=select_radio)
-    rb3.place(x=width/2+w, y=h, anchor='ne')
+    rb3.place(x=w, y=h, anchor='nw')
 
     h = h+50
     text_view = tk.Text(window)
@@ -164,6 +177,10 @@ if __name__ == '__main__':
     def parserAnr():
         value = select.get()
         file_path = entry.get()
+        packageName = packageEntry.get().strip()
+        if not packageName:
+            packageName = DEFAULT_PACKAGE
+            packageEntry.insert('insert', packageName)
         bar = GressBar()
         addWorkDoneCallback(lambda :bar.quit())
         print("parserAnr start")
@@ -176,7 +193,7 @@ if __name__ == '__main__':
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
                     def parse():
-                        globalValue = parseZipLog(file_path, resonFile, removeDir=True)
+                        globalValue = parseZipLog(file_path, resonFile, packageName=packageName, removeDir=True)
                         resonFile.flush()
                         resonFile.close()
                         if len(globalValue.showMessage) > 0:
@@ -195,7 +212,7 @@ if __name__ == '__main__':
                 text_view.delete('1.0','end')
                 try:
                     def parse():
-                        globalValuesList = parserZipLogDir(file_path, removeDir=True)
+                        globalValuesList = parserZipLogDir(file_path, packageName=packageName, removeDir=True)
                         showMessages = ['\n'.join(globalValues.showMessage) for globalValues in globalValuesList if len(globalValues.showMessage)>0 ]
                         if len(showMessages) > 0:
                             text_view.insert('insert','\n'.join(showMessages))
@@ -216,7 +233,7 @@ if __name__ == '__main__':
                     def getAction(path):
                         def action():
                             if isdir(path):
-                                globalValuesList = parserZipLogDir(path, True)
+                                globalValuesList = parserZipLogDir(path, packageName=packageName, removeDir=True)
                                 showMessages = ['\n'.join(globalValues.showMessage) for globalValues in globalValuesList if len(globalValues.showMessage)>0 ]
                                 if len(showMessages) > 0:
                                     text_view.insert('insert','\n'.join(showMessages))

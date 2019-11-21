@@ -19,14 +19,30 @@ def parseSurfaceFlinger(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not line.globalValues.pidMap.__contains__(line.pid):
         line.globalValues.pidMap[line.pid] = line.tag
 
+# '09-26 02:04:14.363   928   928 E         : freezerd, set_thread_freeze_state, freeze=0, pid=29086, num=139'
+def parseNoTag(allAnr :Anr, allLine:LogLine, line:LogLine):
+    match = re.match('freezerd, set_thread_freeze_state.*\ pid=([\d]+)[^\d].*', line.msg)
+    isParsed = False
+    if match:
+        pid = int(match.group(1))
+        for anr in allAnr:
+            if anr.pid == pid:
+                line.isFreezerd = True
+                line.isFreezerdPid = pid
+                allLine.append(line)
+                isParsed = True
+                break
+    return isParsed
+
 # IPCThreadState: IPCThreadState, binder thread pool (4 threads) starved for 9276 ms
 # IPCThreadState: IPCThreadState, Waiting for thread to be free. mExecutingThreadsCount=32 mMaxThreads=31
+#'IPCThreadState: set_thread_freeze_state, freeze=1, pid=29086, num=152'
 pattern_ipc1 = '^.*IPCThreadState, binder thread pool.* ([\d|\.]+)[\ ]?ms.*'
 pattern_ipc2 = '^.*IPCThreadState, Waiting.*mExecutingThreadsCount=([\d]+) mMaxThreads=([\d]+).*'
+pattern_ipc3 = '^.*set_thread_freeze_state.*\ pid=([\d]+)[^\d].*'
 def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParsed = False
     line.isIPCLine = True
-    log(line.line)
     match = re.match(pattern_ipc1, line.msg)
     if match:
         delay = float(match.group(1))
@@ -50,6 +66,18 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
                     allLine.append(line)
                     isParsed = True
                     break
+    if not isParsed:
+        match = re.match(pattern_ipc3, line.msg)
+        if match:
+            pid = int(match.group(1))
+            for anr in allAnr:
+                if anr.pid == pid:
+                    line.isFreezerd = True
+                    line.isFreezerdPid = pid
+                    allLine.append(line)
+                    isParsed = True
+                    break
+
     return isParsed
 
 # Slow dispatch took 12050ms main h=com.android.server.job.JobSchedulerService$JobHandler c=null m=1
@@ -416,6 +444,12 @@ def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_
     if not isParsed and tag.strip() == 'SurfaceFlinger'.strip().lower():
         isParsed = parseSurfaceFlinger(allAnr, allLine, line)
 
+    ##########################pid log###########################
+    #保存SF的pid
+    if not isParsed and len(tag.strip()) == 0:
+        isParsed = parseNoTag(allAnr, allLine, line)
+
+
     ##########################解析完成###########################
     #如果有解析则打印该行
     if isParsed:
@@ -659,7 +693,7 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
         rmtree(tempDir)
     return globalValues
 
-def parserZipLogDir(foldPath, removeDir = True):
+def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True):
     #打印需要解析的路径
     print("--parserZipLogDir thread={} foldPath={}".format(current_thread().getName(), foldPath))
     #获取该路径下所有的zip文件
@@ -675,7 +709,7 @@ def parserZipLogDir(foldPath, removeDir = True):
         #在文件输出解析zip的名称
         resonFile.writelines('{}.{}\n\n'.format(str(zipPoint), abspath(zipFile)[len(dirname(foldPath)) + 1:]))
         #解析zip log
-        globalValuesList.append(parseZipLog(zipFile, resonFile, removeDir=removeDir))
+        globalValuesList.append(parseZipLog(zipFile, resonFile, packageName = packageName, removeDir=removeDir))
         #解析完后换行
         resonFile.writelines('\n\n')
     #将解析的内容写入到文件
@@ -692,6 +726,7 @@ if __name__ == '__main__':
     current = ''
     current = sep.join(['anr_papser','papser','LOG-495785','NX627J_Z0_CN_WQM0P_V217','uzrUka.RhPN3hW.zip'])
     current = sep.join(['anr_papser','papser','LOG-494067'])
+    current = sep.join(['anr_papser','test'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):

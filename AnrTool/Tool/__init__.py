@@ -2,7 +2,6 @@ import re
 import time
 from Tool import *
 from Tool import toolUtils
-
 DEF_MAX_DELAY_TIME = 1000
 
 SHOW_LOG = False
@@ -18,6 +17,8 @@ class GlobalValues:
         self.showMessage = list()
         self.year = '2000'
 
+GLOBAL_VALUES = GlobalValues()
+
 class LogLine():
     '''
     10-11 07:10:00.024  1303  1303 V SettingsProvider: Notifying for 0: content://settings/system/next_alarm_formatted
@@ -25,7 +26,7 @@ class LogLine():
     '''
     pattern= '^([\d]{2}-[\d]{2}[\ ]+[\d|:|\.]+)[\ ]+([\d|\ ]+)[\ ]+([\d|\ ]+)[\ ]+([\w])[\ ](.*)'
 
-    def __init__(self, line: str, linenum:int, globalValues:GlobalValues):
+    def __init__(self, line: str, linenum:int = 0, globalValues:GlobalValues = GLOBAL_VALUES):
         self.globalValues = globalValues
         self.line = line
         self.linenum = linenum
@@ -52,6 +53,7 @@ class LogLine():
             print(line)
 
     def initOther(self):
+        self.isFreezerd = False
         self.isIPCLine = False
         self.isGslMmapFailed = False
         self.isGslIoctlFailed = False
