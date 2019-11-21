@@ -182,14 +182,28 @@ if __name__ == '__main__':
             packageName = DEFAULT_PACKAGE
             packageEntry.insert('insert', packageName)
         bar = GressBar()
-        addWorkDoneCallback(lambda :bar.quit())
+
+        def downCallback():
+            time.sleep(1)
+            bar.quit()
+            start_file = ''
+            if value == 0 :
+                start_file = sep.join([dirname(abspath(file_path)), 'reason.txt'])
+            elif value == 1 :
+                start_file = sep.join([file_path, 'reason.txt'])
+            elif value == 2 :
+                start_file = file_path
+            if exists(start_file):
+                startfile(start_file)
+        addWorkDoneCallback(downCallback)
         print("parserAnr start")
         if value == 0 :
             # tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
             if zipfile.is_zipfile(file_path):
                 text_view.delete('1.0', 'end')
                 foldPath = dirname(abspath(file_path))
-                resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
+                fileTxt = sep.join([foldPath, 'reason.txt'])
+                resonFile = open(file=fileTxt, mode='w', encoding='utf-8')
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
                     def parse():
@@ -200,8 +214,8 @@ if __name__ == '__main__':
                             text_view.insert('insert','\n'.join(globalValue.showMessage))
                         else:
                             text_view.insert('insert','解析完成')
+
                     postAction(action=parse)
-                    # WorkThread(action=parse).start()
                 except:
                     print("Error: unable to start thread")
                 bar.start()
@@ -219,8 +233,9 @@ if __name__ == '__main__':
                             text_view.insert('insert','\n'.join(showMessages))
                         else:
                             text_view.insert('insert','解析完成')
+                        fileTxt = sep.join([file_path,'reason.txt'])
+
                     postAction(action=parse)
-                    # WorkThread(action=parse).start()
                 except:
                     print("Error: unable to start thread")
                 bar.start()
@@ -243,13 +258,11 @@ if __name__ == '__main__':
                         return action
                     try:
                         postAction(getAction(foldPath))
-                        # WorkThread(action=parse).start()
                     except:
                         print("Error: unable to start thread")
                 bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
-        print(entry.get())
         print("parserAnr end")
     selse_button = tk.Button(window, text='文件/文件夹', font=('Arial', 10), width=10, height=2, command=selectPath)
     selse_button.place(x=width/10-30, y=h, anchor='nw')
