@@ -22,8 +22,8 @@ EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
 AnrTool_FILE = EXE_PATH+'AnrTool.zip'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.000'
-CURRENT_UPDATE_CONTENT = '第一个版本'
+CURRENT_VERSION = '1.0.001'
+CURRENT_UPDATE_CONTENT = '修复空文件显示进度条问题'
 
 class GressBar():
 
@@ -204,6 +204,7 @@ if __name__ == '__main__':
                     # WorkThread(action=parse).start()
                 except:
                     print("Error: unable to start thread")
+                bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择anr的zip包！')
         elif value == 1:
@@ -222,8 +223,10 @@ if __name__ == '__main__':
                     # WorkThread(action=parse).start()
                 except:
                     print("Error: unable to start thread")
+                bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
+
 
         if value == 2:
             # tip.config(text='解析解析目录下所有anr文件(例如:/项目)')
@@ -243,11 +246,11 @@ if __name__ == '__main__':
                         # WorkThread(action=parse).start()
                     except:
                         print("Error: unable to start thread")
+                bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
         print(entry.get())
         print("parserAnr end")
-        bar.start()
     selse_button = tk.Button(window, text='文件/文件夹', font=('Arial', 10), width=10, height=2, command=selectPath)
     selse_button.place(x=width/10-30, y=h, anchor='nw')
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)
