@@ -51,6 +51,7 @@ class GressBar():
 
 def updateExe():
     update = False
+    version = ''
     if isfile(VERSION_INI_FILE):
         customerConf = ConfigParser()
         customerConf.read(VERSION_INI_FILE)
@@ -60,8 +61,9 @@ def updateExe():
             current_version = int(''.join(CURRENT_VERSION.split('.')))
             if remote_version > current_version:
                 update = True
+                version = 'v{}'.format(defaultConf['version'])
     if update:
-        ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本！')
+        ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本{}！'.format(version))
         if ret == 'yes' or str(ret) == 'Ture':
             file_path = askdirectory()
             bar = GressBar()
