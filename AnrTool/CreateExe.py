@@ -9,10 +9,10 @@ import re
 from AnrWindow import EXE_PATH, VERSION_INI_FILE
 AnrTool_FILE = EXE_PATH+'AnrTool/AnrWindow.exe'
 
-def getVersion():
+def getVersion(pyName='AnrWindow.py'):
     CURRENT_VERSION = '1.0.001'
     pattrn = 'CURRENT_VERSION = \'([\.|\d]+)\'.*'
-    anr_py = sep.join([dirname(abspath(__file__)), 'AnrWindow.py'])
+    anr_py = sep.join([dirname(abspath(__file__)), pyName])
     for line in open(anr_py,encoding=checkFileCode(anr_py)).readlines():
         match = re.match(pattrn, line)
         if match:
