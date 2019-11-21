@@ -661,7 +661,7 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
 
 def parserZipLogDir(foldPath, removeDir = True):
     #打印需要解析的路径
-    print("-----parserZipLogDir foldPath={}".format(foldPath))
+    print("--parserZipLogDir thread={} foldPath={}".format(current_thread().getName(), foldPath))
     #获取该路径下所有的zip文件
     allZips = [file for file in toolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
     #创建该路径下的reason文件，用于保存解析结果
@@ -691,7 +691,7 @@ if __name__ == '__main__':
     current = 'NX627JV2B-1080'
     current = ''
     current = sep.join(['anr_papser','papser','LOG-495785','NX627J_Z0_CN_WQM0P_V217','uzrUka.RhPN3hW.zip'])
-    current = sep.join(['anr_papser','papser','LOG-494973'])
+    current = sep.join(['anr_papser','papser','LOG-494067'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):

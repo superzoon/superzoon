@@ -90,9 +90,9 @@ class TracesLog():
 
     def getBolckStack(self):
         threadStack = []
-        for stack in [stack for stack in self.pid_stack if stack.packageName == self.packageName]:
+        for stack in [stack for stack in self.pid_stack if stack.getMainStack() and stack.packageName == self.packageName]:
             threadStack.append(stack.getMainStack())
-        if len(threadStack)>=2 and threadStack[0].javaStacks == threadStack[1].javaStacks:
+        if len(threadStack)>=2 and threadStack[0].javaStacks == threadStack[1].javaStacks and threadStack[0].javaStacks:
             return threadStack[0]
         return None
 

@@ -22,6 +22,18 @@ def getNextItem(array, item, defItem):
         return array[index+1]
     return defItem
 
+def zip_single(src_file, dest_zip):
+    z = zipfile.ZipFile(dest_zip, 'w')
+    cwd = os.getcwd()
+    os.chdir(src_file)
+    for root_path, dir_names, file_names in os.walk('.'):
+        for fn in file_names:
+            file = os.path.join(root_path, fn)
+            print(file)
+            z.write(file)
+    z.close()
+    os.chdir(cwd)
+
 def unzip_single(src_file, dest_dir, password = None):
     ''' 解压单个文件到目标文件夹。'''
     LockUtil.acquire(UNZIP_LOCK)

@@ -1,30 +1,37 @@
-
 import tkinter as tk
 from tkinter import (PhotoImage, Frame)
-from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
+from os import (startfile, walk, path, listdir, popen, remove, rename, makedirs, chdir)
 import base64
 from subprocess import call
 from zipfile import ZipFile
+from shutil import (rmtree, copyfile)
 import threading
+from tkinter.filedialog import askdirectory, askopenfilename
 from AnrTool import parseZipLog, parserZipLogDir, GlobalValues
 from Tool.workThread import WorkThread
 from Tool.workThread import (postAction, addWorkDoneCallback)
 from tkinter import messagebox, Toplevel, Label, ttk
-import zipfile
+import zipfile, time
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
-
+from datetime import datetime
+from configparser import ConfigParser
 current_dir = dirname(abspath(__file__))
 
-#    call('pyinstaller -w -F -i res\anr.ico AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool')
+EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
+AnrTool_FILE = EXE_PATH+'AnrTool.zip'
+VERSION_INI_FILE = EXE_PATH+'version.ini'
 
+CURRENT_VERSION = '1.0.000'
+
+window = tk.Tk()
 class GressBar():
 
-	def start(self):
+	def start(self, title='解析ANR',lableTxt='任务正在运行中,请稍等……'):
 		top = Toplevel()
 		self.master = top
 		top.overrideredirect(True)
-		top.title("解析ANR")
-		Label(top, text="任务正在运行中,请稍等……", fg="green").pack(pady=2)
+		top.title(title)
+		Label(top, text=lableTxt, fg="green").pack(pady=2)
 		prog = ttk.Progressbar(top, mode='indeterminate', length=200)
 		prog.pack(pady=10, padx=35)
 		prog.start()
@@ -41,10 +48,40 @@ class GressBar():
 		if self.master:
 			self.master.destroy()
 
+
+def updateExe():
+    update = False
+    if isfile(VERSION_INI_FILE):
+        customerConf = ConfigParser()
+        customerConf.read(VERSION_INI_FILE)
+        defaultConf = customerConf.defaults()
+        if 'version' in defaultConf:
+            remote_version = int(''.join(defaultConf['version'].split('.')))
+            current_version = int(''.join(CURRENT_VERSION.split('.')))
+            if remote_version > current_version:
+                update = True
+    if update:
+        ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本！')
+        if ret == 'yes' or str(ret) == 'Ture':
+            file_path = askdirectory()
+            bar = GressBar()
+            def copyAnrTool():
+                zip_file = sep.join([file_path, 'AnrTool.zip'])
+                copyfile(AnrTool_FILE, zip_file)
+                time.sleep(3)
+                if isfile(zip_file):
+                    startfile(zip_file)
+                else:
+                    tk.messagebox.showinfo(title='提示', message='下载失败！')
+                bar.quit()
+
+            WorkThread(action=copyAnrTool).start()
+            bar.start('更新软件','正在下载......')
+
+
 if __name__ == '__main__':
     height = 600
     width = 800
-    window = tk.Tk()
     window.title('Anr 工具')
     window.resizable(0, 0)
     ico = sep.join(['res',"anr.ico"])
@@ -102,7 +139,6 @@ if __name__ == '__main__':
     entry = tk.Entry(window, show=None, font=('Arial', 14))  # 显示成明文形式
     entry.place(x=width/10+65, y=h, anchor='nw', width=500, height=40)
     def selectPath():
-        from tkinter.filedialog import askdirectory, askopenfilename
         value = select.get()
         file_path = None
         if value == 0:
@@ -189,6 +225,8 @@ if __name__ == '__main__':
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)
     parser_button.place(x=width-140, y=h, anchor='nw')
     select_radio()
+    ##########检查更新#########
+    updateExe()
     window.mainloop()
 
 def testImage():
