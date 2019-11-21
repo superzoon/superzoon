@@ -19,6 +19,16 @@ def getVersion(pyName='AnrWindow.py'):
             CURRENT_VERSION = match.group(1)
     return CURRENT_VERSION
 
+def getUpdateContent(pyName='AnrWindow.py'):
+    CURRENT_UPDATE_CONTENT = '1.0.001'
+    pattrn = 'CURRENT_UPDATE_CONTENT = \'(.*)\'.*'
+    anr_py = sep.join([dirname(abspath(__file__)), pyName])
+    for line in open(anr_py,encoding=checkFileCode(anr_py)).readlines():
+        match = re.match(pattrn, line)
+        if match:
+            CURRENT_UPDATE_CONTENT = match.group(1)
+    return CURRENT_UPDATE_CONTENT
+
 def create_decorator(func):
     def decorator(ico_path, *args, **kwargs):
         if ico_path and isfile(ico_path) and ico_path.endswith('.ico'):
@@ -39,6 +49,8 @@ def createAnrWindowExe(ico:str = None):
         defaultConf = customerConf.defaults()
         defaultConf['update_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         defaultConf['version'] = getVersion()
+        defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent()
+        defaultConf['content'] = defaultConf['v{}'.format(defaultConf['version'])]
         customerConf.write(open(VERSION_INI_FILE, mode='w'))
         if isdir('dist'):
             rmtree('dist')

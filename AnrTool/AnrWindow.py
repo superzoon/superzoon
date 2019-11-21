@@ -22,7 +22,7 @@ AnrTool_FILE = EXE_PATH+'AnrTool.zip'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
 CURRENT_VERSION = '1.0.000'
-
+CURRENT_UPDATE_CONTENT = '第一个版本'
 window = tk.Tk()
 class GressBar():
 
@@ -52,18 +52,27 @@ class GressBar():
 def updateExe():
     update = False
     version = ''
+    content = ''
     if isfile(VERSION_INI_FILE):
         customerConf = ConfigParser()
         customerConf.read(VERSION_INI_FILE)
         defaultConf = customerConf.defaults()
+        def versionToInt(version:str):
+            vint = 0
+            for istr in version.split('.'):
+                vint = vint*1000+int(istr)
+            return vint
         if 'version' in defaultConf:
-            remote_version = int(''.join(defaultConf['version'].split('.')))
-            current_version = int(''.join(CURRENT_VERSION.split('.')))
+            versionToInt(defaultConf['version'])
+            remote_version = versionToInt(defaultConf['version'])
+            current_version = versionToInt(CURRENT_VERSION)
             if remote_version > current_version:
                 update = True
                 version = 'v{}'.format(defaultConf['version'])
+        if 'content' in defaultConf:
+            content = defaultConf['content']
     if update:
-        ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本{}！'.format(version))
+        ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本{}?\n\n{}'.format(version,content))
         if ret == 'yes' or str(ret) == 'Ture':
             file_path = askdirectory()
             bar = GressBar()
