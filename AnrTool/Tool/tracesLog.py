@@ -13,6 +13,7 @@ class ThreadStack:
         self.javaStacks = []
         self.pid = pid
         self.top = top
+        self.isBlock = False
 
     def addLine(self, line:str):
         isParser = False
@@ -92,7 +93,16 @@ class TracesLog():
         threadStack = []
         for stack in [stack for stack in self.pid_stack if stack.getMainStack() and stack.packageName == self.packageName]:
             threadStack.append(stack.getMainStack())
-        if len(threadStack)>=2 and threadStack[0].javaStacks == threadStack[1].javaStacks and threadStack[0].javaStacks:
+        if len(threadStack)>=2 :
+            if  threadStack[0].javaStacks == threadStack[1].javaStacks:
+                if threadStack[0].javaStacks and not threadStack[0].isBlock:
+                    threadStack[0].isBlock = True
+                    threadStack[0].top = threadStack[0].top+' --> 阻塞Stack'
+                if threadStack[1].javaStacks and not threadStack[1].isBlock:
+                    threadStack[1].isBlock = True
+                    threadStack[1].top = threadStack[1].top+' --> 阻塞Stack'
+            return threadStack[0]
+        elif len(threadStack)==1 and threadStack[0].javaStacks:
             return threadStack[0]
         return None
 
