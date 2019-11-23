@@ -2,11 +2,8 @@ import http.cookiejar
 import urllib.request
 import sys
 import io
+import json
 if __name__ == '__main__':
-    Request_URL = 'http://log-list.server.nubia.cn/'
-    cookieName = 'task_username'
-    uv = 'common'
-    pv = 'common'
     # cookie = http.cookiejar.CookieJar()
     # cookie.set(cookieName, uv, 2678400)
     # 改变标准输出的默认编码
@@ -43,8 +40,21 @@ if __name__ == '__main__':
     #构造访问请求
     req = urllib.request.Request(url, headers = headers)
     resp = opener.open(req)
-    print(resp.read().decode('utf-8'))
-
+    text = json.loads(resp.read().decode('utf-8'))
+    print(text)
+    print(text['code'])
+    print(text['message'])
+    print(text['data'])
+    print(text['data']['total'])
+    print(text['data']['offset'])
+    print(text['data']['limit'])
+    print(text['data']['sort'])
+    for row in text['data']['rows']:
+        print(row['hbaseRowid'])
+        print(row['imei'])
+        print(row['rooted'])
+        print(row['keyInfo'])
+    exit(0)
     url = 'http://log-list.server.nubia.cn/log/download/bxoICc.RiYQvnJ.do'
 
     req = urllib.request.Request(url, headers = headers)

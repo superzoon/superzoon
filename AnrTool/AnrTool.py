@@ -611,7 +611,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             # 输出阻塞的堆栈
         for stack in [stack for item in blockStacks if str(item.pid) == str(anr.pid)]:
             if stack:
-                temp = '\t\njava栈:' + '\t\n\t' + stack.top + '\n'
+                temp = '\t\npid = '+stack.pid+' main java栈:' + '\t\n\t' + stack.top + '\n'
                 globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
                 temp = '\t\t' + '\n\t\t'.join(stack.javaStacks if len(stack.javaStacks) < 10 else stack.javaStacks[0:10])
@@ -668,8 +668,9 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     log('####################end write######################')
     return globalValues
 
-def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True):
-    print("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
+def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
+    log("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
+    callbackMsg(basename(fileName))
     #如果不是pid文件则不解析
     if not zipfile.is_zipfile(fileName):
         exit(-1)
@@ -693,7 +694,7 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
         rmtree(tempDir)
     return globalValues
 
-def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True):
+def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
     #打印需要解析的路径
     print("--parserZipLogDir thread={} foldPath={}".format(current_thread().getName(), foldPath))
     #获取该路径下所有的zip文件
@@ -709,7 +710,7 @@ def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True):
         #在文件输出解析zip的名称
         resonFile.writelines('{}.{}\n\n'.format(str(zipPoint), abspath(zipFile)[len(dirname(foldPath)) + 1:]))
         #解析zip log
-        globalValuesList.append(parseZipLog(zipFile, resonFile, packageName = packageName, removeDir=removeDir))
+        globalValuesList.append(parseZipLog(zipFile, resonFile, packageName = packageName, removeDir=removeDir, callbackMsg=callbackMsg))
         #解析完后换行
         resonFile.writelines('\n\n')
     #将解析的内容写入到文件
@@ -733,11 +734,11 @@ if __name__ == '__main__':
             foldPath = dirname(abspath(papserPath))
             resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
             resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(papserPath)[len(dirname(foldPath)) + 1:]))
-            parseZipLog(papserPath, resonFile, removeDir=True)
+            parseZipLog(papserPath, resonFile, removeDir=True,callbackMsg=lambda msg:print('解析{}'.format(msg)))
 
             resonFile.writelines('\n\n')
         else:
-            parserZipLogDir(papserPath, removeDir=True)
+            parserZipLogDir(papserPath, removeDir=True,callbackMsg=lambda msg:print('解析{}'.format(msg)))
         end = time.clock()
         time.strftime("%b %d %Y %H:%M:%S",)
         print('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))

@@ -22,32 +22,41 @@ EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
 AnrTool_FILE = EXE_PATH+'AnrTool.zip'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.001'
-CURRENT_UPDATE_CONTENT = '修复空文件显示进度条问题'
+CURRENT_VERSION = '1.0.002'
+CURRENT_UPDATE_CONTENT = '修复空文件显示进度条问题,添加进度条显示当前解析文件'
 
 class GressBar():
+    def __init__(self):
+        self.master = Toplevel()
+        self.tipLable = tk.Label(self.master, text='任务进行中', fg="green")
+        self.isLoop = False
 
-	def start(self, title='解析ANR',lableTxt='任务正在运行中,请稍等……'):
-		top = Toplevel()
-		self.master = top
-		top.overrideredirect(True)
-		top.title(title)
-		Label(top, text=lableTxt, fg="green").pack(pady=2)
-		prog = ttk.Progressbar(top, mode='indeterminate', length=200)
-		prog.pack(pady=10, padx=35)
-		prog.start()
-		top.resizable(False, False)
-		top.update()
-		curWidth = top.winfo_width()
-		curHeight = top.winfo_height()
-		scnWidth, scnHeight = top.maxsize()
-		tmpcnf = '+%d+%d' % ((scnWidth - curWidth) / 2, (scnHeight - curHeight) / 2)
-		top.geometry(tmpcnf)
-		top.mainloop()
+    def start(self, title='解析ANR',lableTxt='任务正在运行中,请稍等……'):
+        top = self.master
+        top.overrideredirect(True)
+        top.title(title)
+        Label(top, text=lableTxt, fg="green").pack(pady=2)
+        prog = ttk.Progressbar(top, mode='indeterminate', length=200)
+        prog.pack(pady=10, padx=35)
+        prog.start()
+        self.tipLable.pack(pady=11)
+        top.resizable(False, False)
+        top.update()
+        curWidth = top.winfo_width()
+        curHeight = top.winfo_height()
+        scnWidth, scnHeight = top.maxsize()
+        tmpcnf = '+%d+%d' % ((scnWidth - curWidth) / 2, (scnHeight - curHeight) / 2)
+        top.geometry(tmpcnf)
+        self.isLoop = True
+        top.mainloop()
 
-	def quit(self):
-		if self.master:
-			self.master.destroy()
+    def updateMsg(self, msg:str):
+        if hasattr(self, 'tipLable'):
+            self.tipLable.config(text='正在解析{}'.format(msg))
+
+    def quit(self):
+        if self.isLoop:
+            self.master.destroy()
 
 
 def updateExe():
@@ -207,7 +216,7 @@ if __name__ == '__main__':
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
                     def parse():
-                        globalValue = parseZipLog(file_path, resonFile, packageName=packageName, removeDir=True)
+                        globalValue = parseZipLog(file_path, resonFile, packageName=packageName, removeDir=True, callbackMsg=bar.updateMsg)
                         resonFile.flush()
                         resonFile.close()
                         if len(globalValue.showMessage) > 0:
@@ -227,7 +236,7 @@ if __name__ == '__main__':
                 text_view.delete('1.0','end')
                 try:
                     def parse():
-                        globalValuesList = parserZipLogDir(file_path, packageName=packageName, removeDir=True)
+                        globalValuesList = parserZipLogDir(file_path, packageName=packageName, removeDir=True, callbackMsg=bar.updateMsg)
                         showMessages = ['\n'.join(globalValues.showMessage) for globalValues in globalValuesList if len(globalValues.showMessage)>0 ]
                         if len(showMessages) > 0:
                             text_view.insert('insert','\n'.join(showMessages))
@@ -251,7 +260,7 @@ if __name__ == '__main__':
                     def getAction(path):
                         def action():
                             if isdir(path):
-                                globalValuesList = parserZipLogDir(path, packageName=packageName, removeDir=True)
+                                globalValuesList = parserZipLogDir(path, packageName=packageName, removeDir=True, callbackMsg=bar.updateMsg)
                                 showMessages = ['\n'.join(globalValues.showMessage) for globalValues in globalValuesList if len(globalValues.showMessage)>0 ]
                                 if len(showMessages) > 0:
                                     text_view.insert('insert','\n'.join(showMessages))

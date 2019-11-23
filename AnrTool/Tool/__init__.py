@@ -3,7 +3,6 @@ import time
 from Tool import *
 from Tool import toolUtils
 DEF_MAX_DELAY_TIME = 1000
-
 SHOW_LOG = False
 
 def log(msg):
@@ -16,6 +15,21 @@ class GlobalValues:
         self.currentFile = ''
         self.showMessage = list()
         self.year = '2000'
+        self.callbacks = dict()
+
+    def setCallback(self,key:str, callback):
+        if key:
+            self.callbacks[key] = callback
+
+    def removeCallback(self,key:str):
+        if key and key in self.callback.keys():
+            self.callbacks[key] = None
+
+    def callbackFromKey(self, key:str, obj):
+        if key and key in self.callbacks.keys():
+            callback = self.callbacks[key]
+            if callback:
+                callback(obj)
 
 GLOBAL_VALUES = GlobalValues()
 
