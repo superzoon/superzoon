@@ -1,7 +1,9 @@
-import re
-import time
+import re, io, sys, time
 from Tool import *
 from Tool import toolUtils
+
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
+
 DEF_MAX_DELAY_TIME = 1000
 SHOW_LOG = False
 
@@ -16,6 +18,7 @@ class GlobalValues:
         self.showMessage = list()
         self.year = '2000'
         self.callbacks = dict()
+        self.opener = None
 
     def setCallback(self,key:str, callback):
         if key:

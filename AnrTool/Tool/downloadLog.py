@@ -1,64 +1,244 @@
 import http.cookiejar
+from http.client import HTTPResponse
 import urllib.request
-import sys
-import io
-import json
-if __name__ == '__main__':
-    # cookie = http.cookiejar.CookieJar()
-    # cookie.set(cookieName, uv, 2678400)
-    # 改变标准输出的默认编码
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf8')
-    # 登录时需要POST的数据
-    data = {'username': 'common',
-            'password': '888888',}
-    post_data = urllib.parse.urlencode(data).encode('utf-8')
-    # 设置请求头
-    headers = {
-        'User-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
-    }
-    # 登录时表单提交到的地址（用开发者工具可以看到）
-    login_url = 'http://log-list.server.nubia.cn/login/check.do'
-    # 构造登录请求
-    req = urllib.request.Request(login_url, headers=headers, data=post_data)
-    # 构造cookie
-    cookie = http.cookiejar.CookieJar()
-    # 由cookie构造opener
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie))
-    # 发送登录请求，此后这个opener就携带了cookie，以证明自己登录过
-    resp = opener.open(req)
-    print(resp.read().decode('utf-8'))
-    # cookie['task_username']='common'
-    # cookie.set(cookieName, uv, 2678400);
-    #登录后才能访问的网页
-    order='asc'
-    limit='15'
-    offset=1
-    jiraId='LOG-67680'
-    productVersion='NX629J_Z0_CN_VLF0P_V236'
-    hasFile='Y'
-    url = 'http://log-list.server.nubia.cn/log/list.do?order=asc&limit=15&offset=1&jiraId=LOG-67680&productVersion=NX629J_Z0_CN_VLF0P_V236&hasFile=Y'
-    #构造访问请求
-    req = urllib.request.Request(url, headers = headers)
-    resp = opener.open(req)
-    text = json.loads(resp.read().decode('utf-8'))
-    print(text)
-    print(text['code'])
-    print(text['message'])
-    print(text['data'])
-    print(text['data']['total'])
-    print(text['data']['offset'])
-    print(text['data']['limit'])
-    print(text['data']['sort'])
-    for row in text['data']['rows']:
-        print(row['hbaseRowid'])
-        print(row['imei'])
-        print(row['rooted'])
-        print(row['keyInfo'])
-    exit(0)
-    url = 'http://log-list.server.nubia.cn/log/download/bxoICc.RiYQvnJ.do'
+from urllib.request import OpenerDirector
+from queue import Queue
+from AnrTool import parseZipLog, parserZipLogDir, GlobalValues
+from Tool.workThread import postAction,addWorkDoneCallback, LockUtil
+import sys, io, json, zipfile, time, os
+from os import (startfile, walk, path, listdir, popen, remove, rename, makedirs, chdir)
+from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
+from shutil import (copytree, rmtree, copyfile, move)
+from Tool import GLOBAL_VALUES
+__HOST__URL__ = 'http://log-list.server.nubia.cn'
+__CHECK__URL__ = __HOST__URL__+'/login/check.do'
+__LIST__URL__ = __HOST__URL__+'/log/list.do?'
+__DOWN__URL__ = __HOST__URL__+'/log/download/{}.do'
 
-    req = urllib.request.Request(url, headers = headers)
-    resp = opener.open(req)
-    data = resp.read()
-    with open("bxoICc.RiYQvnJ.zip", "wb") as code:
-        code.write(data)
+headers = {
+    'User-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
+}
+lock = LockUtil.createThreadLock()
+def __createDir__(path:str):
+    LockUtil.acquire(lock)
+    if not isdir(path):
+        makedirs(path)
+    LockUtil.release(lock)
+
+def getOpener():
+    if not GLOBAL_VALUES.opener:
+        # 登录时需要POST的数据
+        data = {'username': 'common',
+                'password': '888888', }
+        post_data = urllib.parse.urlencode(data).encode('utf-8')
+        # 构造登录请求
+        req = urllib.request.Request(__CHECK__URL__, headers=headers, data=post_data)
+        # 构造cookie
+        cookie = http.cookiejar.CookieJar()
+        # 由cookie构造opener
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie))
+        # 发送登录请求，此后这个opener就携带了cookie，以证明自己登录过
+        resp:HTTPResponse = opener.open(req)
+        resp = json.loads(resp.read().decode('utf-8'))
+        if 'code' in 'code' and resp['code'] == 0:
+            GLOBAL_VALUES.opener = opener
+            GLOBAL_VALUES.cookie = cookie
+    return GLOBAL_VALUES.opener
+
+
+
+class __JiraLog__():
+
+    def __init__(self, row:dict):
+        '''
+        :param row: msg dict
+        '''
+        self.logType = row['logType']
+        self.severity = row['severity']
+        self.productModel = row['productModel']
+        self.featureCode = row['featureCode']
+        self.logId = row['hbaseRowid']
+        self.softwareVersion = row['specialVersion']
+        self.logSubType = row['logSubType']
+        self.packageName = row['keyInfo']
+        self.platform = row['platform']
+        self.productVersion = row['productVersion']
+        self.reportDate = row['reportDate']
+        self.androidVersion = row['androidVersion']
+        self.jiraId = row['jiraId']
+        self.imei = row['imei']
+        self.rooted = row['rooted']
+        row['url'] = self.getUrl()
+        self.title = '\t'.join(row.keys())
+        self.msg = '\t'.join(row.values())
+
+    def __str__(self, showTitle = False):
+        if hasattr(self, 'msg'):
+            if showTitle:
+                return '\n'.join([self.title, self.msg])
+            else:
+                return self.msg
+        return None
+
+    def getUrl(self):
+        return __DOWN__URL__.format(self.logId)
+
+    def download(self, path):
+        __createDir__(path)
+        fileName = sep.join([path, self.logId+'.zip'])
+        if zipfile.is_zipfile(fileName):
+            return False
+        temp = fileName+'__temp'
+        req = urllib.request.Request(self.getUrl(), headers = headers)
+        resp = getOpener().open(req)
+        if 'zip' in resp.headers['Content-Type']:
+            data = resp.read()
+            with open(temp, "wb") as code:
+                code.write(data)
+            if zipfile.is_zipfile(temp):
+                ##############start lock#############
+                LockUtil.acquire(lock)
+                z = zipfile.ZipFile(temp, 'a')
+                readme = self.logId+'.txt'
+                print(abspath(readme))
+                with open(readme, "w") as code:
+                    code.write(self.__str__(showTitle=True))
+                    code.flush()
+                    code.close()
+                z.write(readme)
+                remove(readme)
+                z.close()
+                LockUtil.release(lock)
+                ##############end lock#############
+                move(temp, fileName)
+                return True
+            else:
+                rmtree(temp)
+        return False
+
+    @classmethod
+    def parJson(cls, resp:dict):
+        code:int = resp['code']
+        message:str = resp['message']
+        data:dict = resp['data']
+        total:int = data['total']
+        offset:int = data['offset']
+        limit:int = data['limit']
+        sort:str = data['sort']
+        rows = data['rows']
+        logs:__JiraLog__ = []
+        if code == 0:
+            for row in rows:
+                log = __JiraLog__(row)
+                logs.append(log)
+        return total, logs
+
+def inList(log: __JiraLog__, list: __JiraLog__):
+    for item in list:
+        if item.logId == log.logId:
+            return True
+    return False
+
+def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
+    '''
+    :param jiraId:
+    :param productModel: 机器型号
+    :param order: reportDate desc asc 多个使用空格隔开
+    :param limit: 请求分页数目为多少
+    :param productVersion:版本号
+    :param tfsId:logid
+    :param hasFile:服务器是否有保存文件
+    :return:所有可下载的log信息
+    '''
+    'order=asc&limit=30&offset=0&productModel=NX629J&jiraId=LOG-67680&productVersion=NX629J_Z0_CN_VLF0P_V234&hasFile=Y'
+    if callbackMsg:
+        callbackMsg('获取jira信息。。。')
+    filters = list()
+    #{productVersion:[{hbaseRowid:json},{hbaseRowid:json}]}
+    allLog:__JiraLog__ = list()
+    logD = dict()#{proedctVersion:[log]}
+    filters.append('order={}'.format(order))
+    filters.append('limit={}'.format(limit))
+    filters.append('offset={}')
+    filters.append('productModel={}'.format(productModel))
+    if tfsId:
+        filters.append('tfsId={}'.format(tfsId))
+    filters.append('jiraId={}'.format(jiraId))
+    if productVersion:
+        filters.append('productVersion={}'.format(productVersion))
+    filters.append('hasFile={}'.format(hasFile))
+    '''
+    url = 'http://log-list.server.nubia.cn/log/list.do?order=asc&limit=30&' \
+          'offset=0&productModel=NX629J&tfsId=jEUd8c.RhJxQN&jiraId=LOG-495986&productVersion=NX629J_Z0_CN_VLF0P_V235&hasFile=Y'
+    '''
+    for i in range(5):
+        url = __LIST__URL__+'&'.join(filters).format(i)
+        req = urllib.request.Request(url, headers=headers)
+        resp: HTTPResponse = getOpener().open(req)
+        text = json.loads(resp.read().decode('utf-8'))
+        total, logs = __JiraLog__.parJson(text)
+        if not logs:
+            break
+        for log in logs:
+            if not inList(log , allLog):
+                allLog.append(log)
+        if len(logs) == 0 or len(allLog) >= total:
+            break
+    return allLog
+
+def __download__log(jiraId:str, productModel:str, outPath:str, callbackMsg = None, async = False, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
+    '''
+    最终下载路径outPath/jiraId/productModel/productVersion/logId.zip
+    outPath/LOG-67680/NX629J_Z0_CN_VLF0P_V234/YroBCa.Rah5LxM.zip
+    '''
+    if not isdir(outPath):
+        __createDir__(outPath)
+    logs:__JiraLog__= getAllJiraLog(jiraId, productModel, callbackMsg, order, limit, productVersion, tfsId, hasFile)
+    if callbackMsg:
+        callbackMsg('开始下载。。。')
+    logDict = dict()#{productModel:{productVersion:[logId]}}
+    parserPath = None
+    for log in logs:
+        if not parserPath:
+            parserPath = sep.join([outPath, log.jiraId])
+        model = log.productModel
+        version = log.productVersion
+        if not model in logDict.keys():
+            logDict[model] = dict()
+        modelDict = logDict[model]
+        if not version in modelDict.keys():
+            modelDict[version] = list()
+        logList = modelDict[version]
+        if not inList(log, logList):
+            logList.append(log)
+    if async:
+        queue = Queue(1)
+        addWorkDoneCallback(lambda :queue.put('下载完成') )
+    for model, versions in logDict.items():
+        for version in sorted(versions.keys(), reverse=True):
+            def getAction(__model__, __version__):
+                def downloadAction():
+                    logs = logDict[__model__][__version__]
+                    for log in logs:
+                        path = sep.join([outPath, log.jiraId, __version__])
+                        if callbackMsg:
+                            callbackMsg('下载{}'.format(log.logId))
+                            log.download(path)
+                    if isdir(path) and len(listdir(path))==0:
+                        rmtree(path)
+                return downloadAction
+            action = getAction(model,version)
+            if async:
+                postAction(action)
+            else:
+                action()
+    if async:
+        print(queue.get())
+        time.sleep(10)
+    globalValuesList = parserZipLogDir(parserPath, removeDir=True, callbackMsg=callbackMsg)
+    return globalValuesList
+
+if __name__ == '__main__':
+    print('启动程序')
+    __download__log('LOG-67680','NX629J','./', callbackMsg=lambda x:print(x))
+    exit()

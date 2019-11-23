@@ -670,7 +670,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
 
 def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
     log("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
-    callbackMsg(basename(fileName))
+    callbackMsg('正在解析{}'.format(basename(fileName)))
     #如果不是pid文件则不解析
     if not zipfile.is_zipfile(fileName):
         exit(-1)

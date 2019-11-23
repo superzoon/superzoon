@@ -1,6 +1,7 @@
 from threading import (Thread, Lock, current_thread)
 from queue import Queue
 import time
+
 #用于线程同步
 class LockUtil:
     @classmethod
@@ -12,6 +13,8 @@ class LockUtil:
     @classmethod
     def release(cls, lock):
         lock.release()
+
+__WORK_THREAD_LOCK__ = LockUtil.createThreadLock()
 
 class WorkThread(Thread):
     THREAD_ID = 1000
@@ -41,6 +44,7 @@ class LooperThread(WorkThread):
         self.isRun = False
         self.looper = True
         self.queue = Queue(999)
+        self.working = False
 
     def quit(self, wait = False):
         # 不需要等待队列执行完，通过looper控制
@@ -58,8 +62,10 @@ class LooperThread(WorkThread):
             self.isRun = True
             while self.looper or (not self.looper and not self.queue.empty()):
                 action = self.queue.get()
+                self.working = True
                 if action and callable(action):
-                    action()
+                    action(self)
+                self.working = False
 
 
 __MAX_WORK_LOOPER__ = 4
@@ -74,19 +80,27 @@ if not __WORK_THREADS__:
         __WORK_THREADS__.append(thread)
 
 def __doAction__(action):
-    def work():
-        print('working start in thread name : {}'.format(current_thread().getName()))
+    def work(thread:LooperThread):
+        print('working start in thread name : {}'.format(thread.getName()))
         action()
-        print('working end in thread name : {}'.format(current_thread().getName()))
+        print('working end in thread name : {}'.format(thread.getName()))
         if not __allWork__.empty():
             for work in __WORK_THREADS__:
                 if work.queue.empty():
                     work.post(__allWork__.get())
                     return
         else:
-            while not __Work_Done__.empty():
-                callback = __Work_Done__.get()
-                callback()
+            LockUtil.acquire(__WORK_THREAD_LOCK__)
+            workCount = 0
+            for t in __WORK_THREADS__:
+                if t.working:
+                    print(t.getName())
+                    workCount = workCount+1
+            if workCount == 1:
+                while not __Work_Done__.empty():
+                    callback = __Work_Done__.get()
+                    callback()
+            LockUtil.release(__WORK_THREAD_LOCK__)
     return work
 
 def addWorkDoneCallback(callback):
@@ -98,13 +112,3 @@ def postAction(action):
         if work.queue.empty():
             work.post(__allWork__.get())
             return
-
-
-xx = lambda : not print('hello') and  time.sleep(0.1)
-
-if __name__ == '__main__':
-    looper = LooperThread()
-    looper.start()
-    for i in range(10):
-        looper.post(xx)
-    looper.quit()
