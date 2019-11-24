@@ -57,8 +57,14 @@ def createAnrWindowExe(ico:str = None):
         if isdir('build'):
             rmtree('build')
 
+@create_decorator
+def createJiraExe(ico:str = None):
+    call('pyinstaller -w -F -i {}  JiraTool.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
+
+
 if __name__ == '__main__':
-    createAnrWindowExe(sep.join(['res','anr.ico']))
+    # createAnrWindowExe(sep.join(['res','anr.ico']))
+    createJiraExe(sep.join(['res','systemui.ico']))
     exit()
 
 
@@ -66,11 +72,33 @@ if __name__ == '__main__':
 
 
 
+'''
+def xx():
+    import base64
+    open_icon = open("icon2.ico", "rb")  # 选择图标文件
+    b64str = base64.b64encode(open_icon.read())
+    open_icon.close()
+    write_data = "img = '{0}'".format(b64str)
+    f = open("icon2.py", "w+")
+    f.write(write_data)  # 生成ASCII码
+    f.close()
 
+    import tkinter as tk
+    import base64
+    import os
 
+    window = tk.Tk()
+    tmp = open("tmp.ico", "wb+")
+    tmp.write(base64.b64decode('AAA')
+    # tmp.write(base64.b64decode('粘贴icon2.py字符串内容'))
+    tmp.close()
+    window.title('窗口标题')
+    window.geometry('300x300')
+    window.iconbitmap("tmp.ico")
+    os.remove("tmp.ico")  #删除icon文件
 
-
-
+    window.mainloop()
+'''
 #装饰器例子
 def statically_typed(*types, return_type=None):
     def decorator(func):

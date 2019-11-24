@@ -72,6 +72,18 @@ class __JiraLog__():
         self.title = '\t'.join(row.keys())
         self.msg = '\t'.join(row.values())
 
+    def isAnr(self):
+        return self.logType.lower() == 'ANR'.lower()
+
+    def isNCrash(self):
+        return self.logType.lower() == 'NCRASH'.lower()
+
+    def isJCrash(self):
+        return self.logType.lower() == 'JCRASH'.lower()
+
+    def isPower(self):
+        return self.logType.lower() == 'POWER'.lower()
+
     def __str__(self, showTitle = False):
         if hasattr(self, 'msg'):
             if showTitle:
@@ -150,7 +162,7 @@ def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc
     :param hasFile:服务器是否有保存文件
     :return:所有可下载的log信息
     '''
-    'order=asc&limit=30&offset=0&productModel=NX629J&jiraId=LOG-67680&productVersion=NX629J_Z0_CN_VLF0P_V234&hasFile=Y'
+    'order=asc&limit=30&offset=0&productModel=NX629J&jiraId=LOG-67680&productVersion=NX629J_Z0_CN_VLF0P_V234&hasFile=Y&rooted=y'
     if callbackMsg:
         callbackMsg('获取jira信息。。。')
     filters = list()
@@ -186,7 +198,7 @@ def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc
             break
     return allLog
 
-def __download__log(jiraId:str, productModel:str, outPath:str, callbackMsg = None, async = False, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
+def download(jiraId:str, productModel:str, outPath:str, callbackMsg = None, parse = False, async = False, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
     '''
     最终下载路径outPath/jiraId/productModel/productVersion/logId.zip
     outPath/LOG-67680/NX629J_Z0_CN_VLF0P_V234/YroBCa.Rah5LxM.zip
@@ -198,9 +210,12 @@ def __download__log(jiraId:str, productModel:str, outPath:str, callbackMsg = Non
         callbackMsg('开始下载。。。')
     logDict = dict()#{productModel:{productVersion:[logId]}}
     parserPath = None
+    packageName = None
     for log in logs:
-        if not parserPath:
+        if not parserPath or len(parserPath) == 0:
             parserPath = sep.join([outPath, log.jiraId])
+        if not packageName or len(packageName) == 0:
+            packageName = log.packageName
         model = log.productModel
         version = log.productVersion
         if not model in logDict.keys():
@@ -235,10 +250,12 @@ def __download__log(jiraId:str, productModel:str, outPath:str, callbackMsg = Non
     if async:
         print(queue.get())
         time.sleep(10)
-    globalValuesList = parserZipLogDir(parserPath, removeDir=True, callbackMsg=callbackMsg)
-    return globalValuesList
+    if parse:
+        return parserZipLogDir(parserPath, packageName=packageName, removeDir=True, callbackMsg=callbackMsg)
+    else:
+        return True
 
 if __name__ == '__main__':
     print('启动程序')
-    __download__log('LOG-67680','NX629J','./', callbackMsg=lambda x:print(x))
+    download('LOG-67680','NX629J','./', callbackMsg=lambda x:print(x))
     exit()

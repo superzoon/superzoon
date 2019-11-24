@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import Tk
 from tkinter import (PhotoImage, Frame)
 from os import (startfile, walk, path, listdir, popen, remove, rename, makedirs, chdir)
 import base64
@@ -99,33 +100,36 @@ def updateExe():
             WorkThread(action=copyAnrTool).start()
             bar.start('更新软件','正在下载......')
 
+HEIGHT = 600
+WIDTH = 800
 
 if __name__ == '__main__':
-    height = 600
-    width = 800
     window = tk.Tk()
     window.title('Anr 工具')
     window.resizable(0, 0)
+
+    tmp = open("tmp.ico", "wb+")
+
     ico = sep.join(['res',"anr.ico"])
     if isfile(ico):
         window.iconbitmap(ico)
     sw = window.winfo_screenwidth()
     sh = window.winfo_screenheight()
-    ww = width
-    wh = height
+    ww = WIDTH
+    wh = HEIGHT
     x = (sw - ww) / 2
     y = (sh - wh) / 2
     window.geometry("%dx%d+%d+%d" % (ww, wh, x, y))
 
     bg = sep.join(['res','window_bg.png'])
     if isfile(bg):
-        canvas = tk.Canvas(window, height=height, width=width)
+        canvas = tk.Canvas(window, height=HEIGHT, width=WIDTH)
         image_file = tk.PhotoImage(file=bg)
-        image = canvas.create_image(width/2, height/2, anchor='center', image=image_file)  # n 北方，s 南方， w西方，e东方，center中间
+        image = canvas.create_image(WIDTH / 2, HEIGHT / 2, anchor='center', image=image_file)  # n 北方，s 南方， w西方，e东方，center中间
         canvas.pack(side='top')
     h = 10
     title = tk.Label(window, text='今天的ANR你努力了吗?', bg='green', font=('Arial', 12), width=30, height=2)
-    title.place(x=width/2, y=h, anchor='n')
+    title.place(x=WIDTH / 2, y=h, anchor='n')
 
     select = tk.IntVar()
     select.set(0)
@@ -167,10 +171,10 @@ if __name__ == '__main__':
 
     h = h+50
     text_view = tk.Text(window)
-    text_view.place(x=50, y=h+50, anchor='nw', width=width-100, height=height-h-80)
+    text_view.place(x=50, y=h+50, anchor='nw', width=WIDTH - 100, height=HEIGHT - h - 80)
 
     entry = tk.Entry(window, show=None, font=('Arial', 14))  # 显示成明文形式
-    entry.place(x=width/10+65, y=h, anchor='nw', width=500, height=40)
+    entry.place(x=WIDTH / 10 + 65, y=h, anchor='nw', width=500, height=40)
     def selectPath():
         value = select.get()
         file_path = None
@@ -274,9 +278,9 @@ if __name__ == '__main__':
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
         print("parserAnr end")
     selse_button = tk.Button(window, text='文件/文件夹', font=('Arial', 10), width=10, height=2, command=selectPath)
-    selse_button.place(x=width/10-30, y=h, anchor='nw')
+    selse_button.place(x=WIDTH / 10 - 30, y=h, anchor='nw')
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)
-    parser_button.place(x=width-140, y=h, anchor='nw')
+    parser_button.place(x=WIDTH - 140, y=h, anchor='nw')
     select_radio()
     ##########检查更新#########
     updateExe()
