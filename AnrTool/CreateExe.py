@@ -6,8 +6,8 @@ from configparser import ConfigParser
 from shutil import (rmtree, copyfile)
 from Tool.toolUtils import ( zip_single, checkFileCode)
 import re
+import  AnrWindow, JiraTool
 from AnrWindow import EXE_PATH, VERSION_INI_FILE
-AnrTool_FILE = EXE_PATH+'AnrTool/AnrWindow.exe'
 
 def getVersion(pyName='AnrWindow.py'):
     CURRENT_VERSION = '1.0.001'
@@ -42,16 +42,16 @@ def createAnrWindowExe(ico:str = None):
     call('pyinstaller -w -F -i {}  AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
     dist = sep.join(['dist','AnrWindow.exe'])
     if isfile(dist):
-        copyfile(dist, AnrTool_FILE)
-        zip_single(EXE_PATH+'AnrTool', EXE_PATH+'AnrTool.zip')
+        copyfile(dist, AnrWindow.EXE_PATH+'AnrTool/AnrWindow.exe')
+        zip_single(AnrWindow.EXE_PATH+'AnrTool', AnrWindow.EXE_PATH+'AnrTool.zip')
         customerConf = ConfigParser()
-        customerConf.read(VERSION_INI_FILE)
+        customerConf.read(AnrWindow.VERSION_INI_FILE)
         defaultConf = customerConf.defaults()
         defaultConf['update_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        defaultConf['version'] = getVersion()
-        defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent()
+        defaultConf['version'] = getVersion('AnrTool.py')
+        defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent('AnrTool.py')
         defaultConf['content'] = defaultConf['v{}'.format(defaultConf['version'])]
-        customerConf.write(open(VERSION_INI_FILE, mode='w'))
+        customerConf.write(open(AnrWindow.VERSION_INI_FILE, mode='w'))
         if isdir('dist'):
             rmtree('dist')
         if isdir('build'):
@@ -60,6 +60,22 @@ def createAnrWindowExe(ico:str = None):
 @create_decorator
 def createJiraExe(ico:str = None):
     call('pyinstaller -w -F -i {}  JiraTool.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
+    dist = sep.join(['dist','JiraTool.exe'])
+    if isfile(dist):
+        copyfile(dist, JiraTool.EXE_PATH+'JiraTool/JiraTool.exe')
+        zip_single(JiraTool.EXE_PATH+'JiraTool', JiraTool.EXE_PATH+'JiraTool.zip')
+        customerConf = ConfigParser()
+        customerConf.read(JiraTool.VERSION_INI_FILE)
+        defaultConf = customerConf.defaults()
+        defaultConf['update_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        defaultConf['version'] = getVersion('JiraTool.py')
+        defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent('JiraTool.py')
+        defaultConf['content'] = defaultConf['v{}'.format(defaultConf['version'])]
+        customerConf.write(open(JiraTool.VERSION_INI_FILE, mode='w'))
+        if isdir('dist'):
+            rmtree('dist')
+        if isdir('build'):
+            rmtree('build')
 
 
 if __name__ == '__main__':

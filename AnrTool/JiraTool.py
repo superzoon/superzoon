@@ -1,64 +1,63 @@
 import tkinter as tk
 from tkinter import Tk ,messagebox, Toplevel, Label, ttk
 from tkinter.filedialog import askdirectory
+from shutil import (rmtree, copyfile)
 from Tool.workThread import postAction,addWorkDoneCallback, LockUtil
-from Tool import downloadLog, SYSTEMUI_ICO
-import base64, os
+from Tool import downloadLog
+from configparser import ConfigParser
+from Tool.workThread import WorkThread
 from queue import Queue
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from os import startfile
 import re, time
-yellow = 'yellow'
-red = 'red'
-blue = 'blue'
-green = 'green'
-gray = 'gray'
-bottom = 'bottom'
-top = 'top'
-left = 'left'
-right = 'right'
-ANCHOR_CENTER = 'center'#中
-ANCHOR_N = 'n'#上
-ANCHOR_NW = 'nw'#左上
-ANCHOR_NS = 'ne'#右上
-ANCHOR_S = 's'#下
-ANCHOR_SW = 's'#左下
-ANCHOR_SE = 's'#下
-ANCHOR_W = 'w'#右左
-ANCHOR_E = 'e'#右
-TEST = True
-class GressBar():
-    def __init__(self):
-        self.master = Toplevel(bg = green)
-        self.tipLable = tk.Label(self.master, text='任务进行中', fg="green")
-        self.isLoop = False
+from Tool import widget
+from Tool import TEST
 
-    def start(self, title='下载Jira',lableTxt='任务正在运行中,请稍等……'):
-        top = self.master
-        top.overrideredirect(True)
-        top.title(title)
-        Label(top, text=lableTxt, fg="green").pack(pady=2)
-        prog = ttk.Progressbar(top, mode='indeterminate', length=200)
-        prog.pack(pady=10, padx=35)
-        prog.start()
-        self.tipLable.pack(pady=11)
-        top.resizable(False, False)
-        top.update()
-        curWidth = top.winfo_width()
-        curHeight = top.winfo_height()
-        scnWidth, scnHeight = top.maxsize()
-        tmpcnf = '+%d+%d' % ((scnWidth - curWidth) / 2, (scnHeight - curHeight) / 2)
-        top.geometry(tmpcnf)
-        self.isLoop = True
-        top.mainloop()
+EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
+VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-    def updateMsg(self, msg:str):
-        if hasattr(self, 'tipLable'):
-            self.tipLable.config(text=msg)
+CURRENT_VERSION = '1.0.000'
+CURRENT_UPDATE_CONTENT = '第一个版本'
 
-    def quit(self):
-        if self.isLoop:
-            self.master.destroy()
+def updateExe():
+    update = False
+    version = ''
+    content = ''
+    if isfile(VERSION_INI_FILE):
+        customerConf = ConfigParser()
+        customerConf.read(VERSION_INI_FILE)
+        defaultConf = customerConf.defaults()
+        def versionToInt(version:str):
+            vint = 0
+            for istr in version.split('.'):
+                vint = vint*1000+int(istr)
+            return vint
+        if 'version' in defaultConf:
+            versionToInt(defaultConf['version'])
+            remote_version = versionToInt(defaultConf['version'])
+            current_version = versionToInt(CURRENT_VERSION)
+            if remote_version > current_version:
+                update = True
+                version = 'v{}'.format(defaultConf['version'])
+        if 'content' in defaultConf:
+            content = defaultConf['content']
+    if update:
+        ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本{}?\n\n{}'.format(version,content))
+        if ret == 'yes' or str(ret) == 'Ture':
+            file_path = askdirectory()
+            bar = widget.GressBar()
+            def copyAnrTool():
+                zip_file = sep.join([file_path, 'JiraTool.zip'])
+                copyfile(EXE_PATH+'JiraTool.zip', zip_file)
+                time.sleep(3)
+                if isfile(zip_file):
+                    startfile(zip_file)
+                else:
+                    tk.messagebox.showinfo(title='提示', message='下载失败！')
+                bar.quit()
+
+            WorkThread(action=copyAnrTool).start()
+            bar.start('更新软件','正在下载......')
 
 class DownloadFrame():
 
@@ -85,14 +84,14 @@ class DownloadFrame():
         height = 40
         width = self.width/2
         left = self.width/4+self.padding
-        lable = tk.Label(frame, text='Jira 下载',bg=gray, anchor=ANCHOR_CENTER, fg =blue, font=('Arial', 16))
+        lable = tk.Label(frame, text='Jira 下载',bg=widget.gray, anchor=widget.ANCHOR_CENTER, fg =widget.blue, font=('Arial', 16))
         lable.place(x=left, y=top, anchor='nw', width=width, height=height)
 
         top = top + height + self.padding
         ###tip
         left = self.padding+20
         width = self.width
-        tipLable = tk.Label(frame, text='多个Jira机型版本使用空格隔开，Jira与机型必填', anchor=ANCHOR_W, fg =gray, font=(11))
+        tipLable = tk.Label(frame, text='多个Jira机型版本使用空格隔开，Jira与机型必填', anchor=widget.ANCHOR_W, fg =widget.gray, font=(11))
         tipLable.place(x=left, y=top, anchor='nw', width=width, height=height)
         self.frame = frame
 
@@ -103,7 +102,7 @@ class DownloadFrame():
         jiraWidth = int(self.width*0.3)
         left = left
         width = self.width*0.1
-        jiraLable = tk.Label(frame, text='Jira:',anchor=ANCHOR_E, font=(14))
+        jiraLable = tk.Label(frame, text='Jira:',anchor=widget.ANCHOR_E, font=(14))
         jiraLable.place(x=left, y=top, anchor='nw', width=width, height=height)
         self.jiraLable = jiraLable
 
@@ -119,7 +118,7 @@ class DownloadFrame():
         modelWidth = int(self.width*0.3)
         left = left + width + MAX/2
         width = self.width*0.1
-        modelLable = tk.Label(frame, text='机型:', anchor=ANCHOR_E, font=(14))
+        modelLable = tk.Label(frame, text='机型:', anchor=widget.ANCHOR_E, font=(14))
         modelLable.place(x=left, y=top, anchor='nw', width=width, height=height)
         self.versionLable = modelLable
 
@@ -135,7 +134,7 @@ class DownloadFrame():
         versionWidth = int(self.width*0.4)
         left = left + width + MAX/2
         width = self.width*0.1
-        versionLable = tk.Label(frame, text='版本:', anchor=ANCHOR_E, font=(14))
+        versionLable = tk.Label(frame, text='版本:', anchor=widget.ANCHOR_E, font=(14))
         versionLable.place(x=left, y=top, anchor='nw', width=width, height=height)
         self.versionLable = versionLable
 
@@ -236,7 +235,7 @@ class DownloadFrame():
                     self.gressBar.quit()
                 startfile(self.savePath)
             addWorkDoneCallback(downCallback)
-            self.gressBar = GressBar()
+            self.gressBar = widget.GressBar()
             for jiraId in self.jiras:
                 def getAction(jiraId, outPath, callback, anrParse):
                     def downloadAction():
@@ -249,20 +248,10 @@ class DownloadFrame():
     def pack(self):
         self.frame.pack()
 
-def setIco(window):
-    window.title('Jira下载工具')
-    ico = 'tmp.ico'
-    tmp = open(ico, "wb+")
-    tmp.write(base64.b64decode(SYSTEMUI_ICO))
-    tmp.close()
-    if isfile(ico):
-        window.iconbitmap(ico)
-        os.remove(ico)
-
 if __name__ == '__main__':
     window = tk.Tk()
     window.resizable(width=False, height=False)
-    setIco(window)
+    widget.setIco(window)
     height = 300
     width = 800
     screenwidth = window.winfo_screenwidth()
@@ -274,7 +263,9 @@ if __name__ == '__main__':
 
     lableWidth = width/5
     lableHeight = 30
-    lable = tk.Label(window, text='Nubia SystemUI team', fg =gray, font=('Arial', 12))
+    lable = tk.Label(window, text='Nubia SystemUI team', fg =widget.gray, font=('Arial', 12))
     lable.place(x=width - lableWidth - 50, y=height - lableHeight - 10 , anchor='nw', width=lableWidth, height=lableHeight)
 
+    ##########检查更新#########
+    updateExe()
     window.mainloop()

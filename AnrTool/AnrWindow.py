@@ -20,7 +20,6 @@ from configparser import ConfigParser
 current_dir = dirname(abspath(__file__))
 
 EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
-AnrTool_FILE = EXE_PATH+'AnrTool.zip'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
 CURRENT_VERSION = '1.0.002'
@@ -30,6 +29,7 @@ class GressBar():
     def __init__(self):
         self.master = Toplevel()
         self.tipLable = tk.Label(self.master, text='任务进行中', fg="green")
+        self.master.attributes('-topmost',True)
         self.isLoop = False
 
     def start(self, title='解析ANR',lableTxt='任务正在运行中,请稍等……'):
@@ -89,7 +89,7 @@ def updateExe():
             bar = GressBar()
             def copyAnrTool():
                 zip_file = sep.join([file_path, 'AnrTool.zip'])
-                copyfile(AnrTool_FILE, zip_file)
+                copyfile(EXE_PATH+'AnrTool.zip', zip_file)
                 time.sleep(3)
                 if isfile(zip_file):
                     startfile(zip_file)
