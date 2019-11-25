@@ -203,12 +203,16 @@ class DownloadFrame():
         pattern = 'LOG-[\d]+'
         self.jiras = []
         for item in jiras:
-            if not re.match(pattern, item):
-                messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
-                return False
             jira = item.strip()
-            if not jira in self.jiras:
-                self.jiras.append(jira)
+            if jira and len(jira) > 0:
+                if not re.match(pattern, jira):
+                    messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
+                    return False
+                if not jira in self.jiras:
+                    self.jiras.append(jira)
+        if len(self.jiras)==0:
+            messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
+            return False
 
         model:str = self.modelEntry.get()
         if not model or len(model) == 0:
@@ -220,6 +224,9 @@ class DownloadFrame():
             model = item.strip()
             if not model in self.models:
                 self.models.append(model)
+        if len(self.models)==0:
+            messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
+            return False
 
         version:str = self.versionEntry.get()
         self.versions = []
@@ -242,6 +249,10 @@ class DownloadFrame():
                 time.sleep(1)
                 if self.gressBar:
                     self.gressBar.quit()
+                if len(downloadLog.downLoadErrs)>0:
+                    file = sep.join([self.savePath,'downloadErr.txt']);
+                    with open(file, mode='w') as errFile:
+                        errFile.write('\n'.join(downloadLog.downLoadErrs))
                 startfile(self.savePath)
             addWorkDoneCallback(downCallback)
             self.gressBar = widget.GressBar()

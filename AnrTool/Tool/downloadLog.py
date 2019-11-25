@@ -18,6 +18,7 @@ __DOWN__URL__ = __HOST__URL__+'/log/download/{}.do'
 headers = {
     'User-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
 }
+downLoadErrs = []
 lock = LockUtil.createThreadLock()
 def __createDir__(path:str):
     LockUtil.acquire(lock)
@@ -101,7 +102,7 @@ class __JiraLog__():
         if zipfile.is_zipfile(fileName):
             return False
         temp = fileName+'__temp'
-        req = urllib.request.Request(self.getUrl(), headers = headers)
+        req:HTTPResponse = urllib.request.Request(self.getUrl(), headers = headers)
         resp = getOpener().open(req)
         if 'zip' in resp.headers['Content-Type']:
             data = resp.read()
@@ -126,24 +127,33 @@ class __JiraLog__():
                 return True
             else:
                 rmtree(temp)
+        elif 'text' in resp.headers['Content-Type']:
+            err = '--url={}, resp={}'.format(self.getUrl(),resp.read().decode('utf-8'));
+            downLoadErrs.append(err)
+            print(err)
         return False
 
     @classmethod
-    def parJson(cls, resp:dict):
+    def parJson(cls, resp:dict, url=None):
         code:int = resp['code']
         message:str = resp['message']
-        data:dict = resp['data']
-        total:int = data['total']
-        offset:int = data['offset']
-        limit:int = data['limit']
-        sort:str = data['sort']
-        rows = data['rows']
-        logs:__JiraLog__ = []
-        if code == 0:
+        if code == 0 and 'data' in resp:
+            data:dict = resp['data']
+            total:int = data['total']
+            # offset:int = data['offset']
+            # limit:int = data['limit']
+            # sort:str = data['sort']
+            rows = data['rows']
+            logs:__JiraLog__ = []
             for row in rows:
                 log = __JiraLog__(row)
                 logs.append(log)
-        return total, logs
+            return total, logs
+        else:
+            errMsg ='url={}, resp={}'.format(url,resp)
+            downLoadErrs.append(errMsg)
+            print(errMsg)
+            return 0, []
 
 def inList(log: __JiraLog__, list: __JiraLog__):
     for item in list:
@@ -188,7 +198,7 @@ def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc
         req = urllib.request.Request(url, headers=headers)
         resp: HTTPResponse = getOpener().open(req)
         text = json.loads(resp.read().decode('utf-8'))
-        total, logs = __JiraLog__.parJson(text)
+        total, logs = __JiraLog__.parJson(text, url)
         if not logs:
             break
         for log in logs:
@@ -199,10 +209,13 @@ def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc
     return allLog
 
 def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = False, async = False, order:str='asc',limit:int=30, productVersions=[], tfsId=None, hasFile='Y'):
+    downLoadErrs.clear()
     '''
     最终下载路径outPath/jiraId/productModel/productVersion/logId.zip
     outPath/LOG-67680/NX629J_Z0_CN_VLF0P_V234/YroBCa.Rah5LxM.zip
     '''
+    opener = getOpener()
+    time.sleep(2)
     if not isdir(outPath):
         __createDir__(outPath)
     logs:__JiraLog__= []
@@ -260,7 +273,7 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
     if async:
         print(queue.get())
         time.sleep(10)
-    if parse:
+    if parse and parserPath and isdir(parserPath):
         return parserZipLogDir(parserPath, packageName=packageName, removeDir=True, callbackMsg=callbackMsg)
     else:
         return True
