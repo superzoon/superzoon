@@ -221,6 +221,7 @@ if __name__ == '__main__':
                 try:
                     def parse():
                         globalValue = parseZipLog(file_path, resonFile, packageName=packageName, removeDir=True, callbackMsg=bar.updateMsg)
+                        resonFile.writelines("\n\n 解析有误或者有建议请邮箱xiao.liang@nubia.com(肖良)")
                         resonFile.flush()
                         resonFile.close()
                         if len(globalValue.showMessage) > 0:

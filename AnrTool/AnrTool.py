@@ -713,6 +713,7 @@ def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, ca
         globalValuesList.append(parseZipLog(zipFile, resonFile, packageName = packageName, removeDir=removeDir, callbackMsg=callbackMsg))
         #解析完后换行
         resonFile.writelines('\n\n')
+    resonFile.writelines("\n\n 解析有误或者有建议请邮箱xiao.liang@nubia.com(肖良)")
     #将解析的内容写入到文件
     resonFile.flush()
     #关闭文件流
