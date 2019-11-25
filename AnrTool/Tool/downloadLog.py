@@ -128,7 +128,7 @@ class __JiraLog__():
             else:
                 rmtree(temp)
         elif 'text' in resp.headers['Content-Type']:
-            err = '--url={}, resp={}'.format(self.getUrl(),resp.read().decode('utf-8'));
+            err = '--url={}, resp={}, jira={}, version={}'.format(self.getUrl(),resp.read().decode('utf-8'),self.jiraId, self.productVersion);
             downLoadErrs.append(err)
             print(err)
         return False

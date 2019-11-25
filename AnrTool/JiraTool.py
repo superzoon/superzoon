@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Tk ,messagebox, Toplevel, Label, ttk
+from tkinter import Tk ,messagebox, Toplevel, Label, ttk, Event
 from tkinter.filedialog import askdirectory
 from shutil import (rmtree, copyfile)
 from Tool.workThread import postAction,addWorkDoneCallback, LockUtil
@@ -182,8 +182,23 @@ class DownloadFrame():
         def checklistener():
             self.anrParse = var.get()
         parseCheck = tk.Checkbutton(window, text='Anr解析', variable=var, onvalue=True, offvalue=False, command=checklistener )
-        parseCheck.place(x=left+MIN, y=top, anchor='nw', width=width, height=height)
+        def showParseCheck():
+            self.parseCheck.place(x=left+MIN, y=top, anchor='nw', width=width, height=height)
+            self.parseCheckShow = True
+        def hideParseCheck():
+            self.parseCheck.place_forget()
+            self.parseCheckShow = False
 
+        self.parseCheckShow = False
+        self.parseCheck = parseCheck
+        self.showParseCheck = showParseCheck
+        self.hideParseCheck = hideParseCheck
+
+    def showAnrBox(self):
+        if hasattr(self, 'showParseCheck') and not self.parseCheckShow:
+            self.showParseCheck()
+        elif hasattr(self, 'hideParseCheck') and self.parseCheckShow:
+            self.hideParseCheck()
 
     def check(self):
         savePath:str = self.saveEntry.get()
@@ -267,6 +282,7 @@ class DownloadFrame():
     def pack(self):
         self.frame.pack()
 
+lastTouchTeamTime = 0
 if __name__ == '__main__':
     window = tk.Tk()
     window.resizable(width=False, height=False)
@@ -280,9 +296,18 @@ if __name__ == '__main__':
     downloadFrame = DownloadFrame(window, width, height)
     downloadFrame.pack()
 
+    var = tk.StringVar(value='0')
+    def touchTeam(events:Event):
+        currentTime = time.time()
+        timestamp = currentTime - float(var.get())
+        if timestamp < 0.2:
+            downloadFrame.showAnrBox()
+        var.set(str(currentTime))
+
     lableWidth = width/5
     lableHeight = 30
     lable = tk.Label(window, text='Nubia SystemUI team', fg =widget.gray, font=('Arial', 12))
+    lable.bind("<Button-1>",touchTeam)  # 鼠标点击事件 <Button-1>表示左键 2表示滚轮 3表示右键
     lable.place(x=width - lableWidth - 50, y=height - lableHeight - 10 , anchor='nw', width=lableWidth, height=lableHeight)
 
     ##########检查更新#########
