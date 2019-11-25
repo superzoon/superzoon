@@ -265,7 +265,7 @@ class DownloadFrame():
                 if self.gressBar:
                     self.gressBar.quit()
                 if len(downloadLog.downLoadErrs)>0:
-                    file = sep.join([self.savePath,'downloadErr.txt']);
+                    file = sep.join([self.savePath,'downloadError.txt']);
                     with open(file, mode='w') as errFile:
                         errFile.write('\n'.join(downloadLog.downLoadErrs))
                 startfile(self.savePath)

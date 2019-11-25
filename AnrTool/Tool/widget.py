@@ -43,7 +43,7 @@ class GressBar():
     def __init__(self):
         self.master = Toplevel()
         self.master.protocol("WM_DELETE_WINDOW", lambda :print('休想关闭'))
-        setIco(self.master)
+        setTitleIco(self.master,'下载')
         self.master.attributes('-topmost',True)
         self.tipLable = tk.Label(self.master, text='任务进行中', fg="green")
         self.isLoop = False
