@@ -84,7 +84,7 @@ class DownloadFrame():
         height = 40
         width = self.width/2
         left = self.width/4+self.padding
-        lable = tk.Label(frame, text='Jira 下载',bg=widget.gray, anchor=widget.ANCHOR_CENTER, fg =widget.blue, font=('Arial', 16))
+        lable = tk.Label(frame, text='Jira Log下载',bg=widget.gray, anchor=widget.ANCHOR_CENTER, fg =widget.blue, font=('Arial', 16))
         lable.place(x=left, y=top, anchor='nw', width=width, height=height)
 
         top = top + height + self.padding
@@ -286,7 +286,7 @@ lastTouchTeamTime = 0
 if __name__ == '__main__':
     window = tk.Tk()
     window.resizable(width=False, height=False)
-    widget.setIco(window)
+    widget.setTitleIco(window, 'Log下载工具')
     height = 300
     width = 800
     screenwidth = window.winfo_screenwidth()

@@ -27,10 +27,10 @@ ANCHOR_SE = 's'#下
 ANCHOR_W = 'w'#右左
 ANCHOR_E = 'e'#右
 
-def setIco(window, ico_code:str = None):
+def setTitleIco(window, title, ico_code:str = None):
     if not ico_code or len(ico_code) == 0:
         ico_code = base64.b64decode(SYSTEMUI_ICO)
-    window.title('Jira下载工具')
+    window.title(title)
     ico = 'tmp.ico'
     tmp = open(ico, "wb+")
     tmp.write(ico_code)
