@@ -91,7 +91,7 @@ class DownloadFrame():
         ###tip
         left = self.padding+20
         width = self.width
-        tipLable = tk.Label(frame, text='多个Jira机型版本使用空格隔开，Jira与机型必填', anchor=widget.ANCHOR_W, fg =widget.gray, font=(11))
+        tipLable = tk.Label(frame, text='多个Jira、机型、版本使用空格隔开，Jira与机型必填', anchor=widget.ANCHOR_W, fg =widget.gray, font=(11))
         tipLable.place(x=left, y=top, anchor='nw', width=width, height=height)
         self.frame = frame
 
@@ -221,6 +221,15 @@ class DownloadFrame():
             if not model in self.models:
                 self.models.append(model)
 
+        version:str = self.versionEntry.get()
+        self.versions = []
+        if version or len(version) >0:
+            self.versions = version.split(' ')
+        for item in models:
+            model = item.strip()
+            if not model in self.models:
+                self.models.append(model)
+
         return True
 
     def downloadJira(self):
@@ -237,12 +246,11 @@ class DownloadFrame():
             addWorkDoneCallback(downCallback)
             self.gressBar = widget.GressBar()
             for jiraId in self.jiras:
-                def getAction(jiraId, outPath, callback, anrParse):
+                def getAction( outPath, callback, jiraId, models, versions, anrParse):
                     def downloadAction():
-                        for product in self.models:
-                            downloadLog.download(jiraId = jiraId, productModel = product, outPath = outPath, callbackMsg=callback, parse=anrParse)
+                        downloadLog.download(outPath = outPath, callbackMsg=callback, jiraId = jiraId, productModels = models, productVersions= versions,  parse=anrParse)
                     return downloadAction
-                postAction(getAction(jiraId, self.savePath, callbackMsg, self.anrParse))
+                postAction(getAction( self.savePath, callbackMsg, jiraId, self.models, self.versions, self.anrParse))
             self.gressBar.start()
 
     def pack(self):

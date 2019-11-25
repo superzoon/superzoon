@@ -198,14 +198,17 @@ def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc
             break
     return allLog
 
-def download(jiraId:str, productModel:str, outPath:str, callbackMsg = None, parse = False, async = False, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
+def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = False, async = False, order:str='asc',limit:int=30, productVersions=[], tfsId=None, hasFile='Y'):
     '''
     最终下载路径outPath/jiraId/productModel/productVersion/logId.zip
     outPath/LOG-67680/NX629J_Z0_CN_VLF0P_V234/YroBCa.Rah5LxM.zip
     '''
     if not isdir(outPath):
         __createDir__(outPath)
-    logs:__JiraLog__= getAllJiraLog(jiraId, productModel, callbackMsg, order, limit, productVersion, tfsId, hasFile)
+    logs:__JiraLog__= []
+    for productModel in productModels:
+        for log in getAllJiraLog(jiraId, productModel, callbackMsg, order, limit, productVersion = None, tfsId = tfsId, hasFile= hasFile):
+            logs.append(log)
     if callbackMsg:
         callbackMsg('开始下载。。。')
     logDict = dict()#{productModel:{productVersion:[logId]}}
@@ -234,12 +237,19 @@ def download(jiraId:str, productModel:str, outPath:str, callbackMsg = None, pars
             def getAction(__model__, __version__):
                 def downloadAction():
                     logs = logDict[__model__][__version__]
+                    path = None
                     for log in logs:
-                        path = sep.join([outPath, log.jiraId, __version__])
-                        if callbackMsg:
-                            callbackMsg('下载{}'.format(log.logId))
-                            log.download(path)
-                    if isdir(path) and len(listdir(path))==0:
+                        willDown = False
+                        if not productVersions or len(productVersions) == 0:
+                            willDown = True
+                        elif log.productVersion in productVersions:
+                            willDown = True
+                        if willDown:
+                            path = sep.join([outPath, log.jiraId, __version__])
+                            if callbackMsg:
+                                callbackMsg('下载{}'.format(log.logId))
+                                log.download(path)
+                    if path and isdir(path) and len(listdir(path))==0:
                         rmtree(path)
                 return downloadAction
             action = getAction(model,version)
