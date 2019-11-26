@@ -120,7 +120,7 @@ class __JiraLog__():
                     code.close()
                 if isfile(readme):
                     z.write(readme)
-                    remove(readme)
+                    rmtree(readme)
                 z.close()
                 LockUtil.release()
                 ##############end lock#############
