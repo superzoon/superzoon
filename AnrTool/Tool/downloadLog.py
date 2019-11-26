@@ -19,12 +19,12 @@ headers = {
     'User-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36',
 }
 downLoadErrs = []
-lock = LockUtil.createThreadLock()
+
 def __createDir__(path:str):
-    LockUtil.acquire(lock)
+    LockUtil.acquire()
     if not isdir(path):
         makedirs(path)
-    LockUtil.release(lock)
+    LockUtil.release()
 
 def getOpener():
     if not GLOBAL_VALUES.opener:
@@ -110,7 +110,7 @@ class __JiraLog__():
                 code.write(data)
             if zipfile.is_zipfile(temp):
                 ##############start lock#############
-                LockUtil.acquire(lock)
+                LockUtil.acquire()
                 z = zipfile.ZipFile(temp, 'a')
                 readme = self.logId+'.txt'
                 print(abspath(readme))
@@ -118,10 +118,11 @@ class __JiraLog__():
                     code.write(self.__str__(showTitle=True))
                     code.flush()
                     code.close()
-                z.write(readme)
-                remove(readme)
+                if isfile(readme):
+                    z.write(readme)
+                    remove(readme)
                 z.close()
-                LockUtil.release(lock)
+                LockUtil.release()
                 ##############end lock#############
                 move(temp, fileName)
                 return True

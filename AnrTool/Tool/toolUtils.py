@@ -8,8 +8,6 @@ from Tool.workThread import LockUtil
 import time
 from threading import current_thread
 
-UNZIP_LOCK = LockUtil.createThreadLock()
-
 getTime = lambda timeStr: time.mktime(time.strptime(timeStr, '%Y-%m-%d %H:%M:%S.%f'))
 BASE_TIME_FLOAT = time.mktime((2000,0,0,0,0,0,0,0,0))
 def getUsedTimeStr(startTime:float, endTime:float):
@@ -36,7 +34,7 @@ def zip_single(src_file, dest_zip):
 
 def unzip_single(src_file, dest_dir, password = None):
     ''' 解压单个文件到目标文件夹。'''
-    LockUtil.acquire(UNZIP_LOCK)
+    LockUtil.acquire()
     if password:
         password = password.encode()
     zf = zipfile.ZipFile(src_file)
@@ -67,7 +65,7 @@ def unzip_single(src_file, dest_dir, password = None):
         rmtree(root_path)
     zf.close()
     os.chdir(cwd)
-    LockUtil.release(UNZIP_LOCK)
+    LockUtil.release()
 
 def encodeAndDecode(dest_dir:str):
     for root_path, dir_names, file_names in os.walk(dest_dir):

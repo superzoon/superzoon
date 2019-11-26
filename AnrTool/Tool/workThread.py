@@ -4,15 +4,26 @@ import time
 
 #用于线程同步
 class LockUtil:
+    LOCK = Lock()
     @classmethod
     def createThreadLock(cls):
         return Lock()
+
     @classmethod
     def acquire(cls, lock):
         lock.acquire()
+
+    @classmethod
+    def acquire(cls):
+        LockUtil.LOCK.acquire()
+
     @classmethod
     def release(cls, lock):
         lock.release()
+
+    @classmethod
+    def release(cls):
+        LockUtil.LOCK.release()
 
 __WORK_THREAD_LOCK__ = LockUtil.createThreadLock()
 

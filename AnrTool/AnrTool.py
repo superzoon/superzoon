@@ -728,7 +728,7 @@ if __name__ == '__main__':
     current = ''
     current = sep.join(['anr_papser','papser','LOG-495785','NX627J_Z0_CN_WQM0P_V217','uzrUka.RhPN3hW.zip'])
     current = sep.join(['anr_papser','test'])
-    current = sep.join(['anr_papser','papser','LOG-494067'])
+    current = sep.join(['anr_papser','NX629J','LOG-311596'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):
