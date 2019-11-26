@@ -282,7 +282,6 @@ class DownloadFrame():
     def pack(self):
         self.frame.pack()
 
-lastTouchTeamTime = 0
 if __name__ == '__main__':
     window = tk.Tk()
     window.resizable(width=False, height=False)

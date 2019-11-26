@@ -19,6 +19,7 @@ class GlobalValues:
         self.year = '2000'
         self.callbacks = dict()
         self.opener = None
+        self.debug = False
 
     def setCallback(self,key:str, callback):
         if key:

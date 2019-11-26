@@ -101,13 +101,15 @@ class __JiraLog__():
         fileName = sep.join([path, self.logId+'.zip'])
         if zipfile.is_zipfile(fileName):
             return False
-        temp = fileName+'__temp'
         req:HTTPResponse = urllib.request.Request(self.getUrl(), headers = headers)
         resp = getOpener().open(req)
         if 'zip' in resp.headers['Content-Type']:
             data = resp.read()
+            temp = fileName+'__temp'
             with open(temp, "wb") as code:
                 code.write(data)
+                code.flush()
+                code.close()
             if zipfile.is_zipfile(temp):
                 ##############start lock#############
                 LockUtil.acquire()
@@ -118,10 +120,14 @@ class __JiraLog__():
                     code.write(self.__str__(showTitle=True))
                     code.flush()
                     code.close()
-                if isfile(readme):
-                    z.write(readme)
-                    rmtree(readme)
-                z.close()
+                try:
+                    if isfile(readme):
+                        z.write(readme)
+                        remove(readme)
+                except Exception as e:
+                    print('file {}, err:{} ')
+                finally:
+                    z.close()
                 LockUtil.release()
                 ##############end lock#############
                 move(temp, fileName)

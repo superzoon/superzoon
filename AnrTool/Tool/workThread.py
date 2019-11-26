@@ -1,4 +1,5 @@
 from threading import (Thread, Lock, current_thread)
+from multiprocessing import cpu_count,current_process
 from queue import Queue
 import time
 
@@ -10,16 +11,16 @@ class LockUtil:
         return Lock()
 
     @classmethod
-    def acquire(cls, lock):
+    def acquireLock(cls, lock):
         lock.acquire()
+
+    @classmethod
+    def releaseLock(cls, lock):
+        lock.release()
 
     @classmethod
     def acquire(cls):
         LockUtil.LOCK.acquire()
-
-    @classmethod
-    def release(cls, lock):
-        lock.release()
 
     @classmethod
     def release(cls):
@@ -79,7 +80,7 @@ class LooperThread(WorkThread):
                 self.working = False
 
 
-__MAX_WORK_LOOPER__ = 4
+__MAX_WORK_LOOPER__ = cpu_count()
 __WORK_THREADS__:LooperThread = list()
 __allWork__ = Queue(999)
 __Work_Done__ = Queue(999)
@@ -101,7 +102,7 @@ def __doAction__(action):
                     work.post(__allWork__.get())
                     return
         else:
-            LockUtil.acquire(__WORK_THREAD_LOCK__)
+            LockUtil.acquireLock(__WORK_THREAD_LOCK__)
             workCount = 0
             for t in __WORK_THREADS__:
                 if t.working:
@@ -111,7 +112,7 @@ def __doAction__(action):
                 while not __Work_Done__.empty():
                     callback = __Work_Done__.get()
                     callback()
-            LockUtil.release(__WORK_THREAD_LOCK__)
+            LockUtil.releaseLock(__WORK_THREAD_LOCK__)
     return work
 
 def addWorkDoneCallback(callback):
