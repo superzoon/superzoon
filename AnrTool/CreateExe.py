@@ -10,14 +10,14 @@ import  AnrWindow, JiraTool
 from AnrWindow import EXE_PATH, VERSION_INI_FILE
 
 def getVersion(pyName='AnrWindow.py'):
-    CURRENT_VERSION = '1.0.001'
+    currentVersion = '1.0.001'
     pattrn = 'CURRENT_VERSION = \'([\.|\d]+)\'.*'
     anr_py = sep.join([dirname(abspath(__file__)), pyName])
     for line in open(anr_py,encoding=checkFileCode(anr_py)).readlines():
         match = re.match(pattrn, line)
         if match:
-            CURRENT_VERSION = match.group(1)
-    return CURRENT_VERSION
+            currentVersion = match.group(1)
+    return currentVersion
 
 def getUpdateContent(pyName='AnrWindow.py'):
     CURRENT_UPDATE_CONTENT = '1.0.001'
@@ -41,6 +41,7 @@ def create_decorator(func):
 def createAnrWindowExe(ico:str = None):
     call('pyinstaller -w -F -i {}  AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
     dist = sep.join(['dist','AnrWindow.exe'])
+
     if isfile(dist):
         copyfile(dist, AnrWindow.EXE_PATH+'AnrTool/AnrWindow.exe')
         zip_single(AnrWindow.EXE_PATH+'AnrTool', AnrWindow.EXE_PATH+'AnrTool.zip')
@@ -48,7 +49,7 @@ def createAnrWindowExe(ico:str = None):
         customerConf.read(AnrWindow.VERSION_INI_FILE)
         defaultConf = customerConf.defaults()
         defaultConf['update_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        defaultConf['version'] = getVersion('AnrTool.py')
+        defaultConf['version'] = getVersion('AnrWindow.py')
         defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent('AnrTool.py')
         defaultConf['content'] = defaultConf['v{}'.format(defaultConf['version'])]
         customerConf.write(open(AnrWindow.VERSION_INI_FILE, mode='w'))
@@ -80,7 +81,7 @@ def createJiraExe(ico:str = None):
 
 if __name__ == '__main__':
     createAnrWindowExe(sep.join(['res','anr.ico']))
-    # createJiraExe(sep.join(['res','systemui.ico']))
+    createJiraExe(sep.join(['res','systemui.ico']))
     exit()
 
 

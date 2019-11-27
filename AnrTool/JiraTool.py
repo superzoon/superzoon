@@ -16,7 +16,7 @@ from Tool import TEST
 EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.001'
+CURRENT_VERSION = '1.0.002'
 CURRENT_UPDATE_CONTENT = '修复多线程下载出现低概率报错'
 
 def updateExe():

@@ -24,8 +24,8 @@ current_dir = dirname(abspath(__file__))
 EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.002'
-CURRENT_UPDATE_CONTENT = '修复空文件显示进度条问题,添加进度条显示当前解析文件'
+CURRENT_VERSION = '1.0.003'
+CURRENT_UPDATE_CONTENT = '修复空文件显示进度条问题,添加解析阻塞数量'
 
 class GressBar():
     def __init__(self):
