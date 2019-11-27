@@ -1,43 +1,42 @@
 import logging
-from Tool import GLOBAL_VALUES
 
-if GLOBAL_VALUES.debug:
-    logger = logging.getLogger("xlan")
+from os.path import isfile
+from os import remove
+LOG_FILE = "log.txt"
+TAG = "xlan"
+if isfile(LOG_FILE):
+    remove(LOG_FILE)
 
-    handler1 = logging.StreamHandler()
-    handler2 = logging.FileHandler(filename="log.txt")
+logger = logging.getLogger(TAG)
 
-    logger.setLevel(logging.DEBUG)
-    handler1.setLevel(logging.WARNING)
-    handler2.setLevel(logging.DEBUG)
+handler1 = logging.StreamHandler()
+handler2 = logging.FileHandler(filename=LOG_FILE)
 
-    formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
-    handler1.setFormatter(formatter)
-    handler2.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
+handler1.setLevel(logging.WARNING)
+handler2.setLevel(logging.DEBUG)
 
-    logger.addHandler(handler1)
-    logger.addHandler(handler2)
+formatter = logging.Formatter("%(asctime)s %(name)s %(levelname)s %(message)s")
+handler1.setFormatter(formatter)
+handler2.setFormatter(formatter)
+
+logger.addHandler(handler1)
+logger.addHandler(handler2)
 
 def debug(msg):
-    if GLOBAL_VALUES.debug:
-        logger.debug(msg)
+    logger.debug(msg)
 
 def info(msg):
-    if GLOBAL_VALUES.debug:
-        logger.info(msg)
+    logger.info(msg)
 
 def info(msg):
-    if GLOBAL_VALUES.debug:
-        logger.info(msg)
+    logger.info(msg)
 
 def warning(msg):
-    if GLOBAL_VALUES.debug:
-        logger.warning(msg)
+    logger.warning(msg)
 
 def error(msg):
-    if GLOBAL_VALUES.debug:
-        logger.error(msg)
+    logger.error(msg)
 
 def critical(msg):
-    if GLOBAL_VALUES.debug:
-        logger.critical(msg)
+    logger.critical(msg)

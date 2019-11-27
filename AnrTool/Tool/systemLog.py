@@ -97,11 +97,24 @@ class SystemLog():
     def __init__(self, files, anrs: Anr, globalValues : GlobalValues, packageName: str = 'com.android.systemui'):
         self.globalValues = globalValues
         self.allAnr = anrs
-        self.files = sorted(files,reverse=True)
-        firstFile = self.files[0]
-        self.files = self.files[1:]
-        self.files.append(firstFile)
+        if files and len(files)>0:
+            self.files = sorted(files,reverse=True)
+            firstFile = self.files[0]
+            self.files = self.files
+            self.files.append(firstFile)
+        else:
+            self.files = []
         self.packageName = packageName
+
+    def addSystemAnrToAllAnr(self, systemAnr:SystemAnr):
+        add = True
+        if not systemAnr or not self.allAnr:
+            return
+        for anr in self.allAnr:
+            if str(systemAnr.pid) == str(anr.pid):
+                add = False
+        if add:
+            self.allAnr.append(systemAnr)
 
     def findAllAnr(self):
         for file in self.files:
@@ -119,6 +132,7 @@ class SystemLog():
                             temp = AnrLine(line, linenum, self.globalValues)
                             if temp.isAnrLine(self.packageName):
                                 anr = Anr(temp)
+                                self.addSystemAnrToAllAnr(systemAnr)
                                 systemAnr = SystemAnr(temp, anr)
                                 anr.systemAnr = systemAnr
                                 self.allAnr.append(anr)
@@ -128,5 +142,6 @@ class SystemLog():
                                 systemAnr.addLine(temp)
                             else:
                                 systemAnr = None
+            self.addSystemAnrToAllAnr(systemAnr)
 
         return self.allAnr

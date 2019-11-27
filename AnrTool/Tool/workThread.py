@@ -1,6 +1,7 @@
 from threading import (Thread, Lock, current_thread)
 from multiprocessing import cpu_count,current_process
 from queue import Queue
+from Tool import logUtils
 import time
 
 #用于线程同步
@@ -47,7 +48,11 @@ class WorkThread(Thread):
 
     def run(self):
         if callable(self.action):
-            self.action()
+            try:
+                self.action()
+            except  Exception as e:
+                logUtils.info(e)
+
 
 class LooperThread(WorkThread):
     def __init__(self):
@@ -80,7 +85,7 @@ class LooperThread(WorkThread):
                 self.working = False
 
 
-__MAX_WORK_LOOPER__ = cpu_count()
+__MAX_WORK_LOOPER__ = cpu_count()*2
 __WORK_THREADS__:LooperThread = list()
 __allWork__ = Queue(999)
 __Work_Done__ = Queue(999)
@@ -93,9 +98,16 @@ if not __WORK_THREADS__:
 
 def __doAction__(action):
     def work(thread:LooperThread):
-        print('working start in thread name : {}'.format(thread.getName()))
-        action()
-        print('working end in thread name : {}'.format(thread.getName()))
+        msg = 'working start in thread name : {}'.format(thread.getName())
+        print(msg)
+        logUtils.info(msg)
+        try:
+            action()
+        except  Exception as e:
+            logUtils.error(e)
+        msg = 'working end in thread name : {}'.format(thread.getName())
+        print(msg)
+        logUtils.info(msg)
         if not __allWork__.empty():
             for work in __WORK_THREADS__:
                 if work.queue.empty():

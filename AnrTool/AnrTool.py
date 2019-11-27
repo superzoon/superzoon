@@ -8,9 +8,7 @@ from _io import TextIOWrapper
 from Tool import toolUtils
 from Tool.toolUtils import *
 from Tool.tracesLog import *
-from Tool import Anr
-from Tool import GlobalValues
-from Tool import log
+from Tool import Anr,GlobalValues, log, logUtils
 from Tool.systemLog import *
 from Tool import DEF_MAX_DELAY_TIME
 
@@ -649,7 +647,10 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     allLine.sort(key=lambda line: line.timeFloat)
     #判断是否有anr
     if len(allAnr) == 0:
-        log("未能解析")
+        temp =("未能解析 {}".format(destDir))
+        logUtils.info(temp)
+        globalValues.showMessage.append(temp)
+        resonFile.writelines(temp)
     #判断是否main log不足
     if mainLine!=None and (mainLine.timeFloat < anrTimeFloat):
         log("main log 不足")
@@ -684,7 +685,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     if hungerBinder:
         temp = '\ndump时候异常binder 共有饥饿binder{}个：'.format(len(globalValues.hungerBinders))
         for key, value in hungerBinder.items():
-            if value > 3:
+            if value > 3 or len(hungerBinder)==1:
                 pids = key.split(':')
                 fromPid = int(pids[0])
                 toPid = int(pids[1])
@@ -756,7 +757,9 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
 
 def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
     #打印需要解析的路径
-    print("--parserZipLogDir thread={} foldPath={}".format(current_thread().getName(), foldPath))
+    msg = '--parserZipLogDir thread={} foldPath={}'.format(current_thread().getName(), foldPath)
+    logUtils.info(msg)
+    print(msg)
     #获取该路径下所有的zip文件
     allZips = [file for file in toolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
     #创建该路径下的reason文件，用于保存解析结果
