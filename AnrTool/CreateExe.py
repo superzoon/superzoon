@@ -79,8 +79,8 @@ def createJiraExe(ico:str = None):
 
 
 if __name__ == '__main__':
-    # createAnrWindowExe(sep.join(['res','anr.ico']))
-    createJiraExe(sep.join(['res','systemui.ico']))
+    createAnrWindowExe(sep.join(['res','anr.ico']))
+    # createJiraExe(sep.join(['res','systemui.ico']))
     exit()
 
 

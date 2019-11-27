@@ -11,12 +11,14 @@ from tkinter.filedialog import askdirectory, askopenfilename
 from AnrTool import parseZipLog, parserZipLogDir, GlobalValues
 from Tool.workThread import WorkThread
 from Tool.workThread import (postAction, addWorkDoneCallback)
+from Tool import GLOBAL_VALUES
 from tkinter import messagebox, Toplevel, Label, ttk
 import zipfile, time
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from datetime import datetime
 from AnrTool import DEFAULT_PACKAGE
 from configparser import ConfigParser
+from Tool import logUtils
 current_dir = dirname(abspath(__file__))
 
 EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
@@ -82,6 +84,10 @@ def updateExe():
                 version = 'v{}'.format(defaultConf['version'])
         if 'content' in defaultConf:
             content = defaultConf['content']
+    else:
+        if GLOBAL_VALUES.debug:
+            logUtils.debug('不能连接服务器跟新文件{}'.format(EXE_PATH+'AnrTool.zip'))
+        print('不能连接服务器')
     if update:
         ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本{}?\n\n{}'.format(version,content))
         if ret == 'yes' or str(ret) == 'Ture':
@@ -107,9 +113,6 @@ if __name__ == '__main__':
     window = tk.Tk()
     window.title('Anr 工具')
     window.resizable(0, 0)
-
-    tmp = open("tmp.ico", "wb+")
-
     ico = sep.join(['res',"anr.ico"])
     if isfile(ico):
         window.iconbitmap(ico)

@@ -485,20 +485,11 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     crashFiles = [file for file in allFiles if 'crash.txt' in file]
     #获取所有的 anr trace文件
     anrFiles = [file for file in allFiles if sep.join(['anr','anr_'+str(packageName)]) in file]
+    anrFiles.sort(reverse = False)
     #获取所有的 system.prop文件
     propFiles = [file for file in allFiles if 'system.prop' in file]
     #解析prop文件获取手机信息
     propMsg = toolUtils.parseProp(propFiles)
-    #解析所有的anr trace
-    blockStacks = []
-    for file in anrFiles:
-        log(file)
-        trace = TracesLog(file, globalValues, packageName)
-        trace.parser()
-        stack:ThreadStack = trace.getBolckStack()
-        #如果堆栈出现两次相同则加入到数列中
-        if stack != None:
-            blockStacks.append(stack)
 
     #添加所有需要需要解析的log文件
     parseFiles = []
@@ -519,6 +510,28 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     # 从systemui解析有多少个anr
     systemLog = SystemLog(systemFiles, allAnr, globalValues, packageName)
     systemLog.findAllAnr()
+    #解析所有的anr trace
+    mainStacks = list()
+    blockStacks = dict()
+    pattern='anr_[\w|\.]+_([\d]+)_([\d|-]+)'
+    parseTracesPids = list()
+    tracesLogs = []
+    for file in anrFiles:
+        match = re.match(pattern,  basename(file))
+        if match:
+            pid = match.group(1)
+            if not pid in  parseTracesPids:
+                parseTracesPids.append(pid)
+                for anr in allAnr:
+                    if str(pid) == str(anr.pid):
+                        log(file)
+                        trace = TracesLog(file, globalValues, packageName)
+                        trace.parser()
+                        tracesLogs.append(trace)
+                        stack:ThreadStack = trace.getMainStack()
+                        #如果堆栈出现两次相同则加入到数列中
+                        if stack != None:
+                            mainStacks.append(stack)
     #最后一行main log，用于验证main log是否包含anr时间
     mainLine = None
     #保存最后发生anr的时间，当mainLine时间小于anr时间则main log不全
@@ -609,7 +622,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             resonFile.writelines(temp)
 
             # 输出阻塞的堆栈
-        for stack in [stack for item in blockStacks if str(item.pid) == str(anr.pid)]:
+        for stack in [stack for item in mainStacks if str(item.pid) == str(anr.pid)]:
             if stack:
                 temp = '\t\npid = '+stack.pid+' main java栈:' + '\t\n\t' + stack.top + '\n'
                 globalValues.showMessage.append(temp)
@@ -645,9 +658,56 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         resonFile.writelines(temp)
     #输出pid和线程名称到文件
     if len(globalValues.pidMap)>0:
-        temp ="线程名称:" + str(globalValues.pidMap) + '\n'
+        temp ="线程名称:\n\t"
+        count = 0
+        for key in sorted(globalValues.pidMap.keys()):
+            temp = temp + 'pid={} : name={},\t\t'.format(key, globalValues.pidMap[key])
+            count = count+1
+            if count%3==0:
+                temp = temp+'\n\t'
         globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
+    #查找最异常binder
+    hungerBinder = dict()
+    maxBinderNum = 0
+    maxBinder = ''
+    for key, value in globalValues.hungerBinders.items():
+        newKey = '{}:{}'.format(key.split(':')[0], value.split(':')[0])
+        if newKey in hungerBinder.keys():
+            hungerBinder[newKey] = hungerBinder[newKey] + 1
+        else:
+            hungerBinder[newKey] = 1
+        if maxBinderNum < hungerBinder[newKey]:
+            maxBinder = newKey
+            maxBinderNum = hungerBinder[newKey]
+
+    if hungerBinder:
+        temp = '\ndump时候异常binder 共有饥饿binder{}个：'.format(len(globalValues.hungerBinders))
+        for key, value in hungerBinder.items():
+            if value > 3:
+                pids = key.split(':')
+                fromPid = int(pids[0])
+                toPid = int(pids[1])
+                temp = temp+'\n\t其中等待 binder form {} to {}, 数量 = {}。'.format(fromPid, toPid, maxBinderNum)
+
+                if fromPid in globalValues.pidMap and toPid in globalValues.pidMap:
+                    temp = temp+'\n\t\tfrom name={}, to name={}'.format(globalValues.pidMap[fromPid],globalValues.pidMap[toPid])
+
+        globalValues.showMessage.append(temp)
+        resonFile.writelines(temp)
+
+    if len(tracesLogs) > 0:
+        temp = '\n\n阻塞线程\n'
+        for tracesLog in tracesLogs:
+            for key in tracesLog.suspiciousStack:
+                pidStack: PidStack = tracesLog.suspiciousStack[key]
+                pidName = int(pidStack.pid)
+                if int(pidStack.pid) in globalValues.pidMap:
+                    pidName = globalValues.pidMap[pidName]
+                temp = '{}\t{} 进程名称:{}\n\t\t{}'.format(temp,key,pidName,'\n\t\t'.join(pidStack.javaStacks[:5]))
+                globalValues.showMessage.append(temp)
+                resonFile.writelines(temp)
+
     temp = '\n'
     globalValues.showMessage.append(temp)
     resonFile.writelines(temp)
@@ -726,9 +786,9 @@ if __name__ == '__main__':
     # D:\workspace\anr_papser\log\LOG-36743
     current = 'NX627JV2B-1080'
     current = ''
-    current = sep.join(['anr_papser','papser','LOG-495785','NX627J_Z0_CN_WQM0P_V217','uzrUka.RhPN3hW.zip'])
     current = sep.join(['anr_papser','test'])
     current = sep.join(['anr_papser','NX629J','LOG-311596'])
+    current = sep.join(['anr_papser','papser','LOG-495539','NX629J_Z0_CN_VLF0P_V227','YYeXlc.RgwXbXQ.zip'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):

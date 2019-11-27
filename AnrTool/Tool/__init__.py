@@ -20,6 +20,7 @@ class GlobalValues:
         self.callbacks = dict()
         self.opener = None
         self.debug = False
+        self.hungerBinders = dict()
 
     def setCallback(self,key:str, callback):
         if key:

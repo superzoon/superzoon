@@ -37,7 +37,7 @@ def warning(msg):
 def error(msg):
     if GLOBAL_VALUES.debug:
         logger.error(msg)
-        
+
 def critical(msg):
     if GLOBAL_VALUES.debug:
         logger.critical(msg)
