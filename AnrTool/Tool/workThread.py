@@ -51,7 +51,7 @@ class WorkThread(Thread):
             try:
                 self.action()
             except  Exception as e:
-                logUtils.info(e)
+                logUtils.error(e.args)
 
 
 class LooperThread(WorkThread):
@@ -104,7 +104,7 @@ def __doAction__(action):
         try:
             action()
         except  Exception as e:
-            logUtils.error(e)
+            logUtils.error(e.args)
         msg = 'working end in thread name : {}'.format(thread.getName())
         print(msg)
         logUtils.info(msg)

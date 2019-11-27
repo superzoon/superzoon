@@ -4,8 +4,12 @@ from os.path import isfile
 from os import remove
 LOG_FILE = "log.txt"
 TAG = "xlan"
-if isfile(LOG_FILE):
-    remove(LOG_FILE)
+
+try:
+    if isfile(LOG_FILE):
+        remove(LOG_FILE)
+except Exception as e:
+    print('初始化log文件异常 {}'.format(e.args))
 
 logger = logging.getLogger(TAG)
 
