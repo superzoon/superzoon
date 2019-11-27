@@ -683,13 +683,13 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             maxBinderNum = hungerBinder[newKey]
 
     if hungerBinder:
-        temp = '\ndump时候异常binder 共有饥饿binder{}个：'.format(len(globalValues.hungerBinders))
+        temp = '\ndump时候异常binder 等待binder共有{}个：'.format(len(globalValues.hungerBinders))
         for key, value in hungerBinder.items():
-            if value > 3 or len(hungerBinder)==1:
+            if maxBinderNum == value or value > 3 or len(hungerBinder)==1:
                 pids = key.split(':')
                 fromPid = int(pids[0])
                 toPid = int(pids[1])
-                temp = temp+'\n\t其中等待 binder form {} to {}, 数量 = {}。'.format(fromPid, toPid, maxBinderNum)
+                temp = temp+'\n\t其中 binder form {} to {}, 数量 = {}。'.format(fromPid, toPid, value)
 
                 if fromPid in globalValues.pidMap and toPid in globalValues.pidMap:
                     temp = temp+'\n\t\tfrom name={}, to name={}'.format(globalValues.pidMap[fromPid],globalValues.pidMap[toPid])
