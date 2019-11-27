@@ -24,17 +24,17 @@ current_dir = dirname(abspath(__file__))
 EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.003'
+CURRENT_VERSION = '1.0.004'
 CURRENT_UPDATE_CONTENT = '修复空文件显示进度条问题,添加解析阻塞数量'
 
 class GressBar():
     def __init__(self):
-        self.master = Toplevel()
-        self.tipLable = tk.Label(self.master, text='任务进行中', fg="green")
-        self.master.attributes('-topmost',True)
+        self.tip = ''
         self.isLoop = False
 
     def start(self, title='解析ANR',lableTxt='任务正在运行中,请稍等……'):
+        self.master = Toplevel()
+        self.master.attributes('-topmost',True)
         top = self.master
         top.overrideredirect(True)
         top.title(title)
@@ -42,6 +42,7 @@ class GressBar():
         prog = ttk.Progressbar(top, mode='indeterminate', length=200)
         prog.pack(pady=10, padx=35)
         prog.start()
+        self.tipLable = tk.Label(self.master, text=self.tip, fg="green")
         self.tipLable.pack(pady=11)
         top.resizable(False, False)
         top.update()
@@ -54,6 +55,7 @@ class GressBar():
         top.mainloop()
 
     def updateMsg(self, msg:str):
+        self.tip = msg
         if hasattr(self, 'tipLable'):
             self.tipLable.config(text=msg)
 
