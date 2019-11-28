@@ -1,6 +1,7 @@
 
 from subprocess import call
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
+from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
 from datetime import datetime
 from configparser import ConfigParser
 from shutil import (rmtree, copyfile)
@@ -44,12 +45,15 @@ def createAnrWindowExe(ico:str = None):
     dist = sep.join(['dist','AnrWindow.exe'])
 
     if isfile(dist):
-        EXE_PATH = AnrWindow.EXE_PATH
-        if not isdir(EXE_PATH):
-            EXE_PATH = sep.join(SHARE_PATH,'AnrTool')
-            print('EXE_PATH isdir '.format(isdir(EXE_PATH)))
-        copyfile(dist, sep.join([EXE_PATH,'AnrTool','AnrTool.exe']))
-        zip_single(sep.join([EXE_PATH, 'AnrTool']), sep.join([EXE_PATH, 'AnrTool.zip']))
+        EXE_PATH = sep.join([SHARE_PATH, 'AnrTool'])
+        print('{} isdir {}'.format(EXE_PATH, isdir(EXE_PATH)))
+        ANR_TOOL_PATH = sep.join([EXE_PATH, 'AnrTool'])
+        EXE_FILE_PATH = sep.join([ANR_TOOL_PATH, 'AnrTool.exe'])
+        ZIP_FILE_PATH = sep.join([EXE_PATH, 'AnrTool.zip'])
+        print('exe={} zip={}'.format(EXE_FILE_PATH, ZIP_FILE_PATH))
+        copyfile(dist, EXE_FILE_PATH)
+        zip_single(ANR_TOOL_PATH, ZIP_FILE_PATH)
+
         customerConf = ConfigParser()
         customerConf.read(AnrWindow.VERSION_INI_FILE)
         defaultConf = customerConf.defaults()
@@ -68,12 +72,16 @@ def createJiraExe(ico:str = None):
     call('pyinstaller -w -F -i {}  JiraTool.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
     dist = sep.join(['dist','JiraTool.exe'])
     if isfile(dist):
-        EXE_PATH = JiraTool.EXE_PATH
-        if not isdir(EXE_PATH):
-            EXE_PATH = sep.join(SHARE_PATH,'JiraTool')
-            print('EXE_PATH isdir '.format(isdir(EXE_PATH)))
-        copyfile(dist, sep.join([EXE_PATH,'JiraTool','JiraTool.exe']))
-        zip_single(sep.join([EXE_PATH, 'JiraTool']), sep.join([EXE_PATH, 'JiraTool.zip']))
+
+        EXE_PATH = sep.join([SHARE_PATH,'JiraTool'])
+        print('{} isdir {}'.format(EXE_PATH, isdir(EXE_PATH)))
+        JIRA_TOOL_PATH = sep.join([EXE_PATH, 'JiraTool'])
+        EXE_FILE_PATH = sep.join([JIRA_TOOL_PATH, 'JiraTool.exe'])
+        ZIP_FILE_PATH = sep.join([EXE_PATH, 'JiraTool.zip'])
+        print('exe={} zip={}'.format(EXE_FILE_PATH, ZIP_FILE_PATH))
+
+        copyfile(dist, EXE_FILE_PATH)
+        zip_single(JIRA_TOOL_PATH, ZIP_FILE_PATH)
         customerConf = ConfigParser()
         customerConf.read(JiraTool.VERSION_INI_FILE)
         defaultConf = customerConf.defaults()

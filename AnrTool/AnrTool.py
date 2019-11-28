@@ -182,7 +182,9 @@ def parseVold(allAnr :Anr, allLine:LogLine, line:LogLine):
 def parseKeyguardViewMediator(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not line.globalValues.pidMap.__contains__(line.pid):
         line.globalValues.pidMap[line.pid] = 'systemui'
-    if line.msg.startswith('handleHide') or line.msg.startswith('handleShow'):
+    if line.msg.startswith('handleHide') or line.msg.startswith('handleShow')\
+            or line.msg.startswith('onStartedGoingToSleep') or line.msg.startswith('onFinishedGoingToSleep')\
+            or line.msg.startswith('onStartedWakingUp'):
         for anr in allAnr:
             if line.isDoubtLine(anr):
                 allLine.append(line)
@@ -663,14 +665,18 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     #输出pid和线程名称到文件
     if len(globalValues.pidMap)>0:
         temp ="线程名称:\n\t"
-        count = 0
+        temp = ''
         for key in sorted(globalValues.pidMap.keys()):
             temp = temp + 'pid={} : name={},\t\t'.format(key, globalValues.pidMap[key])
             count = count+1
-            if count%3==0:
+            if len(temp)>125:
                 temp = temp+'\n\t'
-        globalValues.showMessage.append(temp)
-        resonFile.writelines(temp)
+                globalValues.showMessage.append(temp)
+                resonFile.writelines(temp)
+                temp = ''
+        if len(temp)>0:
+            resonFile.writelines(temp)
+            globalValues.showMessage.append(temp)
     #查找最异常binder
     hungerBinder = dict()
     maxBinderNum = 0
