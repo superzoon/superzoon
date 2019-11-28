@@ -2,6 +2,7 @@ from threading import (Thread, Lock, current_thread)
 from multiprocessing import cpu_count,current_process
 from queue import Queue
 from Tool import logUtils
+import traceback
 import time
 
 #用于线程同步
@@ -50,9 +51,8 @@ class WorkThread(Thread):
         if callable(self.action):
             try:
                 self.action()
-            except  Exception as e:
-                logUtils.error(e.args)
-
+            except  Exception:
+                logUtils.logException('任务出错')
 
 class LooperThread(WorkThread):
     def __init__(self):
@@ -103,8 +103,8 @@ def __doAction__(action):
         logUtils.info(msg)
         try:
             action()
-        except  Exception as e:
-            logUtils.error(e.args)
+        except  Exception:
+            logUtils.logException('任务出错')
         msg = 'working end in thread name : {}'.format(thread.getName())
         print(msg)
         logUtils.info(msg)

@@ -666,6 +666,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     if len(globalValues.pidMap)>0:
         temp ="线程名称:\n\t"
         temp = ''
+        count = 0
         for key in sorted(globalValues.pidMap.keys()):
             temp = temp + 'pid={} : name={},\t\t'.format(key, globalValues.pidMap[key])
             count = count+1

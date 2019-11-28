@@ -2,6 +2,9 @@ import logging
 
 from os.path import isfile
 from os import remove
+from traceback import TracebackException, format_exc
+import sys
+
 LOG_FILE = "log.txt"
 TAG = "xlan"
 
@@ -44,3 +47,12 @@ def error(msg):
 
 def critical(msg):
     logger.critical(msg)
+
+def logException(msg):
+     error('{}:\n{}'.format(msg, format_exc()))
+
+def traceback():
+    (etype, value, tb) = sys.exc_info()
+    for line in TracebackException(type(value), value, tb, limit=None).format(chain=True):
+        warning(line)
+
