@@ -725,7 +725,8 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         resonFile.writelines("\n关键log:\n")
         for line in allLine:
             if line.isAnrCore:
-                resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file, line.linenum))
+                start = len(dirname(dirname(dirname(destDir))))+1
+                resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file[start:], line.linenum))
             resonFile.writelines("\t{}\n".format(line.line.strip()))
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
