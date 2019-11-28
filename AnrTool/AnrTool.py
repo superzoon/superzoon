@@ -708,7 +708,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             temp = '\n'
             for title, stack  in tracesLog.suspiciousStack.items():
                 pidStack: PidStack = stack
-                temp = '{}\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:5]))
+                temp = '{}\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:10]))
                 globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
 

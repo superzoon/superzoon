@@ -2,6 +2,7 @@
 import re
 from os.path import sep
 from Tool import toolUtils
+from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from Tool import GlobalValues
 class ThreadStack:
     def __init__(self, name:str, prio, tid, state, pid, top, pidStack):
@@ -164,7 +165,7 @@ class TracesLog():
                 pidName = int(stack.pid)
                 if int(stack.pid) in self.globalValues.pidMap:
                     pidName = self.globalValues.pidMap[pidName]
-                key = 'pid{} {} 单个进程binder阻塞{}个,{}'.format(stack.pid, pidName, str(stack.maxBlockNumber), self.file)
+                key = 'pid{} {} 单个进程binder阻塞{}个,{}'.format(stack.pid, pidName, str(stack.maxBlockNumber), self.file[len(dirname(self.file)):])
                 self.suspiciousStack[key] = stack.maxBlockStack
 
     def getMainStack(self):
