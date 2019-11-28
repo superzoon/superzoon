@@ -520,16 +520,19 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             pid = match.group(1)
             if not pid in  parseTracesPids:
                 parseTracesPids.append(pid)
+                willParser = False
                 for anr in allAnr:
                     if str(pid) == str(anr.pid):
-                        log(file)
-                        trace = TracesLog(file, globalValues, packageName)
-                        trace.parser()
-                        tracesLogs.append(trace)
-                        stack:ThreadStack = trace.getMainStack()
-                        #如果堆栈出现两次相同则加入到数列中
-                        if stack != None:
-                            mainStacks.append(stack)
+                        willParser = True
+                if willParser:
+                    log(file)
+                    trace = TracesLog(file, globalValues, packageName)
+                    trace.parser()
+                    tracesLogs.append(trace)
+                    stack:ThreadStack = trace.getMainStack()
+                    #如果堆栈出现两次相同则加入到数列中
+                    if stack != None:
+                        mainStacks.append(stack)
     #最后一行main log，用于验证main log是否包含anr时间
     mainLine = None
     #保存最后发生anr的时间，当mainLine时间小于anr时间则main log不全
@@ -683,7 +686,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             maxBinderNum = hungerBinder[newKey]
 
     if hungerBinder:
-        temp = '\ndump时候异常binder 等待binder共有{}个：'.format(len(globalValues.hungerBinders))
+        temp = '\n\ndump时候异常binder 等待binder共有{}个：'.format(len(globalValues.hungerBinders))
         for key, value in hungerBinder.items():
             if maxBinderNum == value or value > 3 or len(hungerBinder)==1:
                 pids = key.split(':')
@@ -697,15 +700,15 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
 
-    if len(tracesLogs) > 0:
+    if len(tracesLogs) > 0 and len(tracesLogs[0].suspiciousStack)>0:
         temp = '\n\n阻塞线程\n'
+        globalValues.showMessage.append(temp)
+        resonFile.writelines(temp)
         for tracesLog in tracesLogs:
-            for key in tracesLog.suspiciousStack:
-                pidStack: PidStack = tracesLog.suspiciousStack[key]
-                pidName = int(pidStack.pid)
-                if int(pidStack.pid) in globalValues.pidMap:
-                    pidName = globalValues.pidMap[pidName]
-                temp = '{}\t{} 进程名称:{}\n\t\t{}'.format(temp,key,pidName,'\n\t\t'.join(pidStack.javaStacks[:5]))
+            temp = '\n'
+            for title, stack  in tracesLog.suspiciousStack.items():
+                pidStack: PidStack = stack
+                temp = '{}\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:5]))
                 globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
 
@@ -790,19 +793,19 @@ if __name__ == '__main__':
     current = 'NX627JV2B-1080'
     current = ''
     current = sep.join(['anr_papser','test'])
-    current = sep.join(['anr_papser','NX629J','LOG-311596'])
     current = sep.join(['anr_papser','papser','LOG-495539','NX629J_Z0_CN_VLF0P_V227','YYeXlc.RgwXbXQ.zip'])
+    current = sep.join(['anr_papser','papser','LOG-494778'])
     if len(current) > 0:
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):
             foldPath = dirname(abspath(papserPath))
             resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
             resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(papserPath)[len(dirname(foldPath)) + 1:]))
-            parseZipLog(papserPath, resonFile, removeDir=True,callbackMsg=lambda msg:print('解析{}'.format(msg)))
+            parseZipLog(papserPath, resonFile, removeDir=True,callbackMsg=lambda msg:print(msg))
 
             resonFile.writelines('\n\n')
         else:
-            parserZipLogDir(papserPath, removeDir=True,callbackMsg=lambda msg:print('解析{}'.format(msg)))
+            parserZipLogDir(papserPath, removeDir=True,callbackMsg=lambda msg:print(msg))
         end = time.clock()
         time.strftime("%b %d %Y %H:%M:%S",)
         print('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))

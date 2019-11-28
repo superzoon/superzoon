@@ -44,7 +44,7 @@ class PidStack:
         self.tempThreadStack = None
         self.isSystemServer = False
         self.maxBlockNumber = 0
-        self.maxBlock = None
+        self.maxBlockStack = None
         self.globalValues = globalValues
 
     def getMainStack(self):
@@ -89,9 +89,10 @@ class PidStack:
                     blockMap[key] = stack
                 if self.maxBlockNumber <  keyMap[key]:
                     self.maxBlockNumber = keyMap[key]
-                    self.maxBlock = blockMap[key]
+                    self.maxBlockStack = blockMap[key]
 
     PATTERN_PID = '----- pid ([\d]+) at ([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}) -----'
+
     @staticmethod
     def getPidStack(line:str, globalValues):
         match = re.match(PidStack.PATTERN_PID, line)
@@ -100,7 +101,7 @@ class PidStack:
         return None
 
 class TracesLog():
-    @classmethod
+
     def __init__(self, file, globalValues:GlobalValues, packageName: str = 'com.android.systemui'):
         self.globalValues = globalValues
         self.file = file
@@ -122,6 +123,17 @@ class TracesLog():
             if inTid.split(':')[1]=='0':
                 self.hungerBinders[outTid] = inTid
 
+    def addPidStackToList(self,pidStack:PidStack):
+        inList = False
+        if not pidStack:
+            return
+        for stack in self.pidStacks:
+            if str(stack.pid) == str(pidStack.pid):
+                inList = True
+
+        if not inList:
+            self.pidStacks.append(pidStack)
+
     def parser(self):
         with open(self.file, encoding=toolUtils.checkFileCode(self.file)) as mmFile:
             lines = mmFile.readlines()
@@ -141,12 +153,19 @@ class TracesLog():
                         if tempPidStack:
                             tempPidStack.check()
                         tempPidStack = newPid
-                        self.pidStacks.append(tempPidStack)
+                        self.addPidStackToList(tempPidStack)
                     if tempPidStack:
                         tempPidStack.addLine(line)
+            if tempPidStack:
+                tempPidStack.check()
+                self.addPidStackToList(tempPidStack)
+
             for stack in [stack for stack in self.pidStacks if stack.maxBlockNumber > 3]:
-                key = '序号:{} 数量:{}'.format(len( self.suspiciousStack),stack.maxBlockNumber)
-                self.suspiciousStack[key] = stack.maxBlock
+                pidName = int(stack.pid)
+                if int(stack.pid) in self.globalValues.pidMap:
+                    pidName = self.globalValues.pidMap[pidName]
+                key = 'pid{} {} 单个进程binder阻塞{}个,{}'.format(stack.pid, pidName, str(stack.maxBlockNumber), self.file)
+                self.suspiciousStack[key] = stack.maxBlockStack
 
     def getMainStack(self):
         threadStack = []
