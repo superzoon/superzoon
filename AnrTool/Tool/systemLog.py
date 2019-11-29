@@ -34,10 +34,10 @@ class SystemAnr():
         self.cpu_one = None
         self.cpu_two = None
 
-    def addLine(self, line: LogLine):
+    def addLine(self, line: LogLine, allAnr:Anr):
         self.lines.append(line)
         if len(self.lines) < 8:
-            self.parser(line.msg.strip())
+            self.parser(line.msg.strip(), allAnr)
 
     def getYear(self):
         return self.anrLine.timeYear
@@ -48,12 +48,14 @@ class SystemAnr():
     '''CPU usage from 0ms to 7411ms later (2019-10-11 12:29:13.178 to 2019-10-11 12:29:20.589):'''
     cpu_pattern = '^CPU usage from ([\d]+)ms to ([-|\d]+)ms.*\(([\d]{4}).*'
 
-    def parser(self, msg: str):
+    def parser(self, msg: str, allAnr:Anr):
         match = re.match(SystemAnr.pid_pattern, msg)
         if match:
             self.pid = int(match.group(1).strip())
             self.anr.pid = self.pid
-            return
+            samePidCount = len([anr for anr in allAnr if anr.pid == self.pid])
+            if allAnr and samePidCount > 1 and self.anr in allAnr:
+                allAnr.remove(self.anr)
         match = re.match(SystemAnr.reason_pattern, msg)
         if match:
             self.anr.anrReason = match.group(1).strip()
@@ -106,19 +108,9 @@ class SystemLog():
             self.files = []
         self.packageName = packageName
 
-    def addSystemAnrToAllAnr(self, systemAnr:SystemAnr):
-        add = True
-        if not systemAnr or not self.allAnr:
-            return
-        for anr in self.allAnr:
-            if str(systemAnr.pid) == str(anr.pid):
-                add = False
-        if add:
-            self.allAnr.append(systemAnr)
-
     def findAllAnr(self):
+        systemAnr = None
         for file in self.files:
-            systemAnr = None
             with open(file, encoding=toolUtils.checkFileCode(file)) as mFile:
                 linenum = 0
                 while True:
@@ -132,16 +124,14 @@ class SystemLog():
                             temp = AnrLine(line, linenum, self.globalValues)
                             if temp.isAnrLine(self.packageName):
                                 anr = Anr(temp)
-                                self.addSystemAnrToAllAnr(systemAnr)
                                 systemAnr = SystemAnr(temp, anr)
                                 anr.systemAnr = systemAnr
                                 self.allAnr.append(anr)
                         else:
                             temp = LogLine(line, linenum, self.globalValues)
                             if temp.isLogLine and temp.tag == systemAnr.anrLine.tag:
-                                systemAnr.addLine(temp)
+                                systemAnr.addLine(temp, self.allAnr)
                             else:
                                 systemAnr = None
-            self.addSystemAnrToAllAnr(systemAnr)
 
         return self.allAnr

@@ -99,14 +99,12 @@ if not __WORK_THREADS__:
 def __doAction__(action):
     def work(thread:LooperThread):
         msg = 'working start in thread name : {}'.format(thread.getName())
-        print(msg)
         logUtils.info(msg)
         try:
             action()
         except  Exception:
             logUtils.logException('任务出错')
         msg = 'working end in thread name : {}'.format(thread.getName())
-        print(msg)
         logUtils.info(msg)
         if not __allWork__.empty():
             for work in __WORK_THREADS__:
@@ -118,7 +116,6 @@ def __doAction__(action):
             workCount = 0
             for t in __WORK_THREADS__:
                 if t.working:
-                    print(t.getName())
                     workCount = workCount+1
             if workCount == 1:
                 while not __Work_Done__.empty():

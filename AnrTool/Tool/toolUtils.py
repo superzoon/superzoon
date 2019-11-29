@@ -5,6 +5,7 @@ from shutil import (copytree, rmtree, copyfile, move)
 from sys import argv
 from zipfile import ZipFile
 from Tool.workThread import LockUtil
+from Tool import logUtils
 import time
 from threading import current_thread
 
@@ -27,7 +28,6 @@ def zip_single(src_file, dest_zip):
     for root_path, dir_names, file_names in os.walk('.'):
         for fn in file_names:
             file = os.path.join(root_path, fn)
-            print(file)
             z.write(file)
     z.close()
     os.chdir(cwd)
@@ -55,12 +55,11 @@ def unzip_single(src_file, dest_dir, password = None):
                     makedirs(dirname(fname_str))
                 zf.extract(name, dest_dir, pwd=password)
                 if name != fname_str:
-                    print('{} --> {}'.format(name, fname_str))
                     os.rename(name, fname_str)
             elif not isdir(fname_str):
                 makedirs(fname_str)
-        except RuntimeError as e:
-            print(e)
+        except RuntimeError:
+            logUtils.logException('unzip_single')
     if root_path and isdir(root_path):
         rmtree(root_path)
     zf.close()
@@ -76,8 +75,8 @@ def encodeAndDecode(dest_dir:str):
                     fn = fn.encode('cp437').decode('utf-8')
                     new_path = os.path.join(root_path, fn)
                     os.rename(path, new_path)
-                except Exception as e:
-                    print('error:', e)
+                except Exception :
+                    logUtils.logException('encodeAndDecode')
 
 def unzip_all(source_dir, dest_dir, password):
      if not os.path.isdir(source_dir):    # 如果是单一文件

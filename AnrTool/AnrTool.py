@@ -770,11 +770,10 @@ def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, ca
     #打印需要解析的路径
     msg = '--parserZipLogDir thread={} foldPath={}'.format(current_thread().getName(), foldPath)
     logUtils.info(msg)
-    print(msg)
     #获取该路径下所有的zip文件
     allZips = [file for file in toolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
     #创建该路径下的reason文件，用于保存解析结果
-    resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
+    resonFile = open(file=sep.join([foldPath, '{}.txt'.format(basename(foldPath))]), mode='w', encoding='utf-8')
     #用于标记在第几个zip
     zipPoint = 0
     #解析每一个zip
@@ -782,7 +781,7 @@ def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, ca
     for zipFile in allZips:
         zipPoint = zipPoint + 1
         #在文件输出解析zip的名称
-        resonFile.writelines('{}.{}\n\n'.format(str(zipPoint), abspath(zipFile)[len(dirname(foldPath)) + 1:]))
+        resonFile.writelines('{}.{}\n\n'.format(str(zipPoint), abspath(zipFile)[len(dirname(foldPath)) + 1:-4]))
         #解析zip log
         globalValuesList.append(parseZipLog(zipFile, resonFile, packageName = packageName, removeDir=removeDir, callbackMsg=callbackMsg))
         #解析完后换行
@@ -807,21 +806,21 @@ if __name__ == '__main__':
         papserPath = sep.join(['D:','workspace',current])
         if isfile(papserPath):
             foldPath = dirname(abspath(papserPath))
-            resonFile = open(file=sep.join([foldPath, 'reason.txt']), mode='w', encoding='utf-8')
+            resonFile = open(file=sep.join([foldPath, basename(foldPath)]), mode='w', encoding='utf-8')
             resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(papserPath)[len(dirname(foldPath)) + 1:]))
-            parseZipLog(papserPath, resonFile, removeDir=True,callbackMsg=lambda msg:print(msg))
+            parseZipLog(papserPath, resonFile, removeDir=True,callbackMsg=lambda msg:logUtils.info(msg))
 
             resonFile.writelines('\n\n')
         else:
-            parserZipLogDir(papserPath, removeDir=True,callbackMsg=lambda msg:print(msg))
+            parserZipLogDir(papserPath, removeDir=True,callbackMsg=lambda msg:logUtils.info(msg))
         end = time.clock()
         time.strftime("%b %d %Y %H:%M:%S",)
-        print('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))
+        logUtils.info('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))
     else:
         papserPath = sep.join(['C:','Users','Administrator','Downloads','parse'])
         for foldPath in [ sep.join([papserPath, child]) for child in listdir(papserPath)]:
             parserZipLogDir(foldPath, True)
         end = time.clock()
-        print('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))
+        logUtils.info('---used {}----'.format(toolUtils.getUsedTimeStr(start, end)))
 
 

@@ -1,7 +1,6 @@
 
 from subprocess import call
-from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
-from os import (walk, path, listdir, popen, remove, rename, makedirs, chdir)
+from os.path import (isdir, isfile, sep, dirname, abspath)
 from datetime import datetime
 from configparser import ConfigParser
 from shutil import (rmtree, copyfile)

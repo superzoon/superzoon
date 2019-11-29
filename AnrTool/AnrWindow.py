@@ -25,8 +25,8 @@ current_dir = dirname(abspath(__file__))
 EXE_PATH = '//MININT-578MFLI/Share/AnrTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.005'
-CURRENT_UPDATE_CONTENT = '修复bug，添加解析深度'
+CURRENT_VERSION = '1.0.006'
+CURRENT_UPDATE_CONTENT = '修复bug,更正log记录'
 
 def updateExe():
     update = False
@@ -116,7 +116,6 @@ if __name__ == '__main__':
     h = h+5
     def select_radio():
         value = select.get()
-        print()
         if value == 0:
             selse_button.config(text='文件')
             tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
@@ -170,21 +169,20 @@ if __name__ == '__main__':
             bar.quit()
             start_file = ''
             if value == 0 :
-                start_file = sep.join([dirname(abspath(file_path)), 'reason.txt'])
+                start_file = sep.join([foldPath, basename(file_path).replace('.zip','.txt') if '.zip' in basename(file_path) else 'reason.txt'])
             elif value == 1 :
-                start_file = sep.join([file_path, 'reason.txt'])
+                start_file = sep.join([file_path, '{}.txt'.format(basename(file_path))])
             elif value == 2 :
                 start_file = file_path
             if exists(start_file):
                 startfile(start_file)
         addWorkDoneCallback(downCallback)
-        print("parserAnr start")
         if value == 0 :
             # tip.config(text='解析单个anr的zip文件(例如:Jira号/版本号/LogId.zip)')
             if zipfile.is_zipfile(file_path):
                 text_view.delete('1.0', 'end')
                 foldPath = dirname(abspath(file_path))
-                fileTxt = sep.join([foldPath, 'reason.txt'])
+                fileTxt = sep.join([foldPath, basename(file_path).replace('.zip','.txt') if '.zip' in basename(file_path) else 'reason.txt'])
                 resonFile = open(file=fileTxt, mode='w', encoding='utf-8')
                 resonFile.writelines('{}.{}\n\n'.format(str(1), abspath(file_path)[len(dirname(foldPath)) + 1:]))
                 try:
@@ -200,7 +198,7 @@ if __name__ == '__main__':
 
                     postAction(action=parse)
                 except:
-                    print("Error: unable to start thread")
+                    logUtils.logException("Error: unable to start thread")
                 bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择anr的zip包！')
@@ -220,7 +218,7 @@ if __name__ == '__main__':
 
                     postAction(action=parse)
                 except:
-                    print("Error: unable to start thread")
+                    logUtils.logException("Error: unable to start thread")
                 bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
@@ -242,11 +240,10 @@ if __name__ == '__main__':
                     try:
                         postAction(getAction(foldPath))
                     except:
-                        print("Error: unable to start thread")
+                        logUtils.logException("Error: unable to start thread")
                 bar.start()
             else:
                 messagebox.showwarning(title='错误', message='请选择带anr的zip的目录！')
-        print("parserAnr end")
     selse_button = tk.Button(window, text='文件/文件夹', font=('Arial', 10), width=10, height=2, command=selectPath)
     selse_button.place(x=WIDTH / 10 - 30, y=h, anchor='nw')
     parser_button = tk.Button(window, text='解析', font=('Arial', 10), width=10, height=2, command=parserAnr)

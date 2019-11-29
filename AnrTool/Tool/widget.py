@@ -82,7 +82,7 @@ class GressBar():
 
     def updateMsg(self, msg:str):
         self.tip = msg
-        if self.master and hasattr(self, 'tipLable'):
+        if hasattr(self, 'tipLable'):
             self.tipLable.config(text=msg)
 
     def quit(self):

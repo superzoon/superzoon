@@ -30,29 +30,35 @@ handler2.setFormatter(formatter)
 logger.addHandler(handler1)
 logger.addHandler(handler2)
 
-def debug(msg):
+def debug(msg, printMsg:bool=False):
     logger.debug(msg)
+    if printMsg:
+        print(msg)
 
-def info(msg):
+def info(msg, printMsg:bool=True):
     logger.info(msg)
+    if printMsg:
+        print(msg)
 
-def info(msg):
+def info(msg, printMsg:bool=True):
     logger.info(msg)
+    if printMsg:
+        print(msg)
 
-def warning(msg):
+def warning(msg, printMsg:bool=True):
     logger.warning(msg)
 
-def error(msg):
+def error(msg, printMsg:bool=True):
     logger.error(msg)
 
-def critical(msg):
+def critical(msg, printMsg:bool=True):
     logger.critical(msg)
 
-def logException(msg):
-     error('{}:\n{}'.format(msg, format_exc()))
+def logException(msg, printMsg:bool=False):
+     error('{}:\n{}'.format(msg, format_exc()), printMsg)
 
-def traceback():
+def traceback(printMsg:bool=False):
     (etype, value, tb) = sys.exc_info()
     for line in TracebackException(type(value), value, tb, limit=None).format(chain=True):
-        warning(line)
+        warning(line, printMsg)
 
