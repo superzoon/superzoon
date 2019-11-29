@@ -650,12 +650,6 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         log(anr.anrReason)
     # 将主要信息按时间排序
     allLine.sort(key=lambda line: line.timeFloat)
-    #判断是否有anr
-    if len(allAnr) == 0:
-        temp =("未能解析 {}".format(destDir))
-        logUtils.info(temp)
-        globalValues.showMessage.append(temp)
-        resonFile.writelines(temp)
     #判断是否main log不足
     if mainLine!=None and (mainLine.timeFloat < anrTimeFloat):
         log("main log 不足")
@@ -737,6 +731,14 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             resonFile.writelines("\t{}\n".format(line.line.strip()))
             if line.isDelayLine:
                 resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
+        resonFile.writelines("\n")
+
+    # 判断是否有anr
+    if len(allAnr) == 0:
+        temp = ("{}未找到anr报错信息\n".format(basename(destDir)))
+        logUtils.info(temp)
+        globalValues.showMessage.append(temp)
+        resonFile.writelines(temp)
     log('####################end write######################')
     return globalValues
 

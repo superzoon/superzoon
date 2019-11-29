@@ -21,7 +21,7 @@ def getVersion(pyName='AnrWindow.py'):
     return currentVersion
 
 def getUpdateContent(pyName='AnrWindow.py'):
-    CURRENT_UPDATE_CONTENT = '1.0.001'
+    CURRENT_UPDATE_CONTENT = '初始化版本'
     pattrn = 'CURRENT_UPDATE_CONTENT = \'(.*)\'.*'
     anr_py = sep.join([dirname(abspath(__file__)), pyName])
     for line in open(anr_py,encoding=checkFileCode(anr_py)).readlines():
@@ -58,7 +58,7 @@ def createAnrWindowExe(ico:str = None):
         defaultConf = customerConf.defaults()
         defaultConf['update_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         defaultConf['version'] = getVersion('AnrWindow.py')
-        defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent('AnrTool.py')
+        defaultConf['v{}'.format(defaultConf['version'])] = getUpdateContent('AnrWindow.py')
         defaultConf['content'] = defaultConf['v{}'.format(defaultConf['version'])]
         customerConf.write(open(AnrWindow.VERSION_INI_FILE, mode='w'))
         if isdir('dist'):
