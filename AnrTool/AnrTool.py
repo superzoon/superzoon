@@ -627,7 +627,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             # 输出阻塞的堆栈
         for stack in [stack for item in mainStacks if str(item.pid) == str(anr.pid)]:
             if stack:
-                temp = '\t\npid = '+stack.pid+' main java栈:' + '\t\n\t' + stack.top + '\n'
+                temp = '\t\nmain pid='+str(stack.pid)+' time='+str(stack.pidStack.time)+' java栈:' + '\t\n\t' + str(stack.top) + '\n'
                 globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
                 temp = '\t\t' + '\n\t\t'.join(stack.javaStacks if len(stack.javaStacks) < 10 else stack.javaStacks[0:10])

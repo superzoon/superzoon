@@ -30,7 +30,7 @@ handler2.setFormatter(formatter)
 logger.addHandler(handler1)
 logger.addHandler(handler2)
 
-def debug(msg, printMsg:bool=False):
+def debug(msg, printMsg:bool=True):
     logger.debug(msg)
     if printMsg:
         print(msg)
