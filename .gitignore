@@ -2,4 +2,4 @@ __pycache__
 .idea
 *.venv
 *.spec
-log.txt
+*log.txt
