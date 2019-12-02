@@ -4,364 +4,508 @@ from Tool import toolUtils
 import re
 
 UN_REGISTER_MAP = list()
-def registerEventHandler(tag:str, action):
-    if 'kEventTraceHeaderOpcode' == tag:
-        tag = 'EventTraceParser.prototype.decodeHeader.bind(this)'
-    elif 'kProcessStartOpcode' == tag:
-        tag = 'ProcessParser.prototype.decodeStart.bind(this)'
-    elif 'kProcessEndOpcode' == tag:
-        tag = 'ProcessParser.prototype.decodeEnd.bind(this)'
-    elif 'kProcessDCStartOpcode' == tag:
-        tag = 'ProcessParser.prototype.decodeDCStart.bind(this)'
-    elif 'kProcessDCEndOpcode' == tag:
-        tag = 'ProcessParser.prototype.decodeDCEnd.bind(this)'
-    elif 'kProcessDefunctOpcode' == tag:
-        tag = 'ProcessParser.prototype.decodeDefunct.bind(this)'
-    elif 'kThreadStartOpcode' == tag:
-        tag = 'ThreadParser.prototype.decodeStart.bind(this)'
-    elif 'kThreadEndOpcode' == tag:
-        tag = 'ThreadParser.prototype.decodeEnd.bind(this)'
-    elif 'kThreadDCStartOpcode' == tag:
-        tag = 'ThreadParser.prototype.decodeDCStart.bind(this)'
-    elif 'kThreadDCEndOpcode' == tag:
-        tag = 'ThreadParser.prototype.decodeDCEnd.bind(this)'
-    elif 'kThreadCSwitchOpcode' == tag:
-        tag = 'ThreadParser.prototype.decodeCSwitch.bind(this)'
-    elif 'opcode' == tag:
-        tag = 'xxx'
-    elif 'tracing_mark_write:android' == tag:
-        tag = 'AndroidParser.prototype.traceMarkWriteAndroidEvent.bind(this)'
-    elif '0:android' == tag:
-        tag = 'AndroidParser.prototype.traceMarkWriteAndroidEvent.bind(this)'
-    elif 'binder_locked' == tag:
-        tag = 'BinderParser.prototype.binderLocked.bind(this)'
-    elif 'binder_unlock' == tag:
-        tag = 'BinderParser.prototype.binderUnlock.bind(this)'
-    elif 'binder_lock' == tag:
-        tag = 'BinderParser.prototype.binderLock.bind(this)'
-    elif 'binder_transaction' == tag:
-        tag = 'BinderParser.prototype.binderTransaction.bind(this)'
-    elif 'binder_transaction_received' == tag:
-        tag = 'BinderParser.prototype.binderTransactionReceived.bind(this)'
-    elif 'binder_transaction_alloc_buf' == tag:
-        tag = 'BinderParser.prototype.binderTransactionAllocBuf.bind(this)'
-    elif 'memory_bus_usage' == tag:
-        tag = 'BusParser.prototype.traceMarkWriteBusEvent.bind(this)'
-    elif 'clock_set_rate' == tag:
-        tag = ',ClockParser.prototype.traceMarkWriteClockEvent.bind(this)'
-    elif 'clk_set_rate' == tag:
-        tag = 'ClockParser.prototype.traceMarkWriteClkEvent.bind(this)'
-    elif 'clock_enable' == tag:
-        tag = 'ClockParser.prototype.traceMarkWriteClockOnOffEvent.bind(this)'
-    elif 'clock_disable' == tag:
-        tag = 'ClockParser.prototype.traceMarkWriteClockOnOffEvent.bind(this)'
-    elif 'clk_enable' == tag:
-        tag = 'ClockParser.prototype.traceMarkWriteClkOnEvent.bind(this)'
-    elif 'clk_disable' == tag:
-        tag = 'ClockParser.prototype.traceMarkWriteClkOffEvent.bind(this)'
-    elif 'cpufreq_interactive_up' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqUpDownEvent.bind(this)'
-    elif 'cpufreq_interactive_down' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqUpDownEvent.bind(this)'
-    elif 'cpufreq_interactive_already' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
-    elif 'cpufreq_interactive_notyet' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
-    elif 'cpufreq_interactive_setspeed' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
-    elif 'cpufreq_interactive_target' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
-    elif 'cpufreq_interactive_boost' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqBoostUnboostEvent.bind(this)'
-    elif 'cpufreq_interactive_unboost' == tag:
-        tag = 'CpufreqParser.prototype.cpufreqBoostUnboostEvent.bind(this)'
-    elif 'f2fs_write_begin' == tag:
-        tag = 'DiskParser.prototype.f2fsWriteBeginEvent.bind(this)'
-    elif 'f2fs_write_end' == tag:
-        tag = 'DiskParser.prototype.f2fsWriteEndEvent.bind(this)'
-    elif 'f2fs_sync_file_enter' == tag:
-        tag = 'DiskParser.prototype.f2fsSyncFileEnterEvent.bind(this)'
-    elif 'f2fs_sync_file_exit' == tag:
-        tag = 'DiskParser.prototype.f2fsSyncFileExitEvent.bind(this)'
-    elif 'ext4_sync_file_enter' == tag:
-        tag = 'DiskParser.prototype.ext4SyncFileEnterEvent.bind(this)'
-    elif 'ext4_sync_file_exit' == tag:
-        tag = 'DiskParser.prototype.ext4SyncFileExitEvent.bind(this)'
-    elif 'ext4_da_write_begin' == tag:
-        tag = 'DiskParser.prototype.ext4WriteBeginEvent.bind(this)'
-    elif 'ext4_da_write_end' == tag:
-        tag = 'DiskParser.prototype.ext4WriteEndEvent.bind(this)'
-    elif 'block_rq_issue' == tag:
-        tag = 'DiskParser.prototype.blockRqIssueEvent.bind(this)'
-    elif 'block_rq_complete' == tag:
-        tag = 'DiskParser.prototype.blockRqCompleteEvent.bind(this)'
-    elif 'drm_vblank_event' == tag:
-        tag = 'DrmParser.prototype.vblankEvent.bind(this)'
-    elif 'exynos_busfreq_target_int' == tag:
-        tag = 'ExynosParser.prototype.busfreqTargetIntEvent.bind(this)'
-    elif 'exynos_busfreq_target_mif' == tag:
-        tag = 'ExynosParser.prototype.busfreqTargetMifEvent.bind(this)'
-    elif 'exynos_page_flip_state' == tag:
-        tag = 'ExynosParser.prototype.pageFlipStateEvent.bind(this)'
-    elif 'fence_init' == tag:
-        tag = 'FenceParser.prototype.initEvent.bind(this)'
-    elif 'fence_destroy' == tag:
-        tag = 'FenceParser.prototype.fenceDestroyEvent.bind(this)'
-    elif 'fence_enable_signal' == tag:
-        tag = 'FenceParser.prototype.fenceEnableSignalEvent.bind(this)'
-    elif 'fence_signaled' == tag:
-        tag = 'FenceParser.prototype.fenceSignaledEvent.bind(this)'
-    elif 'tracing_mark_write:log' == tag:
-        tag = 'GestureParser.prototype.logEvent.bind(this)'
-    elif 'tracing_mark_write:SyncInterpret' == tag:
-        tag = 'GestureParser.prototype.syncEvent.bind(this)'
-    elif 'tracing_mark_write:HandleTimer' == tag:
-        tag = 'GestureParser.prototype.timerEvent.bind(this)'
-    elif 'i2c_write:HandleTimer' == tag:
-        tag = 'I2cParser.prototype.i2cWriteEvent.bind(this)'
-    elif 'i2c_read' == tag:
-        tag = 'I2cParser.prototype.i2cReadEvent.bind(this)'
-    elif 'i2c_write' == tag:
-        tag = 'xx'
-    elif 'i2c_reply' == tag:
-        tag = 'I2cParser.prototype.i2cReplyEvent.bind(this)'
-    elif 'i2c_result' == tag:
-        tag = 'I2cParser.prototype.i2cResultEvent.bind(this)'
-    elif 'i915_gem_object_create' == tag:
-        tag = 'I915Parser.prototype.gemObjectCreateEvent.bind(this)'
-    elif 'i915_gem_object_bind' == tag:
-        tag = 'I915Parser.prototype.gemObjectBindEvent.bind(this)'
-    elif 'i915_gem_object_unbind' == tag:
-        tag = 'I915Parser.prototype.gemObjectBindEvent.bind(this)'
-    elif 'i915_gem_object_change_domain' == tag:
-        tag = 'I915Parser.prototype.gemObjectChangeDomainEvent.bind(this)'
-    elif 'i915_gem_object_pread' == tag:
-        tag = 'I915Parser.prototype.gemObjectPreadWriteEvent.bind(this)'
-    elif 'i915_gem_object_pwrite' == tag:
-        tag = 'I915Parser.prototype.gemObjectPreadWriteEvent.bind(this)'
-    elif 'i915_gem_object_fault' == tag:
-        tag = 'I915Parser.prototype.gemObjectFaultEvent.bind(this)'
-    elif 'i915_gem_object_clflush' == tag:
-        tag = 'I915Parser.prototype.gemObjectDestroyEvent.bind(this)'
-    elif 'i915_gem_object_destroy' == tag:
-        tag = 'I915Parser.prototype.gemObjectDestroyEvent.bind(this)'
-    elif 'i915_gem_ring_dispatch' == tag:
-        tag = 'I915Parser.prototype.gemRingDispatchEvent.bind(this)'
-    elif 'i915_gem_ring_flush' == tag:
-        tag = 'I915Parser.prototype.gemRingFlushEvent.bind(this)'
-    elif 'i915_gem_request' == tag:
-        tag = 'I915Parser.prototype.gemRequestEvent.bind(this)'
-    elif 'i915_gem_request_add' == tag:
-        tag = 'I915Parser.prototype.gemRequestEvent.bind(this)'
-    elif 'i915_gem_request_complete' == tag:
-        tag = 'I915Parser.prototype.gemRequestEvent.bind(this)'
-    elif 'i915_gem_request_retire' == tag:
-        tag = 'I915Parser.prototype.gemRequestEvent.bind(this)'
-    elif 'i915_gem_request_wait_begin' == tag:
-        tag = 'I915Parser.prototype.gemRequestEvent.bind(this)'
-    elif 'i915_gem_request_wait_end' == tag:
-        tag = 'I915Parser.prototype.gemRequestEvent.bind(this)'
-    elif 'i915_gem_ring_wait_begin' == tag:
-        tag = 'I915Parser.prototype.gemRingWaitEvent.bind(this)'
-    elif 'i915_gem_ring_wait_end' == tag:
-        tag = 'I915Parser.prototype.gemRingWaitEvent.bind(this)'
-    elif 'i915_reg_rw' == tag:
-        tag = 'I915Parser.prototype.regRWEvent.bind(this)'
-    elif 'i915_flip_request' == tag:
-        tag = 'I915Parser.prototype.flipEvent.bind(this)'
-    elif 'i915_flip_complete' == tag:
-        tag = 'I915Parser.prototype.flipEvent.bind(this)'
-    elif 'intel_gpu_freq_change' == tag:
-        tag = 'I915Parser.prototype.gpuFrequency.bind(this)'
-    elif 'irq_handler_entry' == tag:
-        tag = 'IrqParser.prototype.irqHandlerEntryEvent.bind(this)'
-    elif 'irq_handler_exit' == tag:
-        tag = 'IrqParser.prototype.irqHandlerExitEvent.bind(this)'
-    elif 'softirq_raise' == tag:
-        tag = 'IrqParser.prototype.softirqRaiseEvent.bind(this)'
-    elif 'softirq_entry' == tag:
-        tag = 'IrqParser.prototype.softirqEntryEvent.bind(this)'
-    elif 'softirq_exit' == tag:
-        tag = 'IrqParser.prototype.softirqExitEvent.bind(this)'
-    elif 'ipi_entry' == tag:
-        tag = 'IrqParser.prototype.ipiEntryEvent.bind(this)'
-    elif 'ipi_exit' == tag:
-        tag = 'IrqParser.prototype.ipiExitEvent.bind(this)'
-    elif 'preempt_disable' == tag:
-        tag = 'IrqParser.prototype.preemptStartEvent.bind(this)'
-    elif 'preempt_enable' == tag:
-        tag = 'IrqParser.prototype.preemptEndEvent.bind(this)'
-    elif 'irq_disable' == tag:
-        tag = 'IrqParser.prototype.irqoffStartEvent.bind(this)'
-    elif 'irq_enable' == tag:
-        tag = 'IrqParser.prototype.irqoffEndEvent.bind(this)'
-    elif 'graph_ent' == tag:
-        tag = 'KernelFuncParser.prototype.traceKernelFuncEnterEvent.bind(this)'
-    elif 'graph_ret' == tag:
-        tag = 'KernelFuncParser.prototype.traceKernelFuncReturnEvent.bind(this)'
-    elif 'mali_dvfs_event' == tag:
-        tag = 'MaliParser.prototype.dvfsEventEvent.bind(this)'
-    elif 'mali_dvfs_set_clock' == tag:
-        tag = 'MaliParser.prototype.dvfsSetClockEvent.bind(this)'
-    elif 'mali_dvfs_set_voltage' == tag:
-        tag = 'MaliParser.prototype.dvfsSetVoltageEvent.bind(this)'
-    elif 'tracing_mark_write:mali_driver' == tag:
-        tag = 'MaliParser.prototype.maliDDKEvent.bind(this)'
-    elif 'mali_job_systrace_event_start' == tag:
-        tag = 'MaliParser.prototype.maliJobEvent.bind(this)'
-    elif 'mali_job_systrace_event_stop' == tag:
-        tag = ',MaliParser.prototype.maliJobEvent.bind(this)'
-    elif 'mm_vmscan_kswapd_wake' == tag:
-        tag = 'MemReclaimParser.prototype.kswapdWake.bind(this)'
-    elif 'mm_vmscan_kswapd_sleep' == tag:
-        tag = 'MemReclaimParser.prototype.kswapdSleep.bind(this)'
-    elif 'mm_vmscan_direct_reclaim_begin' == tag:
-        tag = 'MemReclaimParser.prototype.reclaimBegin.bind(this)'
-    elif 'mm_vmscan_direct_reclaim_end' == tag:
-        tag = 'MemReclaimParser.prototype.reclaimEnd.bind(this)'
-    elif 'lowmemory_kill' == tag:
-        tag = 'MemReclaimParser.prototype.lowmemoryKill.bind(this)'
-    elif 'power_start' == tag:
-        tag = 'PowerParser.prototype.powerStartEvent.bind(this)'
-    elif 'power_frequency' == tag:
-        tag = 'PowerParser.prototype.powerFrequencyEvent.bind(this)'
-    elif 'cpu_frequency' == tag:
-        tag = 'PowerParser.prototype.cpuFrequencyEvent.bind(this)'
-    elif 'cpu_frequency_limits' == tag:
-        tag = 'PowerParser.prototype.cpuFrequencyLimitsEvent.bind(this)'
-    elif 'cpu_idle' == tag:
-        tag = 'PowerParser.prototype.cpuIdleEvent.bind(this)'
-    elif 'regulator_enable' == tag:
-        tag = 'RegulatorParser.prototype.regulatorEnableEvent.bind(this)'
-    elif 'regulator_enable_delay' == tag:
-        tag = 'RegulatorParser.prototype.regulatorEnableDelayEvent.bind(this)'
-    elif 'regulator_enable_complete' == tag:
-        tag = 'RegulatorParser.prototype.regulatorEnableCompleteEvent.bind(this)'
-    elif 'regulator_disable' == tag:
-        tag = 'RegulatorParser.prototype.regulatorDisableEvent.bind(this)'
-    elif 'regulator_disable_complete' == tag:
-        tag = 'RegulatorParser.prototype.regulatorDisableCompleteEvent.bind(this)'
-    elif 'regulator_set_voltage' == tag:
-        tag = 'RegulatorParser.prototype.regulatorSetVoltageEvent.bind(this)'
-    elif 'regulator_set_voltage_complete' == tag:
-        tag = 'RegulatorParser.prototype.regulatorSetVoltageCompleteEvent.bind(this)'
-    elif 'sched_switch' == tag:
-        tag = 'SchedParser.prototype.schedSwitchEvent.bind(this)'
-    elif 'sched_waking' == tag:
-        tag = 'SchedParser.prototype.schedSwitchEvent.bind(this)'
-    elif 'sched_wakeup' == tag:
-        tag = 'SchedParser.prototype.schedSwitchEvent.bind(this)'
-    elif 'sched_blocked_reason' == tag:
-        tag = 'SchedParser.prototype.schedBlockedEvent.bind(this)'
-    elif 'sched_cpu_hotplug' == tag:
-        tag = 'SchedParser.prototype.schedCpuHotplugEvent.bind(this)'
-    elif 'sync_timeline' == tag:
-        tag = 'SyncParser.prototype.timelineEvent.bind(this)'
-    elif 'sync_wait' == tag:
-        tag = 'SyncParser.prototype.syncWaitEvent.bind(this)'
-    elif 'sync_pt' == tag:
-        tag = 'SyncParser.prototype.syncPtEvent.bind(this)'
-    elif 'workqueue_execute_start' == tag:
-        tag = 'WorkqueueParser.prototype.executeStartEvent.bind(this)'
-    elif 'workqueue_execute_end' == tag:
-        tag = 'WorkqueueParser.prototype.executeEndEvent.bind(this)'
-    elif 'workqueue_queue_work' == tag:
-        tag = 'WorkqueueParser.prototype.executeQueueWork.bind(this)'
-    elif 'workqueue_activate_work' == tag:
-        tag = 'WorkqueueParser.prototype.executeActivateWork.bind(this)'
-    elif 'tracing_mark_write' == tag:
-        tag = 'FTraceImporter.prototype.traceMarkingWriteEvent_.bind(this)'
-    elif '0' == tag:
-        tag = 'FTraceImporter.prototype.traceMarkingWriteEvent_.bind(this)'
-    elif 'cgroup_attach_task' == tag:
-        tag = 'xx'
-    elif 'cgroup_release' == tag:
-        tag = 'xx'
-    elif 'cgroup_rmdir' == tag:
-        tag = 'xx'
-    elif 'dma_fence_destroy' == tag:
-        tag = 'xx'
-    elif 'dma_fence_enable_signal' == tag:
-        tag = 'xx'
-    elif 'dma_fence_init' == tag:
-        tag = 'xx'
-    elif 'dma_fence_signaled' == tag:
-        tag = 'xx'
-    elif 'hrtimer_cancel' == tag:
-        tag = 'xx'
-    elif 'hrtimer_expire_entry' == tag:
-        tag = 'xx'
-    elif 'hrtimer_expire_exit' == tag:
-        tag = 'xx'
-    elif 'hrtimer_init' == tag:
-        tag = 'xx'
-    elif 'hrtimer_start' == tag:
-        tag = 'xx'
-    elif 'mm_filemap_add_to_page_cache' == tag:
-        tag = 'xx'
-    elif 'mm_filemap_delete_from_page_cache' == tag:
-        tag = 'xx'
-    elif 'oom_score_adj_update' == tag:
-        tag = 'xx'
-    elif 'rpmh_send_msg' == tag:
-        tag = 'xx'
-    elif 'sched_isolate' == tag:
-        tag = 'xx'
-    elif 'sched_migrate_task' == tag:
-        tag = 'xx'
-    elif 'sched_pi_setprio' == tag:
-        tag = 'xx'
-    elif 'sched_process_exit' == tag:
-        tag = 'xx'
-    elif 'sched_wakeup_new' == tag:
-        tag = 'xx'
-    elif 'sde_evtlog' == tag:
-        tag = 'xx'
-    elif 'sde_perf_calc_crtc' == tag:
-        tag = 'xx'
-    elif 'sde_perf_crtc_update' == tag:
-        tag = 'xx'
-    elif 'sde_perf_set_danger_luts' == tag:
-        tag = 'xx'
-    elif 'sde_perf_set_qos_luts' == tag:
-        tag = 'xx'
-    elif 'task_newtask' == tag:
-        tag = 'xx'
-    elif 'task_rename' == tag:
-        tag = 'xx'
-    elif 'timer_expire_entry' == tag:
-        tag = 'xx'
-    elif 'timer_expire_exit' == tag:
-        tag = 'xx'
-    elif 'eventName' == tag:
-        tag = 'xx'
-    elif 'eventName' == tag:
-        tag = 'xx'
-    elif 'tracing_mark_write:trace_event_clock_sync' == tag:
-        tag = 'xxx'
-    elif '0:trace_event_clock_sync' == tag:
-        tag = 'xxx'
-    elif 'hwcEventName' == tag:
-        tag = 'xx'
-    else:
-        print("tag={}  ###  action={}".format(tag, action))
-        if not tag in UN_REGISTER_MAP:
-            UN_REGISTER_MAP.append(tag)
 
 class TraceFunction:
-    '''
-    cpu_pred_hist: idx:0 resi:13 sample:4 tmr:0
-    '''
-    PATTERN_LINE = '^[\ ]*([^:]+):[\ ]*(.*)'
-    def __init__(self, function:str):
-        self.function = function
-        match = re.match(TraceFunction.PATTERN_LINE, function)
 
-        if match:
-            registerEventHandler(match.group(1).strip(), match.group(2).strip())
+    def __init__(self, eventName:str, details:str, traceLine):
+        self.eventName = eventName
+        self.test = False
+        if eventName and eventName.startswith('sched_'):
+            self.registerSchedEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('binder_'):
+            self.registerBinderEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('kProcess'):
+            self.registerKProcessEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('kThread'):
+            self.registerKThreadEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('cpufreq_'):
+            self.registerCpufreqEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('f2fs_'):
+            self.registerF2fsEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('ext4_'):
+            self.registerExt4EventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('i2c_'):
+            self.registerI2cEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('i915_'):
+            self.registerI915EventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('exynos_'):
+            self.registerExynosEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('clock_'):
+            self.registerClockEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('clk_'):
+            self.registerClkEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('fence_'):
+            self.registerFenceEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('regulator_'):
+            self.registerRegulatorEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('tracing_'):
+            self.registerTracingEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('hrtimer_'):
+            self.registerHrtimerEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('timer_'):
+            self.registerTimerEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('mm_'):
+            self.registerMmEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('workqueue_'):
+            self.registerWorkqueueEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('irq_'):
+            self.registerIrqEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('softirq_'):
+            self.registerSoftirqEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('cpu_'):
+            self.registerCpuEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('mali_'):
+            self.registerMaliEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('dma_'):
+           self.registerDmaEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('sde_'):
+            self.registerSdeEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('cgroup_'):
+            self.registerCgroupEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('task_'):
+            self.registerTaskEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('block_'):
+            self.registerBlockEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('power_'):
+            self.registerPowerEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('sync_'):
+            self.registerSyncEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('0'):
+            self.registerZeroEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('graph_'):
+            self.registerGraphEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('preempt_'):
+            self.registerPreemptEventHandler(eventName, details, traceLine)
+        elif eventName and eventName.startswith('ipi_'):
+            self.registerIpiEventHandler(eventName, details, traceLine)
+        else:
+            self.registerEventHandler(eventName, details, traceLine)
+
+    def registerCpufreqEventHandler(self, eventName: str, details: str, line):
+        if 'cpufreq_interactive_up' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqUpDownEvent.bind(this)'
+        elif 'cpufreq_interactive_down' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqUpDownEvent.bind(this)'
+        elif 'cpufreq_interactive_already' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
+        elif 'cpufreq_interactive_notyet' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
+        elif 'cpufreq_interactive_setspeed' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
+        elif 'cpufreq_interactive_target' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqTargetEvent.bind(this)'
+        elif 'cpufreq_interactive_boost' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqBoostUnboostEvent.bind(this)'
+        elif 'cpufreq_interactive_unboost' == eventName:
+            eventName = 'CpufreqParser.prototype.cpufreqBoostUnboostEvent.bind(this)'
+
+    def registerKThreadEventHandler(self, eventName: str, details: str, line):
+        if 'kThreadStartOpcode' == eventName:
+            eventName = 'ThreadParser.prototype.decodeStart.bind(this)'
+        elif 'kThreadEndOpcode' == eventName:
+            eventName = 'ThreadParser.prototype.decodeEnd.bind(this)'
+        elif 'kThreadDCStartOpcode' == eventName:
+            eventName = 'ThreadParser.prototype.decodeDCStart.bind(this)'
+        elif 'kThreadDCEndOpcode' == eventName:
+            eventName = 'ThreadParser.prototype.decodeDCEnd.bind(this)'
+        elif 'kThreadCSwitchOpcode' == eventName:
+            eventName = 'ThreadParser.prototype.decodeCSwitch.bind(this)'
+
+    def registerKProcessEventHandler(self, eventName: str, details: str, line):
+        if 'kProcessStartOpcode' == eventName:
+            eventName = 'ProcessParser.prototype.decodeStart.bind(this)'
+        elif 'kProcessEndOpcode' == eventName:
+            eventName = 'ProcessParser.prototype.decodeEnd.bind(this)'
+        elif 'kProcessDCStartOpcode' == eventName:
+            eventName = 'ProcessParser.prototype.decodeDCStart.bind(this)'
+        elif 'kProcessDCEndOpcode' == eventName:
+            eventName = 'ProcessParser.prototype.decodeDCEnd.bind(this)'
+        elif 'kProcessDefunctOpcode' == eventName:
+            eventName = 'ProcessParser.prototype.decodeDefunct.bind(this)'
+
+    def registerBinderEventHandler(self, eventName: str, details: str, line):
+        if 'binder_locked' == eventName:
+            eventName = 'BinderParser.prototype.binderLocked.bind(this)'
+        elif 'binder_unlock' == eventName:
+            eventName = 'BinderParser.prototype.binderUnlock.bind(this)'
+        elif 'binder_lock' == eventName:
+            eventName = 'BinderParser.prototype.binderLock.bind(this)'
+        elif 'binder_transaction' == eventName:
+            eventName = 'BinderParser.prototype.binderTransaction.bind(this)'
+        elif 'binder_transaction_received' == eventName:
+            eventName = 'BinderParser.prototype.binderTransactionReceived.bind(this)'
+        elif 'binder_transaction_alloc_buf' == eventName:
+            eventName = 'BinderParser.prototype.binderTransactionAllocBuf.bind(this)'
+
+    def registerSchedEventHandler(self, eventName:str, details:str, line):
+        if 'sched_switch' == eventName:
+            eventName = 'SchedParser.prototype.schedSwitchEvent.bind(this)'
+            if 29162==line.pid:
+                self.test = True
+        elif 'sched_waking' == eventName:
+            eventName = 'SchedParser.prototype.schedSwitchEvent.bind(this)'
+            if 29162==line.pid:
+                self.test = True
+        elif 'sched_wakeup' == eventName:
+            eventName = 'SchedParser.prototype.schedSwitchEvent.bind(this)'
+            if 29162==line.pid:
+                self.test = True
+        elif 'sched_blocked_reason' == eventName:
+            eventName = 'SchedParser.prototype.schedBlockedEvent.bind(this)'
+            if 29162==line.pid:
+                self.test = True
+        elif 'sched_isolate' == eventName:
+            eventName = 'xx'
+        elif 'sched_migrate_task' == eventName:
+            eventName = 'xx'
+        elif 'sched_pi_setprio' == eventName:
+            eventName = 'xx'
+        elif 'sched_process_exit' == eventName:
+            eventName = 'xx'
+        elif 'sched_wakeup_new' == eventName:
+            eventName = 'xx'
+        elif 'sched_cpu_hotplug' == eventName:
+            tag = 'SchedParser.prototype.schedCpuHotplugEvent.bind(this)'
+            if 29162==line.pid:
+                print('sched_cpu_hotplug pid={}, action={}'.format(line.pid, details))
+                return True
+
+    def registerF2fsEventHandler(self, eventName:str, details:str, line):
+        if 'f2fs_write_begin' == eventName:
+            eventName = 'DiskParser.prototype.f2fsWriteBeginEvent.bind(this)'
+        elif 'f2fs_write_end' == eventName:
+            eventName = 'DiskParser.prototype.f2fsWriteEndEvent.bind(this)'
+        elif 'f2fs_sync_file_enter' == eventName:
+            eventName = 'DiskParser.prototype.f2fsSyncFileEnterEvent.bind(this)'
+        elif 'f2fs_sync_file_exit' == eventName:
+            eventName = 'DiskParser.prototype.f2fsSyncFileExitEvent.bind(this)'
+
+    def registerExt4EventHandler(self, eventName:str, details:str, line):
+        if 'ext4_sync_file_enter' == eventName:
+            eventName = 'DiskParser.prototype.ext4SyncFileEnterEvent.bind(this)'
+        elif 'ext4_sync_file_exit' == eventName:
+            eventName = 'DiskParser.prototype.ext4SyncFileExitEvent.bind(this)'
+        elif 'ext4_da_write_begin' == eventName:
+            eventName = 'DiskParser.prototype.ext4WriteBeginEvent.bind(this)'
+        elif 'ext4_da_write_end' == eventName:
+            eventName = 'DiskParser.prototype.ext4WriteEndEvent.bind(this)'
+
+    def registerI2cEventHandler(self, eventName: str, details: str, line):
+        if 'i2c_write:HandleTimer' == eventName:
+            eventName = 'I2cParser.prototype.i2cWriteEvent.bind(this)'
+        elif 'i2c_read' == eventName:
+            eventName = 'I2cParser.prototype.i2cReadEvent.bind(this)'
+        elif 'i2c_write' == eventName:
+            eventName = 'xx'
+        elif 'i2c_reply' == eventName:
+            eventName = 'I2cParser.prototype.i2cReplyEvent.bind(this)'
+        elif 'i2c_result' == eventName:
+            eventName = 'I2cParser.prototype.i2cResultEvent.bind(this)'
+
+    def registerI915EventHandler(self, eventName: str, details: str, line):
+        if 'i915_gem_object_create' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectCreateEvent.bind(this)'
+        elif 'i915_gem_object_bind' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectBindEvent.bind(this)'
+        elif 'i915_gem_object_unbind' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectBindEvent.bind(this)'
+        elif 'i915_gem_object_change_domain' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectChangeDomainEvent.bind(this)'
+        elif 'i915_gem_object_pread' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectPreadWriteEvent.bind(this)'
+        elif 'i915_gem_object_pwrite' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectPreadWriteEvent.bind(this)'
+        elif 'i915_gem_object_fault' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectFaultEvent.bind(this)'
+        elif 'i915_gem_object_clflush' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectDestroyEvent.bind(this)'
+        elif 'i915_gem_object_destroy' == eventName:
+            eventName = 'I915Parser.prototype.gemObjectDestroyEvent.bind(this)'
+        elif 'i915_gem_ring_dispatch' == eventName:
+            eventName = 'I915Parser.prototype.gemRingDispatchEvent.bind(this)'
+        elif 'i915_gem_ring_flush' == eventName:
+            eventName = 'I915Parser.prototype.gemRingFlushEvent.bind(this)'
+        elif 'i915_gem_request' == eventName:
+            eventName = 'I915Parser.prototype.gemRequestEvent.bind(this)'
+        elif 'i915_gem_request_add' == eventName:
+            eventName = 'I915Parser.prototype.gemRequestEvent.bind(this)'
+        elif 'i915_gem_request_complete' == eventName:
+            eventName = 'I915Parser.prototype.gemRequestEvent.bind(this)'
+        elif 'i915_gem_request_retire' == eventName:
+            eventName = 'I915Parser.prototype.gemRequestEvent.bind(this)'
+        elif 'i915_gem_request_wait_begin' == eventName:
+            eventName = 'I915Parser.prototype.gemRequestEvent.bind(this)'
+        elif 'i915_gem_request_wait_end' == eventName:
+            eventName = 'I915Parser.prototype.gemRequestEvent.bind(this)'
+        elif 'i915_gem_ring_wait_begin' == eventName:
+            eventName = 'I915Parser.prototype.gemRingWaitEvent.bind(this)'
+        elif 'i915_gem_ring_wait_end' == eventName:
+            eventName = 'I915Parser.prototype.gemRingWaitEvent.bind(this)'
+        elif 'i915_reg_rw' == eventName:
+            eventName = 'I915Parser.prototype.regRWEvent.bind(this)'
+        elif 'i915_flip_request' == eventName:
+            eventName = 'I915Parser.prototype.flipEvent.bind(this)'
+        elif 'i915_flip_complete' == eventName:
+            eventName = 'I915Parser.prototype.flipEvent.bind(this)'
+
+    def registerExynosEventHandler(self, eventName: str, details: str, line):
+        if 'exynos_busfreq_target_int' == eventName:
+            eventName = 'ExynosParser.prototype.busfreqTargetIntEvent.bind(this)'
+        elif 'exynos_busfreq_target_mif' == eventName:
+            eventName = 'ExynosParser.prototype.busfreqTargetMifEvent.bind(this)'
+        elif 'exynos_page_flip_state' == eventName:
+            eventName = 'ExynosParser.prototype.pageFlipStateEvent.bind(this)'
+
+    def registerClockEventHandler(self, eventName: str, details: str, line):
+        if 'clock_set_rate' == eventName:
+            eventName = ',ClockParser.prototype.traceMarkWriteClockEvent.bind(this)'
+        elif 'clock_enable' == eventName:
+            eventName = 'ClockParser.prototype.traceMarkWriteClockOnOffEvent.bind(this)'
+        elif 'clock_disable' == eventName:
+            eventName = 'ClockParser.prototype.traceMarkWriteClockOnOffEvent.bind(this)'
+
+    def registerClkEventHandler(self, eventName: str, details: str, line):
+        if 'clk_set_rate' == eventName:
+            eventName = 'ClockParser.prototype.traceMarkWriteClkEvent.bind(this)'
+        elif 'clk_enable' == eventName:
+            eventName = 'ClockParser.prototype.traceMarkWriteClkOnEvent.bind(this)'
+        elif 'clk_disable' == eventName:
+            eventName = 'ClockParser.prototype.traceMarkWriteClkOffEvent.bind(this)'
+
+    def registerFenceEventHandler(self, eventName: str, details: str, line):
+        if 'fence_init' == eventName:
+            eventName = 'FenceParser.prototype.initEvent.bind(this)'
+        elif 'fence_destroy' == eventName:
+            eventName = 'FenceParser.prototype.fenceDestroyEvent.bind(this)'
+        elif 'fence_enable_signal' == eventName:
+            eventName = 'FenceParser.prototype.fenceEnableSignalEvent.bind(this)'
+        elif 'fence_signaled' == eventName:
+            eventName = 'FenceParser.prototype.fenceSignaledEvent.bind(this)'
+
+    def registerRegulatorEventHandler(self, eventName: str, details: str, line):
+        if 'regulator_enable' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorEnableEvent.bind(this)'
+        elif 'regulator_enable_delay' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorEnableDelayEvent.bind(this)'
+        elif 'regulator_enable_complete' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorEnableCompleteEvent.bind(this)'
+        elif 'regulator_disable' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorDisableEvent.bind(this)'
+        elif 'regulator_disable_complete' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorDisableCompleteEvent.bind(this)'
+        elif 'regulator_set_voltage' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorSetVoltageEvent.bind(this)'
+        elif 'regulator_set_voltage_complete' == eventName:
+            eventName = 'RegulatorParser.prototype.regulatorSetVoltageCompleteEvent.bind(this)'
+
+    def registerTracingEventHandler(self, eventName: str, details: str, line):
+        if 'tracing_mark_write:mali_driver' == eventName:
+            eventName = 'MaliParser.prototype.maliDDKEvent.bind(this)'
+        elif 'tracing_mark_write:log' == eventName:
+            eventName = 'GestureParser.prototype.logEvent.bind(this)'
+        elif 'tracing_mark_write:SyncInterpret' == eventName:
+            eventName = 'GestureParser.prototype.syncEvent.bind(this)'
+        elif 'tracing_mark_write:HandleTimer' == eventName:
+            eventName = 'GestureParser.prototype.timerEvent.bind(this)'
+        elif 'tracing_mark_write:android' == eventName:
+            eventName = 'AndroidParser.prototype.traceMarkWriteAndroidEvent.bind(this)'
+        elif 'tracing_mark_write' == eventName:
+            eventName = 'FTraceImporter.prototype.traceMarkingWriteEvent_.bind(this)'
+        elif 'tracing_mark_write:trace_event_clock_sync' == eventName:
+            eventName = 'xxx'
+
+    def registerHrtimerEventHandler(self, eventName: str, details: str, line):
+        if 'hrtimer_cancel' == eventName:
+            eventName = 'xx'
+        elif 'hrtimer_expire_entry' == eventName:
+            eventName = 'xx'
+        elif 'hrtimer_expire_exit' == eventName:
+            eventName = 'xx'
+        elif 'hrtimer_init' == eventName:
+            eventName = 'xx'
+        elif 'hrtimer_start' == eventName:
+            eventName = 'xx'
+
+    def registerTimerEventHandler(self, eventName: str, details: str, line):
+        if 'timer_expire_entry' == eventName:
+            eventName = 'xx'
+        elif 'timer_expire_exit' == eventName:
+            eventName = 'xx'
+
+    def registerMmEventHandler(self, eventName: str, details: str, line):
+        if 'mm_vmscan_kswapd_wake' == eventName:
+            eventName = 'MemReclaimParser.prototype.kswapdWake.bind(this)'
+        elif 'mm_vmscan_kswapd_sleep' == eventName:
+            eventName = 'MemReclaimParser.prototype.kswapdSleep.bind(this)'
+        elif 'mm_vmscan_direct_reclaim_begin' == eventName:
+            eventName = 'MemReclaimParser.prototype.reclaimBegin.bind(this)'
+        elif 'mm_vmscan_direct_reclaim_end' == eventName:
+            eventName = 'MemReclaimParser.prototype.reclaimEnd.bind(this)'
+        elif 'mm_filemap_add_to_page_cache' == eventName:
+            eventName = 'xx'
+        elif 'mm_filemap_delete_from_page_cache' == eventName:
+            eventName = 'xx'
+
+    def registerWorkqueueEventHandler(self, eventName: str, details: str, line):
+        if 'workqueue_execute_start' == eventName:
+            eventName = 'WorkqueueParser.prototype.executeStartEvent.bind(this)'
+        elif 'workqueue_execute_end' == eventName:
+            eventName = 'WorkqueueParser.prototype.executeEndEvent.bind(this)'
+        elif 'workqueue_queue_work' == eventName:
+            eventName = 'WorkqueueParser.prototype.executeQueueWork.bind(this)'
+        elif 'workqueue_activate_work' == eventName:
+            eventName = 'WorkqueueParser.prototype.executeActivateWork.bind(this)'
+
+    def registerIrqEventHandler(self, eventName: str, details: str, line):
+        if 'irq_handler_entry' == eventName:
+            eventName = 'IrqParser.prototype.irqHandlerEntryEvent.bind(this)'
+        elif 'irq_handler_exit' == eventName:
+            eventName = 'IrqParser.prototype.irqHandlerExitEvent.bind(this)'
+        elif 'irq_disable' == eventName:
+            eventName = 'IrqParser.prototype.irqoffStartEvent.bind(this)'
+        elif 'irq_enable' == eventName:
+            eventName = 'IrqParser.prototype.irqoffEndEvent.bind(this)'
+
+    def registerSoftirqEventHandler(self, eventName: str, details: str, line):
+        if 'softirq_raise' == eventName:
+            eventName = 'IrqParser.prototype.softirqRaiseEvent.bind(this)'
+        elif 'softirq_entry' == eventName:
+            eventName = 'IrqParser.prototype.softirqEntryEvent.bind(this)'
+        elif 'softirq_exit' == eventName:
+            eventName = 'IrqParser.prototype.softirqExitEvent.bind(this)'
+
+    def registerCpuEventHandler(self, eventName: str, details: str, line):
+        if 'cpu_frequency' == eventName:
+            eventName = 'PowerParser.prototype.cpuFrequencyEvent.bind(this)'
+        elif 'cpu_frequency_limits' == eventName:
+            eventName = 'PowerParser.prototype.cpuFrequencyLimitsEvent.bind(this)'
+        elif 'cpu_idle' == eventName:
+            eventName = 'PowerParser.prototype.cpuIdleEvent.bind(this)'
+
+    def registerMaliEventHandler(self, eventName: str, details: str, line):
+        if 'mali_dvfs_event' == eventName:
+            eventName = 'MaliParser.prototype.dvfsEventEvent.bind(this)'
+        elif 'mali_dvfs_set_clock' == eventName:
+            eventName = 'MaliParser.prototype.dvfsSetClockEvent.bind(this)'
+        elif 'mali_dvfs_set_voltage' == eventName:
+            eventName = 'MaliParser.prototype.dvfsSetVoltageEvent.bind(this)'
+        elif 'mali_job_systrace_event_start' == eventName:
+            eventName = 'MaliParser.prototype.maliJobEvent.bind(this)'
+        elif 'mali_job_systrace_event_stop' == eventName:
+            eventName = ',MaliParser.prototype.maliJobEvent.bind(this)'
+
+    def registerDmaEventHandler(self, eventName: str, details: str, line):
+        if 'dma_fence_destroy' == eventName:
+            eventName = 'xx'
+        elif 'dma_fence_enable_signal' == eventName:
+            eventName = 'xx'
+        elif 'dma_fence_init' == eventName:
+            eventName = 'xx'
+        elif 'dma_fence_signaled' == eventName:
+            eventName = 'xx'
+
+    def registerSdeEventHandler(self, eventName: str, details: str, line):
+        if 'sde_evtlog' == eventName:
+            eventName = 'xx'
+        elif 'sde_perf_calc_crtc' == eventName:
+            eventName = 'xx'
+        elif 'sde_perf_crtc_update' == eventName:
+            eventName = 'xx'
+        elif 'sde_perf_update_bus' == eventName:
+            eventName = 'xx'
+        elif 'sde_perf_set_danger_luts' == eventName:
+            eventName = 'xx'
+        elif 'sde_perf_set_qos_luts' == eventName:
+            eventName = 'xx'
+
+    def registerCgroupEventHandler(self, eventName: str, details: str, line):
+        if 'cgroup_attach_task' == eventName:
+            eventName = 'xx'
+        elif 'cgroup_release' == eventName:
+            eventName = 'xx'
+        elif 'cgroup_rmdir' == eventName:
+            eventName = 'xx'
+
+    def registerTaskEventHandler(self, eventName: str, details: str, line):
+        if 'task_newtask' == eventName:
+            eventName = 'xx'
+        elif 'task_rename' == eventName:
+            eventName = 'xx'
+
+    def registerBlockEventHandler(self, eventName: str, details: str, line):
+        if 'block_rq_issue' == eventName:
+            eventName = 'DiskParser.prototype.blockRqIssueEvent.bind(this)'
+        elif 'block_rq_complete' == eventName:
+            eventName = 'DiskParser.prototype.blockRqCompleteEvent.bind(this)'
+
+    def registerPowerEventHandler(self, eventName: str, details: str, line):
+        if 'power_start' == eventName:
+            eventName = 'PowerParser.prototype.powerStartEvent.bind(this)'
+        elif 'power_frequency' == eventName:
+            eventName = 'PowerParser.prototype.powerFrequencyEvent.bind(this)'
+
+    def registerSyncEventHandler(self, eventName: str, details: str, line):
+        if 'sync_timeline' == eventName:
+            eventName = 'SyncParser.prototype.timelineEvent.bind(this)'
+        elif 'sync_wait' == eventName:
+            eventName = 'SyncParser.prototype.syncWaitEvent.bind(this)'
+        elif 'sync_pt' == eventName:
+            eventName = 'SyncParser.prototype.syncPtEvent.bind(this)'
+
+    def registerZeroEventHandler(self, eventName: str, details: str, line):
+        if '0' == eventName:
+            eventName = 'FTraceImporter.prototype.traceMarkingWriteEvent_.bind(this)'
+        elif '0:android' == eventName:
+            eventName = 'AndroidParser.prototype.traceMarkWriteAndroidEvent.bind(this)'
+        elif '0:trace_event_clock_sync' == eventName:
+            eventName = 'xxx'
+
+    def registerGraphEventHandler(self, eventName: str, details: str, line):
+        if 'graph_ent' == eventName:
+            eventName = 'KernelFuncParser.prototype.traceKernelFuncEnterEvent.bind(this)'
+        elif 'graph_ret' == eventName:
+            eventName = 'KernelFuncParser.prototype.traceKernelFuncReturnEvent.bind(this)'
+
+    def registerPreemptEventHandler(self, eventName: str, details: str, line):
+        if 'preempt_disable' == eventName:
+            eventName = 'IrqParser.prototype.preemptStartEvent.bind(this)'
+        elif 'preempt_enable' == eventName:
+            eventName = 'IrqParser.prototype.preemptEndEvent.bind(this)'
+
+    def registerIpiEventHandler(self, eventName: str, details: str, line):
+        if 'ipi_entry' == eventName:
+            eventName = 'IrqParser.prototype.ipiEntryEvent.bind(this)'
+        elif 'ipi_exit' == eventName:
+            eventName = 'IrqParser.prototype.ipiExitEvent.bind(this)'
+
+    def registerEventHandler(self, eventName:str, details, line):
+        if 'kEventTraceHeaderOpcode' == eventName:
+            eventName = 'EventTraceParser.prototype.decodeHeader.bind(this)'
+        elif 'opcode' == eventName:
+            eventName = 'xxx'
+        elif 'memory_bus_usage' == eventName:
+            eventName = 'BusParser.prototype.traceMarkWriteBusEvent.bind(this)'
+        elif 'drm_vblank_event' == eventName:
+            eventName = 'DrmParser.prototype.vblankEvent.bind(this)'
+        elif 'intel_gpu_freq_change' == eventName:
+            eventName = 'I915Parser.prototype.gpuFrequency.bind(this)'
+        elif 'lowmemory_kill' == eventName:
+            eventName = 'MemReclaimParser.prototype.lowmemoryKill.bind(this)'
+        elif 'oom_score_adj_update' == eventName:
+            eventName = 'xx'
+        elif 'rpmh_send_msg' == eventName:
+            eventName = 'xx'
+        elif 'hwcEventName' == eventName:
+            eventName = 'xx'
+        else:
+            print("tag={}  ###  action={}".format(eventName, details))
+            if not eventName in UN_REGISTER_MAP:
+                UN_REGISTER_MAP.append(eventName)
+
 
 class TraceLine:
-    PATTERN_LINE = '^[\ ]*([^-]+)-([\d]+)[\ ]+\(([\d|-|\ ]+)\)[\ ]+\[([\d]+)\][\ ]+([\w|\d|\.])([\w|\d|\.])([\w|\d|\.])([\w|\d|\.])[\ ]+([\w|\.]+):(.*)'
+    PATTERN_LINE = r'^[\s]*(.+)-([\d]+)[\s]+\(([\d|-|\s]+)\)[\s]+\[([\d]+)\][\s]+([d|X|\.])([N|n|p|\.])([H|h|s|\.])([0-9|a-f|\.])[\s]+([\d]+\.[\d]+):\s+([\S]+):\s(.*)$'
+    PATTERN_LINE = '^[\s]*(.+)-([\d]+)[\s]+\(([^\)]+)\)[\s]+\[([\d]+)\][\s]+([d|X|\.])([N|n|p|\.])([H|h|s|\.])([0-9|a-f|\.])[\s]+([\d]+\.[\d]+):\s+([\S]+):\s(.*)$'
     '''
     <!-- BEGIN TRACE -->
       <script class="trace-data" type="application/text">
@@ -382,42 +526,30 @@ class TraceLine:
       </script>
     <!-- END TRACE -->
     '''
-    IRQ_OFF_MAP = list()
-    NEED_RESCHED = list()
-    IRQ = list()
-    PREEMPT_DEPTH = list()
-    def __init__(self, task:str, pid:int, tgid:int, cpuId:int, irqsOff:str, needResched:str, irq:str, preemptDepth:str, timestamp:float, function:TraceFunction):
+    def __init__(self, task:str, pid:int, tgid:int, cpuId:int, irqsOff:str, needResched:str, irq:str, preemptDepth:str, timestamp:float, eventName, details, systemTrace):
         '''
         :param task: name or ... or idle 名称
         :param pid: 进程id
         :param tgid: 线程id
         :param cpuId: 使用的cpu号
-        :param irqsOff: 终端请求了 ['d', '.']
-        :param needResched: 需要resched ['.', 'n']
-        :param irq: 中断['.', 'h', 's', 'H']
-        :param preemptDepth: 优先等级['4', '1', '.', '2', '3', '5', '8', '9', 'a', '7', '6', 'b', 'c', 'd']
+        :param irqsOff: 终端请求了 [dX.]
+        :param needResched: 需要resched [Nnp.]
+        :param irq: 中断[Hhs.]
+        :param preemptDepth: 优先等级[0-9a-f.]
         :param timestamp: 时间戳
-        :param function:
         '''
         self.task:str = task
         self.pid: int = pid
         self.tgid: int = tgid
         self.cpuId: int = cpuId
         self.irqsOff: chr = irqsOff
-        if not irqsOff in TraceLine.IRQ_OFF_MAP:
-            TraceLine.IRQ_OFF_MAP.append(irqsOff)
         self.needResched: chr = needResched
-        if not needResched in TraceLine.NEED_RESCHED:
-            TraceLine.NEED_RESCHED.append(needResched)
         self.irq: chr = irq
-        if not irq in TraceLine.IRQ:
-            TraceLine.IRQ.append(irq)
         self.preemptDepth: chr = preemptDepth
-        if not preemptDepth in TraceLine.PREEMPT_DEPTH:
-            TraceLine.PREEMPT_DEPTH.append(preemptDepth)
         self.timestamp: float = timestamp
-        self.function: TraceFunction = function
-
+        self.eventName = eventName
+        self.detail: TraceFunction = TraceFunction(eventName, details, self)
+        self.systemTrace = systemTrace
 
 class SystemTrace:
     def __init__(self, trace_html:str):
@@ -425,7 +557,6 @@ class SystemTrace:
         self.lines:TraceLine = []
         #{'key_pid':{key_tgid:TraceLine}}
         self.pidTraceDict = dict()
-        print(isfile(trace_html))
         if not isfile(trace_html) or not trace_html.endswith('.html'):
             self.isTraceFile = False
         else:
@@ -436,43 +567,55 @@ class SystemTrace:
             #name or ... or idle 名称
             task:str = match.group(1).strip()
             #pid 进程id
-            pid:int = int(match.group(2).strip())
+            try:
+                pid:int = int(match.group(2).strip())
+            except :
+                pid: int = 0
             #tgid 线程id
-            tgid:int = int(match.group(3).strip())
-            #cpuId 使用的cpu号
-            cpuId:int = int(match.group(4).strip())
-            #irqs-off 终端请求了 ['d', '.']
+            try:
+                tgid:int = int(match.group(3).strip())
+            except :
+                tgid: int = -1
+                #cpuId 使用的cpu号
+            try:
+                cpuId:int = int(match.group(4).strip())
+            except :
+                cpuId: int = 0
+            #irqs-off 终端请求了 [dX.]
             irqsOff:str = str(match.group(5).strip())
-            #need-resched 需要resched ['.', 'n']
+            #need-resched 需要resched [Nnp.]
             needResched:str = str(match.group(6).strip())
-            #hardirq/softirq 中断['.', 'h', 's', 'H']
+            #hardirq/softirq 中断[Hhs.]
             irq:str = str(match.group(7).strip())
-            #preempt-depth 优先等级['4', '1', '.', '2', '3', '5', '8', '9', 'a', '7', '6', 'b', 'c', 'd']
+            #preempt-depth 优先等级[0-9a-f.]
             preemptDepth:str = str(match.group(8).strip())
             #TIMESTAMP 时间戳
             timestamp:float = float(match.group(9).strip())
-            #FUNCTION 方法
-            function:TraceFunction = TraceFunction(match.group(10).strip())
-            return TraceLine(task, pid, tgid, cpuId, irqsOff, needResched, irq, preemptDepth, timestamp, function)
+            #eventName
+            eventName = match.group(10).strip()
+            #details
+            details = match.group(11).strip()
+            return TraceLine(task, pid, tgid, cpuId, irqsOff, needResched, irq, preemptDepth, timestamp, eventName, details, self)
         else:
             return None
 
     def __addTraceLine__(self, line:TraceLine):
         self.lines.append(line)
         pidKey = 'key_{}'.format(line.pid)
-        pidTrace = None
+
         if pidKey in self.pidTraceDict.keys():
             pidTrace = self.pidTraceDict[pidKey]
         else:
             pidTrace = dict()
             self.pidTraceDict[pidKey] = pidTrace
+
         tgidKey = 'key_{}'.format(line.tgid)
-        tgidList = None
-        if tgidKey in self.pidTraceDict.keys():
+
+        if tgidKey in pidTrace.keys():
             tgidList =pidTrace[tgidKey]
         else:
             tgidList = list()
-            self.pidTraceDict[tgidKey] = tgidList
+            pidTrace[tgidKey] = tgidList
         tgidList.append(line)
 
 
@@ -494,16 +637,29 @@ class SystemTrace:
                     elif beginTrace:
                         temp:TraceLine = self.parseLine(line)
                         if temp:
-                            self.lines.append(temp)
-            print('IRQ_OFF_MAP = {}'.format(TraceLine.IRQ_OFF_MAP))
-            print('NEED_RESCHED = {}'.format(TraceLine.NEED_RESCHED))
-            print('IRQ = {}'.format(TraceLine.IRQ))
-            print('PREEMPT_DEPTH = {}'.format(TraceLine.PREEMPT_DEPTH))
+                            self.__addTraceLine__(temp)
+                            # if temp.detail.test:
+                            #     print(line)
+                        else:
+                            print(line.strip())
+
             UN_REGISTER_MAP.sort()
             print('UN_REGISTER_MAP = {}'.format(UN_REGISTER_MAP))
+            print('pidTraceDict = {}'.format(self.pidTraceDict.keys()))
 
+
+def test():
+    PATTERN_LINE = '^[\s]*(.+)-([\d]+)[\s]+\(([\d|-|\s]+)\)[\s]+\[([\d]+)\][\s]+([d|X|\.])([N|n|p|\.])([H|h|s|\.])([0-9|a-f|\.])[\s]+([\d]+\.[\d]+):\s+([\S]+):\s(.*)$'
+    PATTERN_LINE = '^[\s]*(.+)-([\d]+)[\s]+\(([^\s]+)\)[\s]+\[([\d]+)\][\s]+([d|X|\.])([N|n|p|\.])([H|h|s|\.])([0-9|a-f|\.])[\s]+([\d]+\.[\d]+):\s+([\S]+):\s(.*)$'
+    PATTERN_LINE = '^[\s]*(.+)-([\d]+)[\s]+\(([^\)]+)\)[\s]+\[([\d]+)\][\s]+([d|X|\.])([N|n|p|\.])([H|h|s|\.])([0-9|a-f|\.])[\s]+([\d]+\.[\d]+):\s+([\S]+):\s(.*)$'
+    line = '          <idle>-0     (-----) [007] dn.2  5680.980692: hrtimer_start: hrtimer=00000000fca38243 function=tick_sched_timer expires=5680990000000 softexpires=5680990000000'
+    match = re.match(PATTERN_LINE, line)
+    if match:
+        print(match.groups())
+    exit(0)
 
 if __name__ == '__main__':
+    #test()
     '''    
     #                                      _-----=> irqs-off
     #                                     / _----=> need-resched
@@ -514,11 +670,6 @@ if __name__ == '__main__':
     #              | |        |      |   ||||       |         |
               <idle>-0     (-----) [002] dn.1  1507.655129: cpu_pred_hist: idx:0 resi:13 sample:4 tmr:0
     '''
-    line = '         OomAdjuster-1466  ( 1070) [006] ....  1509.655738: cgroup_attach_task: dst_root=6 dst_id=3 dst_level=1 dst_path=/background pid=5746 comm=Thread-19'
-    pattern = '^[\ ]*([^-]+)-([\d]+)[\ ]+\(([\d|-|\ ]+)\)[\ ]+\[([\d]+)\][\ ]+([\w|\d|\.])([\w|\d|\.])([\w|\d|\.])([\w|\d|\.])[\ ]+([\w|\.]+):(.*)'
-    match = re.match(pattern, line)
-    if match:
-        print(match.groups())
-    trace_html = sep.join(['..','res', 'trace.html'])
+    trace_html = '''C:/Users/Administrator/trace.html'''
     trace = SystemTrace(trace_html)
     trace.parseTrace()
