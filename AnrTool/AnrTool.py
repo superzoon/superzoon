@@ -7,7 +7,7 @@ from zipfile import ZipFile
 from _io import TextIOWrapper
 from Tool import toolUtils
 from Tool.toolUtils import *
-from Tool.tracesLog import *
+from Tool.anrTraces import *
 from Tool import Anr,GlobalValues, log, logUtils
 from Tool.systemLog import *
 from Tool import DEF_MAX_DELAY_TIME
