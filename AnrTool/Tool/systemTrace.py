@@ -192,12 +192,12 @@ class TraceLine:
             match = re.match(TraceLine.PATTERN_SCHED_SWITCH, details)
             if match:
                 self._prev_comm_ = match.group(1)
-                self._prev_pid_ = match.group(2)
-                self._prev_prio_ = match.group(3)
-                self._prev_state_ = match.group(4)
+                self._prev_pid_ = int(match.group(2))
+                self._prev_prio_ = int(match.group(3))
+                self._prev_state_ = match.group(4)#S stop, I , R+ running,R runnable,X , Z
                 self._next_comm_ = match.group(5)
-                self._next_pid_ = match.group(6)
-                self._next_prio_ = match.group(7)
+                self._next_pid_ = int(match.group(6))
+                self._next_prio_ = int(match.group(7))
                 self.systemTrace.schedSwitchs.append(self)
             if str(29162) in details:
                 self.test = True
@@ -207,8 +207,8 @@ class TraceLine:
             if match:
                 self._comm_ = match.group(1)
                 self._fromPid_ = self.pid
-                self._pid_ = match.group(2)
-                self._prio_ = match.group(3)
+                self._pid_ = int(match.group(2))
+                self._prio_ = int(match.group(3))
                 if len(match.groups()) == 5:
                     self._target_cpu_ = match.group(5)
                 else:
@@ -604,13 +604,13 @@ class SystemTrace:
                 cpuId:int = int(match.group(4).strip())
             except :
                 cpuId: int = 0
-            #irqs-off 终端请求了 [dX.]
+            #irqs-off 终端请求了 [dX.]'d '表示中断被 disabled 。' .'表示中断没有关闭；
             irqsOff:str = str(match.group(5).strip())
-            #need-resched 需要resched [Nnp.]
+            #need-resched 需要resched [Nnp.] 'N'表示 need_resched 被设置,'.'表示 need-reched 没有被设置，中断返回不会进行进程切换；
             needResched:str = str(match.group(6).strip())
-            #hardirq/softirq 中断[Hhs.]
+            #hardirq/softirq 中断[Hhs.] 'H' 在 softirq 中发生了硬件中断, 'h' – 硬件中断，'s'表示 softirq，'.'不在中断上下文中，普通状态。
             irq:str = str(match.group(7).strip())
-            #preempt-depth 优先等级[0-9a-f.]
+            #preempt-depth 优先等级[0-9a-f.] 当抢占中断使能后,该域代表 preempt_disabled 的级别
             preemptDepth:str = str(match.group(8).strip())
             #TIMESTAMP 时间戳
             timestamp:float = float(match.group(9).strip())
