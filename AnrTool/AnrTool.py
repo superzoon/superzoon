@@ -386,7 +386,8 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
                         delay = delay+int(item[:-2])
                     elif item.endswith('s'):
                         delay = delay+int(item[:-2])*1000
-
+        if delay > 5000:
+            line.msg = '正在执行:'+line.msg
     if delay > 0:
         line.addDelay(delay)
         if delay > DEF_MAX_DELAY_TIME:
