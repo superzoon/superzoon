@@ -14,12 +14,31 @@ class ThreadStack:
         self.prio = prio
         self.tid = tid
         pidStack.globalValues.tidMap[int(self.tid)] = int(pid)
-        self.state = state
         self.nativeStacks = []
         self.javaStacks = []
         self.pid = pid
         self.top = top
-        self.hasSameStack = False
+        self.group = ''
+        self.sCount = 0
+        self.dsCount= 0
+        self.obj = ''
+        self.self = ''
+        self.sysTid = pid
+        self.nice = ''
+        self.cgrp = 'default'
+        self.sched = ''
+        self.handle = ''
+        self.hasSameStack:bool = False
+        self.state = state
+        self.schedstat_running:int = 0
+        self.schedstat_runable:int = 0
+        self.schedstat_wwitch:int = 0
+        self.utm:int = 0
+        self.stm:int = 0
+        self.core:int = 1
+        self.HZ:int = 100
+        self.stack = ''
+        self.stackSize = ''
         if 'Blocked'.lower() == str(self.state).lower():
             self.isBlock = True
         else:
@@ -28,12 +47,52 @@ class ThreadStack:
 
     def addLine(self, line:str):
         isParser = False
-        if line.strip().startswith('native'):
-            self.nativeStacks.append(line)
+        match = re.match('^ .*group=\"([^\s]+)\"\s+sCount=([\d]+)[\s]+dsCount=([\d]+)\s+flags=([\d]+)\s+obj=([^\s]+)\s+self=([^\s]+).*', line)
+        if match:
+            groups = match.groups()
+            self.group = groups[0]
+            self.sCount = groups[1]
+            self.dsCount = groups[2]
+            self.flags = groups[3]
+            self.obj = groups[4]
+            self.self = groups[5]
             isParser = True
-        elif line.strip().startswith('at') or line.strip().startswith('- '):
-            self.javaStacks.append(line)
-            isParser = True
+        if not match:
+            match = re.match(pattern='^.*sysTid=([\d]+)\s+nice=([\d]+)[\s]+cgrp=([^\s]+)\s+sched=([^\s]+)\s+handle=([^\s]+).*', string=line)
+            if match:
+                groups = match.groups()
+                self.sysTid = groups[0]
+                self.nice = groups[1]
+                self.cgrp = groups[2]
+                self.sched = groups[3]
+                self.handle = groups[4]
+                isParser = True
+        if not match:
+            match = re.match(pattern='^.*state=([\w]+)\s+schedstat=\(\s([\d]+)\s([\d]+)\s([\d]+)\s\)\s+utm=([\d]+)\s+stm=([\d]+)\s+core=([\d]+)\s+HZ=([\d]+).*', string=line)
+            if match:
+                groups = match.groups()
+                self.state = groups[0]
+                self.schedstat_running = int(groups[1])
+                self.schedstat_runable = int(groups[2])
+                self.schedstat_wwitch = int(groups[3])
+                self.utm = int(groups[4])
+                self.stm = int(groups[5])
+                self.core = int(groups[6])
+                self.HZ = int(groups[7])
+                isParser = True
+        if not match:
+            match = re.match(pattern='^.*stack=([^\s]+)\s+stackSize=([^\s]+).*', string=line)
+            if match:
+                groups = match.groups()
+                self.stack = groups[0]
+                self.stackSize = groups[1]
+                isParser = True
+            elif line.strip().startswith('native'):
+                self.nativeStacks.append(line)
+                isParser = True
+            elif line.strip().startswith('at') or line.strip().startswith('- '):
+                self.javaStacks.append(line)
+                isParser = True
         return isParser
 
 class PidStack:
@@ -90,7 +149,7 @@ class PidStack:
                 else:
                     keyMap[key] = 1
                     blockMap[key] = stack
-                    blockTid[key] = stack.tid
+                    blockTid[key] = stack.sysTid
                 if self.maxBlockNumber <  keyMap[key]:
                     self.maxBlockNumber = keyMap[key]
                     self.maxBlockStack = blockMap[key]
@@ -125,7 +184,9 @@ class TracesLog():
             outTid = match.group(1)
             inTid = match.group(2)
             self.binderOutgoing[outTid] = inTid
+            self.binderOutgoing[inTid] = outTid
             if inTid.split(':')[1]=='0':
+                self.hungerBinders[outTid] = inTid
                 self.hungerBinders[outTid] = inTid
 
     def addPidStackToList(self,pidStack:PidStack):
@@ -169,13 +230,17 @@ class TracesLog():
                 pidName = int(stack.pid)
                 if int(stack.pid) in self.globalValues.pidMap:
                     pidName = self.globalValues.pidMap[pidName]
-                binderTid = int(stack.blockTid)
-                if binderTid in self.globalValues.tidMap:
-                    pid = self.globalValues.tidMap[binderTid]
-                    if int(pid) in self.globalValues.pidMap:
-                        binderTid = self.globalValues.pidMap[int(pid)]
+                binderPid = ''
+                #构建阻塞binder的pid:tid
+                toPid = '{}:{}'.format(stack.pid,stack.blockTid)
+                #查找对端binder的pid:tid
+                if toPid in self.binderOutgoing:
+                    binderPid = int(self.binderOutgoing[toPid].split(':')[0])
+                    #获取对端pid线程名称
+                    if binderPid in self.globalValues.pidMap:
+                        binderPid = self.globalValues.pidMap[binderPid]
 
-                key = 'pid{} {}, {} binder阻塞{}个,{}'.format(stack.pid, pidName, binderTid, str(stack.maxBlockNumber), self.file[len(dirname(self.file))+1:])
+                key = 'pid{} {}, {} binder阻塞{}个,{}'.format(stack.pid, pidName, binderPid, str(stack.maxBlockNumber), self.file[len(dirname(self.file))+1:])
                 self.suspiciousStack[key] = stack.maxBlockStack
 
     def getMainStack(self):
