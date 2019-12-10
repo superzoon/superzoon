@@ -709,11 +709,12 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             if maxBinderNum == value or value > 3 or len(hungerBinder)==1:
                 pids = key.split(':')
                 fromPid = int(pids[0])
+                if fromPid in globalValues.pidMap:
+                    fromPid = '{}({})'.format(fromPid, globalValues.pidMap[fromPid])
                 toPid = int(pids[1])
-                temp = temp+'\n\t其中 binder form {} to {}, 数量 = {}。'.format(fromPid, toPid, value)
-
-                if fromPid in globalValues.pidMap and toPid in globalValues.pidMap:
-                    temp = temp+'\n\t\tfrom name={}, to name={}'.format(globalValues.pidMap[fromPid],globalValues.pidMap[toPid])
+                if toPid in globalValues.pidMap:
+                    toPid = '{}({})'.format(toPid, globalValues.pidMap[toPid])
+                temp = temp+'\n\t其中 binder form pid:{} to pid:{}, 数量 = {}。'.format(fromPid, toPid, value)
 
         globalValues.showMessage.append(temp)
         resonFile.writelines(temp)
@@ -726,7 +727,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             temp = '\n'
             for title, stack  in tracesLog.suspiciousStack.items():
                 pidStack: PidStack = stack
-                temp = '{}\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:5]),'\t......','\n\t\t'.join(pidStack.javaStacks[-4:]))
+                temp = '{}\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:5]),'......','\n\t\t'.join(pidStack.javaStacks[-4:]))
                 globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
 
