@@ -5,7 +5,7 @@ import traceback,re
 if __name__ == '__main__':
     LL = '   dispatching message:{ dispatching=-14s99ms sending=-14s141ms callback=com.android.systemui.screenshot.GlobalScreenshot$5'
 
-    pattern_nubialog = '^ .*\ dispatching=-([\d]+s)?([\d]+ms)?\s.*'
+    pattern_nubialog = '^ .*dispatching message.*\ dispatching=-([\d]+s)?([\d]+ms)?\s.*'
     match = re.match(pattern_nubialog, LL)
     if match:
         groups = match.groups()

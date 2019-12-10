@@ -366,7 +366,7 @@ def parseOpenGLRenderer(allAnr :Anr, allLine:LogLine, line:LogLine):
     return True
 
 pattern_nubialog = '^.*\ delay=([\d]+)ms\ .*'
-pattern_nubialog_dispatching = '^.*\ dispatching=-([\d]+s)?([\d]+ms)?\s.*'
+pattern_nubialog_dispatching = '^ .*dispatching message.*\ dispatching=-([\d]+s)?([\d]+ms)?\s.*'
 pattern_nubialog_draw = '.*draw takes ([\d|\.]+) ms:.*'
 def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParsed = False
@@ -381,10 +381,11 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
         match = re.match(pattern_nubialog_dispatching, line.msg)
         if match:
             for item in match.groups():
-                if item.endswith('ms'):
-                    delay = delay+int(item[:-2])
-                elif item.endswith('s'):
-                    delay = delay+int(item[:-2])*1000
+                if item and len(item)>0:
+                    if item.endswith('ms'):
+                        delay = delay+int(item[:-2])
+                    elif item.endswith('s'):
+                        delay = delay+int(item[:-2])*1000
 
     if delay > 0:
         line.addDelay(delay)
