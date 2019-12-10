@@ -51,6 +51,11 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
+
     if not isParsed and re.match(pattern_ipc2, line.msg):
         addLine = True
         lastLine = allLine[-1] if len(allLine)>0 else None
@@ -64,6 +69,10 @@ def parseIPCThreadState(allAnr :Anr, allLine:LogLine, line:LogLine):
                     allLine.append(line)
                     isParsed = True
                     break
+            if len(allAnr) == 0:
+                line.addDelay(delay)
+                allLine.append(line)
+                isParsed = True
     if not isParsed:
         match = re.match(pattern_ipc3, line.msg)
         if match:
@@ -91,6 +100,11 @@ def parseLooper(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+
+        if delay > DEF_MAX_DELAY_TIME and len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 # kgsl-3d0: |kgsl_get_unmapped_area| _get_svm_area: pid 29268 mmap_base f643b000 addr 0 pgoff 35de len 8716288 failed error -12
@@ -104,6 +118,9 @@ def parseKgsl(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 # content_update_sample: [content://com.android.contacts/data,insert, , 23,  com.example.sendmessagetest,   5]
@@ -119,6 +136,10 @@ def parseQuery(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 # dvm_lock_sample: [com.android.settings, 1, (main) , (23),  ManageApplication.java, 1317,  ApplicationState.java, 323 , 5]
@@ -135,6 +156,10 @@ def parseLock(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 # am_activity_launch_time: [0, 185694486, cn.nubia.launcher/com.android.launcher3.Launcher,  257,  257]
@@ -150,6 +175,10 @@ def parseLauncher(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 # binder_sample: [ android.app.IActivityManager,  8,   227,    com.android.phone,    45]
@@ -165,6 +194,10 @@ def parseBinder(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 
@@ -189,6 +222,8 @@ def parseKeyguardViewMediator(allAnr :Anr, allLine:LogLine, line:LogLine):
             if line.isDoubtLine(anr):
                 allLine.append(line)
                 break
+        if len(allAnr) == 0:
+            allLine.append(line)
     return True
 
 
@@ -215,6 +250,9 @@ def parseAdreno(allAnr :Anr, allLine:LogLine, line:LogLine):
                 allLine.append(line)
                 isParsed = True
                 break
+        if len(allAnr) == 0:
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 # 09-22 04:59:35.929  1778  1841 W ActivityManager: Timeout executing service: ServiceRecord{9312bc1 u0 com.android.systemui/.light.LightEffectService}
@@ -396,6 +434,10 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
                     allLine.append(line)
                     isParsed = True
                     break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
     return isParsed
 
 def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_PACKAGE):
