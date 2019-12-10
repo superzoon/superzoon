@@ -387,7 +387,7 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
                     elif item.endswith('s'):
                         delay = delay+int(item[:-1])*1000
         if delay > 5000:
-            line.line = '执行中:'+line.line
+            line.line = '---->'+line.line[5:]
     if delay > 0:
         line.addDelay(delay)
         if delay > DEF_MAX_DELAY_TIME:
@@ -726,7 +726,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
             temp = '\n'
             for title, stack  in tracesLog.suspiciousStack.items():
                 pidStack: PidStack = stack
-                temp = '{}\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:10]))
+                temp = '{}\t{}\n\t\t{}\n\t\t{}\n\t\t{}\n'.format(temp, title,'\n\t\t'.join(pidStack.javaStacks[:5]),'\n\t\t......','\n\t\t'.join(pidStack.javaStacks[-4:]))
                 globalValues.showMessage.append(temp)
                 resonFile.writelines(temp)
 
