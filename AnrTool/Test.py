@@ -12,7 +12,9 @@ if __name__ == '__main__':
         delay = 0;
         for item in groups:
             if item.endswith('ms'):
+                print(item[:-2])
                 delay = delay+int(item[:-2])
             elif item.endswith('s'):
-                delay = delay+int(item[:-2])*1000
+                print(item[:-1])
+                delay = delay+int(item[:-1])*1000
         print(delay)

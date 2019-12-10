@@ -14,6 +14,7 @@ def log(msg):
 class GlobalValues:
     def __init__(self):
         self.pidMap = dict()
+        self.tidMap = dict()
         self.currentFile = ''
         self.showMessage = list()
         self.year = '2000'

@@ -13,6 +13,7 @@ class ThreadStack:
             self.isBinderThread = False
         self.prio = prio
         self.tid = tid
+        pidStack.globalValues.tidMap[int(self.tid)] = int(pid)
         self.state = state
         self.nativeStacks = []
         self.javaStacks = []
@@ -80,6 +81,7 @@ class PidStack:
     def check(self):
         keyMap = dict()
         blockMap = dict()
+        blockTid = dict()
         for stack in self.threadStacks:
             if stack.isBinderThread and stack.isBlock and stack.javaStacks:
                 key = str(stack.javaStacks[:3])
@@ -88,9 +90,11 @@ class PidStack:
                 else:
                     keyMap[key] = 1
                     blockMap[key] = stack
+                    blockTid[key] = stack.tid
                 if self.maxBlockNumber <  keyMap[key]:
                     self.maxBlockNumber = keyMap[key]
                     self.maxBlockStack = blockMap[key]
+                    self.blockTid = blockTid[key]
 
     PATTERN_PID = '----- pid ([\d]+) at ([\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}) -----'
 
@@ -165,7 +169,13 @@ class TracesLog():
                 pidName = int(stack.pid)
                 if int(stack.pid) in self.globalValues.pidMap:
                     pidName = self.globalValues.pidMap[pidName]
-                key = 'pid{} {} 单个进程binder阻塞{}个,{}'.format(stack.pid, pidName, str(stack.maxBlockNumber), self.file[len(dirname(self.file))+1:])
+                binderTid = int(stack.blockTid)
+                if binderTid in self.globalValues.tidMap:
+                    pid = self.globalValues.tidMap[binderTid]
+                    if int(pid) in self.globalValues.pidMap:
+                        binderTid = self.globalValues.pidMap[int(pid)]
+
+                key = 'pid{} {}, {} binder阻塞{}个,{}'.format(stack.pid, pidName, binderTid, str(stack.maxBlockNumber), self.file[len(dirname(self.file))+1:])
                 self.suspiciousStack[key] = stack.maxBlockStack
 
     def getMainStack(self):
