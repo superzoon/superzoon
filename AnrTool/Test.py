@@ -1,6 +1,18 @@
 from multiprocessing import cpu_count,current_process
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from Tool.logUtils import debug
-import traceback
+import traceback,re
 if __name__ == '__main__':
-    print(basename('istrator\AppData\Local\Programs\Python\Python36-32\python.zip').replace('.zip', '.txt'))
+    LL = '   dispatching message:{ dispatching=-14s99ms sending=-14s141ms callback=com.android.systemui.screenshot.GlobalScreenshot$5'
+
+    pattern_nubialog = '^ .*\ dispatching=-([\d]+s)?([\d]+ms)?\s.*'
+    match = re.match(pattern_nubialog, LL)
+    if match:
+        groups = match.groups()
+        delay = 0;
+        for item in groups:
+            if item.endswith('ms'):
+                delay = delay+int(item[:-2])
+            elif item.endswith('s'):
+                delay = delay+int(item[:-2])*1000
+        print(delay)

@@ -119,6 +119,7 @@ def addFileObserver(observer:FileObserver):
 
 
 if __name__ == '__main__':
-    fo = FileObserver('D:/GitStub/superzoon/AnrTool/'.replace('/','\\'),lambda x:print(x))
+    fo = FileObserver('D:/GitStub/superzoon/AnrTool/'.replace('/',sep),lambda x:print(x))
+
     addFileObserver(fo)
     time.sleep(3000)
