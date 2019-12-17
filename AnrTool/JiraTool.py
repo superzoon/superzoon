@@ -10,8 +10,7 @@ from queue import Queue
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from os import startfile
 import re, time
-from Tool import widget
-from Tool import TEST
+from Tool import widget,TEST,logUtils
 
 EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
@@ -91,7 +90,7 @@ class DownloadFrame():
         ###tip
         left = self.padding+20
         width = self.width
-        tipLable = tk.Label(frame, text='多个Jira、机型、版本使用空格隔开，Jira与机型必填', anchor=widget.ANCHOR_W, fg =widget.gray, font=(11))
+        tipLable = tk.Label(frame, text='多个Jira、机型、版本使用空格隔开，至少填两项', anchor=widget.ANCHOR_W, fg =widget.gray, font=(11))
         tipLable.place(x=left, y=top, anchor='nw', width=width, height=height)
         self.frame = frame
 
@@ -223,10 +222,10 @@ class DownloadFrame():
                 if not re.match(pattern, jira):
                     messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
                     return False
-                if not jira in self.jiras:
+                if not jira in self.jiras and len(jira)>0:
                     self.jiras.append(jira)
-        ERR = 0
-        if len(self.jiras)==0:
+        ERR:int = 0
+        if not self.jiras or len(self.jiras)==0:
             ERR = ERR+1
             # messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
             # return False
@@ -239,9 +238,9 @@ class DownloadFrame():
         self.models = []
         for item in models:
             model = item.strip()
-            if not model in self.models:
+            if not model in self.models and len(model)>0:
                 self.models.append(model)
-        if len(self.models)==0:
+        if not self.models or len(self.models)==0:
             ERR = ERR+1
             # messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
             # return False
@@ -254,17 +253,16 @@ class DownloadFrame():
         self.versions = []
         for item in versions:
             version = item.strip()
-            if not version in self.versions:
+            if not version in self.versions and len(version)>0:
                 self.versions.append(version)
-        if len(self.versions)==0:
+        if not self.versions or len(self.versions)==0:
             ERR = ERR+1
             # messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
             # return False
 
         if ERR > 1 :
-            messagebox.showwarning(title='输入参数不足', message='Jira号，机型，版本号至少输入两项，多个使用空格隔开！')
+            messagebox.showwarning(title='输入参数不足', message='(Jira号，机型，版本号)至少输入两项，多个使用空格隔开！')
             return False
-
 
         return True
 
@@ -285,7 +283,11 @@ class DownloadFrame():
                 startfile(self.savePath)
             addWorkDoneCallback(downCallback)
             self.gressBar = widget.GressBar()
+            if len(self.jiras) == 0:
+                self.jiras=['']
+            logUtils.info('jira={}, model={}, version={}'.format(self.jiras,self.models,self.versions))
             for jiraId in self.jiras:
+                print('jiraId...')
                 def getAction( outPath, callback, jiraId, models, versions, anrParse):
                     def downloadAction():
                         downloadLog.download(outPath = outPath, callbackMsg=callback, jiraId = jiraId, productModels = models, productVersions= versions,  parse=anrParse)
