@@ -15,8 +15,8 @@ from Tool import widget,TEST,logUtils
 EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.003'
-CURRENT_UPDATE_CONTENT = '更正log记录'
+CURRENT_VERSION = '1.0.004'
+CURRENT_UPDATE_CONTENT = '多线程操作修复'
 
 def updateExe():
     update = False
@@ -286,12 +286,12 @@ class DownloadFrame():
             if len(self.jiras) == 0:
                 self.jiras=['']
             logUtils.info('jira={}, model={}, version={}'.format(self.jiras,self.models,self.versions))
+            def getAction( outPath, callback, jiraId, models, versions, anrParse):
+                def downloadAction():
+                    downloadLog.download(outPath = outPath, callbackMsg=callback, jiraId = jiraId, productModels = models,
+                                         productVersions= versions,  parse=anrParse, async=(len(self.jiras)<=1))
+                return downloadAction
             for jiraId in self.jiras:
-                print('jiraId...')
-                def getAction( outPath, callback, jiraId, models, versions, anrParse):
-                    def downloadAction():
-                        downloadLog.download(outPath = outPath, callbackMsg=callback, jiraId = jiraId, productModels = models, productVersions= versions,  parse=anrParse)
-                    return downloadAction
                 postAction(getAction( self.savePath, callbackMsg, jiraId, self.models, self.versions, self.anrParse))
             self.gressBar.start()
 

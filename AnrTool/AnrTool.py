@@ -806,7 +806,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     return globalValues
 
 def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
-    logUtils.info("parLogZip : fileName={},  packageName={}".format(fileName, packageName))
+    logUtils.info("parLogZip : fileName={},  packageName={}".format(fileName.replace('\\','/'), packageName))
     callbackMsg('正在解析{}'.format(basename(fileName)))
     #如果不是pid文件则不解析
     if not zipfile.is_zipfile(fileName):
@@ -834,7 +834,7 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
 def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
     #打印需要解析的路径
     msg = '--parserZipLogDir thread={} foldPath={}'.format(current_thread().getName(), foldPath)
-    logUtils.info(msg)
+    log(msg.replace('\\','/'))
     #获取该路径下所有的zip文件
     allZips = [file for file in toolUtils.getAllFileName(foldPath) if zipfile.is_zipfile(file)]
     #创建该路径下的reason文件，用于保存解析结果

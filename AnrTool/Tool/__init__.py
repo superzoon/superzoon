@@ -70,7 +70,6 @@ class LogLine():
             self.initOther()
         else:
             self.isLogLine = False
-            print(line)
 
     def initOther(self):
         self.isFreezerd = False
