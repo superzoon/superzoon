@@ -13,11 +13,12 @@ import re, time
 from Tool import widget
 from Tool import TEST
 
-EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
+EXE_PATH = '//MININT-578MFLI/Share/WorkTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
+EXE_FILE_NAME = 'WorkTool.zip'
 
-CURRENT_VERSION = '1.0.003'
-CURRENT_UPDATE_CONTENT = '更正log记录'
+CURRENT_VERSION = '1.0.000'
+CURRENT_UPDATE_CONTENT = '第一个版本'
 
 def updateExe():
     update = False
@@ -43,12 +44,12 @@ def updateExe():
             content = defaultConf['content']
     if update:
         ret = tk.messagebox.askquestion(title='新版本更新', message='是否更新版本{}?\n\n{}'.format(version,content))
-        if ret == 'yes' or str(ret) == 'Ture':
+        if ret == 'yes' or str(ret) == 'True':
             file_path = askdirectory()
             bar = widget.GressBar()
-            def copyAnrTool():
-                zip_file = sep.join([file_path, 'JiraTool.zip'])
-                copyfile(EXE_PATH+'JiraTool.zip', zip_file)
+            def copyTool():
+                zip_file = sep.join([file_path, 'WorkTool.zip'])
+                copyfile(EXE_PATH+'WorkTool.zip', zip_file)
                 time.sleep(3)
                 if isfile(zip_file):
                     startfile(zip_file)
@@ -56,7 +57,7 @@ def updateExe():
                     tk.messagebox.showinfo(title='提示', message='下载失败！')
                 bar.quit()
 
-            WorkThread(action=copyAnrTool).start()
+            WorkThread(action=copyTool).start()
             bar.start('更新软件','正在下载......')
 
 class DownloadFrame():
@@ -211,9 +212,9 @@ class DownloadFrame():
         self.savePath = savePath
 
         jira:str = self.jiraEntry.get()
-        # if not jira or len(jira) == 0:
-        #     messagebox.showwarning(title='Jira号为空', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
-        #     return False
+        if not jira or len(jira) == 0:
+            messagebox.showwarning(title='Jira号为空', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
+            return False
         jiras = jira.split(' ')
         pattern = 'LOG-[\d]+'
         self.jiras = []
@@ -225,16 +226,14 @@ class DownloadFrame():
                     return False
                 if not jira in self.jiras:
                     self.jiras.append(jira)
-        ERR = 0
         if len(self.jiras)==0:
-            ERR = ERR+1
-            # messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
-            # return False
+            messagebox.showwarning(title='有无效Jira号输入', message='请请输入有效Jira号，多个Jira号使用空格隔开！')
+            return False
 
         model:str = self.modelEntry.get()
-        # if not model or len(model) == 0:
-        #     messagebox.showwarning(title='机型为空', message='请请输入有效机型，多个机型使用空格隔开！')
-        #     return False
+        if not model or len(model) == 0:
+            messagebox.showwarning(title='机型为空', message='请请输入有效机型，多个机型使用空格隔开！')
+            return False
         models = model.split(' ')
         self.models = []
         for item in models:
@@ -242,29 +241,17 @@ class DownloadFrame():
             if not model in self.models:
                 self.models.append(model)
         if len(self.models)==0:
-            ERR = ERR+1
-            # messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
-            # return False
-
-        version:str = self.versionEntry.get()
-        # if not version or len(version) == 0:
-        #     messagebox.showwarning(title='版本为空', message='请输入有效版本，多个版本使用空格隔开！')
-        #     return False
-        versions = version.split(' ')
-        self.versions = []
-        for item in versions:
-            version = item.strip()
-            if not version in self.versions:
-                self.versions.append(version)
-        if len(self.versions)==0:
-            ERR = ERR+1
-            # messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
-            # return False
-
-        if ERR > 1 :
-            messagebox.showwarning(title='输入参数不足', message='Jira号，机型，版本号至少输入两项，多个使用空格隔开！')
+            messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
             return False
 
+        version:str = self.versionEntry.get()
+        self.versions = []
+        if version or len(version) >0:
+            self.versions = version.split(' ')
+        for item in models:
+            model = item.strip()
+            if not model in self.models:
+                self.models.append(model)
 
         return True
 

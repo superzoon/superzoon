@@ -21,7 +21,7 @@ class FileEvent():
             self.actionStr = 'normal'
 
     def __str__(self):
-        return 'file={}, action={}, actionStr={}'.format(self.file, self.action, self.actionStr)
+        return 'file={}, action={}, actionStr={}'.format(self.file.replace(sep, '/'), self.action, self.actionStr)
 
 def _update_observer_():
     if len(GLOBAL_VALUES.observerFiles) > 0 and not GLOBAL_VALUES.isObserverRun:
@@ -31,6 +31,7 @@ def _update_observer_():
         GLOBAL_VALUES.isObserverFile = False
 
 class FileObserver():
+    NO_FILE_NO_OBSERVER = False
     def __init__(self, file:str, callback):
         '''
         :param file:
@@ -48,31 +49,38 @@ class FileObserver():
             for path in toolUtils.getAllFileName(self.file):
                 self.allFile[path]:os.stat_result = os.stat(path)
 
-
     def __check__file__(self):
-        if not isfile(self.file):
-            self.callback(FileEvent(self.path, FileEvent.DELETED))
+        if not isfile(self.file) and FileObserver.NO_FILE_NO_OBSERVER:
+            self.callback(FileEvent(self.file, FileEvent.DELETED))
             if self in GLOBAL_VALUES.observerFiles:
                 GLOBAL_VALUES.observerFiles.remove(self)
                 _update_observer_()
         elif getsize(self.file) != self.fileSize or self.file_mtime != os.stat(self.file).st_mtime:
-            self.callback(FileEvent(self.path, FileEvent.MODIFIED))
+            self.fileSize = getsize(self.file)
+            self.file_mtime = os.stat(self.file).st_mtime
+            self.callback(FileEvent(self.file, FileEvent.MODIFIED))
 
     def __check__dir__(self):
-        allFiles = toolUtils.getAllFileName(self.file)
-        newAllFiles = dict()
-        for path in allFiles:
-            stat = os.stat(path)
-            newAllFiles[path]:os.stat_result = stat
-            if path in self.allFile:
-                oldStat = self.allFile.pop(path)
-                if stat.st_mtime != oldStat.st_mtime:
-                    self.callback(FileEvent(path, FileEvent.MODIFIED))
-            else:
-                self.callback(FileEvent(path, FileEvent.CREATED))
-        for path, stat in self.allFile.items():
-            self.callback(FileEvent(path, FileEvent.DELETED))
-        self.allFile = newAllFiles
+        if not isdir(self.file) and FileObserver.NO_FILE_NO_OBSERVER:
+            self.callback(FileEvent(self.file, FileEvent.DELETED))
+            if self in GLOBAL_VALUES.observerFiles:
+                GLOBAL_VALUES.observerFiles.remove(self)
+                _update_observer_()
+        else:
+            allFiles = toolUtils.getAllFileName(self.file)
+            newAllFiles = dict()
+            for path in allFiles:
+                stat = os.stat(path)
+                newAllFiles[path]:os.stat_result = stat
+                if path in self.allFile:
+                    oldStat = self.allFile.pop(path)
+                    if stat.st_mtime != oldStat.st_mtime:
+                        self.callback(FileEvent(path, FileEvent.MODIFIED))
+                else:
+                    self.callback(FileEvent(path, FileEvent.CREATED))
+            for path, stat in self.allFile.items():
+                self.callback(FileEvent(path, FileEvent.DELETED))
+            self.allFile = newAllFiles
 
     def __check__changed__(self):
         if self.isFile:

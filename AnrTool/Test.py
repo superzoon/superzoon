@@ -1,12 +1,21 @@
 from multiprocessing import cpu_count,current_process
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from Tool.logUtils import debug
+from Tool.toolUtils import APP_DATA_PATH,APP_CONFIG_PATH
 import traceback,re
+import socket, os
+import getpass
 if __name__ == '__main__':
-    LL = ' | stack=0x7f06a67000-0x7f06a69000 stackSize=1009KB'
 
-    pattern_nubialog = '^.*stack=([^\s]+)\s+stackSize=([^\s]+).*'
-    match = re.match(pattern_nubialog, LL)
-    if match:
-        groups = match.groups()
-        print(groups)
+    user_name = getpass.getuser()  # 获取当前用户名
+    hostname = socket.gethostname()  # 获取当前主机名
+
+    print(type(user_name))
+
+    print('C:\\Users\\' + user_name + '\\AppData\Local\Temp\\')
+
+    print(hostname)
+    print(user_name)
+    android_xml = sep.join([APP_CONFIG_PATH,'android.xml'])
+    if isfile(android_xml):
+        print(os.environ['LOCALAPPDATA'])

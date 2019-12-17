@@ -168,7 +168,7 @@ def inList(log: __JiraLog__, list: __JiraLog__):
             return True
     return False
 
-def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
+def getAllJiraLog(jiraId:str=None, productModel:str=None, callbackMsg=None, order:str='asc',limit:int=30, productVersion=None, tfsId=None, hasFile='Y'):
     '''
     :param jiraId:
     :param productModel: 机器型号
@@ -189,10 +189,12 @@ def getAllJiraLog(jiraId:str, productModel:str, callbackMsg=None, order:str='asc
     filters.append('order={}'.format(order))
     filters.append('limit={}'.format(limit))
     filters.append('offset={}')
-    filters.append('productModel={}'.format(productModel))
+    if productModel:
+        filters.append('productModel={}'.format(productModel))
     if tfsId:
         filters.append('tfsId={}'.format(tfsId))
-    filters.append('jiraId={}'.format(jiraId))
+    if jiraId:
+        filters.append('jiraId={}'.format(jiraId))
     if productVersion:
         filters.append('productVersion={}'.format(productVersion))
     filters.append('hasFile={}'.format(hasFile))
@@ -226,6 +228,7 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
     if not isdir(outPath):
         __createDir__(outPath)
     logs:__JiraLog__= []
+    GLOBAL_VALUES.packageNameDown = (jiraId==None)
     for productModel in productModels:
         for log in getAllJiraLog(jiraId, productModel, callbackMsg, order, limit, productVersion = None, tfsId = tfsId, hasFile= hasFile):
             logs.append(log)
@@ -265,7 +268,10 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
                         elif log.productVersion in productVersions:
                             willDown = True
                         if willDown:
-                            path = sep.join([outPath, log.jiraId, __version__])
+                            if GLOBAL_VALUES.packageNameDown:
+                                path = sep.join([outPath, log.packageName, log.jiraId, __version__])
+                            else:
+                                path = sep.join([outPath, log.jiraId, __version__])
                             if callbackMsg:
                                 callbackMsg('下载{}'.format(log.logId))
                                 log.download(path)
