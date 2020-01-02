@@ -819,7 +819,10 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
     tempDir = sep.join([dirname(fileName), name])
     #解压的文件路径如果存在就删除
     if isdir(tempDir):
-        rmtree(tempDir)
+        try:
+            rmtree(tempDir)
+        except  Exception:
+            logUtils.logException('任务出错')
     #创建解压路径
     makedirs(tempDir)
     #解压zip文件到指定路径
