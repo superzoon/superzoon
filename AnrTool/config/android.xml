@@ -10,6 +10,7 @@
     clean="no|yes"                                          清除包名对应的data ,默认false
     delay="no|yes"                                          当多个文件发生变化时候是否延时等待其它任务处理完成后执行action, 默认fase
     delayTime="5"                                           如果延时等待最少等待时间s
+    enable="no"                                             是否对齐监听
     />
 -->
 <android>
@@ -19,6 +20,7 @@
         packageName="com.android.systemui"
         path="/system/product/priv-app/SystemUI/SystemUI.apk"
         action="kill"
+        enable="yes"
         />
     <file
         fileName="services.jar"
@@ -26,6 +28,7 @@
         action="reboot"
         delay="yes"
         delayTime="3"
+        enable="no"
         />
     <file
         fileName="framework.jar"
@@ -33,6 +36,7 @@
         action="reboot"
         delay="yes"
         delayTime="3"
+        enable="no"
         />
     <file
         fileName="framework.apk"
@@ -40,5 +44,6 @@
         action="reboot"
         delay="yes"
         delayTime="3"
+        enable="yes"
         />
 </android>

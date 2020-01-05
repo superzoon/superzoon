@@ -27,7 +27,7 @@ def _update_observer_():
     if len(GLOBAL_VALUES.observerFiles) > 0 and not GLOBAL_VALUES.isObserverRun:
         GLOBAL_VALUES.isObserverFile = True
         GLOBAL_VALUES.observerThread.start()
-    else:
+    elif len(GLOBAL_VALUES.observerFiles) == 0:
         GLOBAL_VALUES.isObserverFile = False
 
 class FileObserver():

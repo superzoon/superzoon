@@ -31,31 +31,38 @@ logger.addHandler(handler1)
 logger.addHandler(handler2)
 
 def debug(msg, printMsg:bool=True):
+    msg = str(msg).replace('\\','/')
     logger.debug(msg)
     if printMsg:
         print(msg)
 
 def info(msg, printMsg:bool=True):
+    msg = str(msg).replace('\\','/')
     logger.info(msg)
     if printMsg:
         print(msg)
 
 def info(msg, printMsg:bool=True):
+    msg = str(msg).replace('\\','/')
     logger.info(msg)
     if printMsg:
         print(msg)
 
 def warning(msg, printMsg:bool=True):
+    msg = str(msg).replace('\\','/')
     logger.warning(msg)
 
 def error(msg, printMsg:bool=True):
+    msg = str(msg).replace('\\','/')
     logger.error(msg)
 
 def critical(msg, printMsg:bool=True):
+    msg = str(msg).replace('\\','/')
     logger.critical(msg)
 
 def logException(msg, printMsg:bool=False):
-     error('{}:\n{}'.format(msg, format_exc()), printMsg)
+    msg = str(msg).replace('\\','/')
+    error('{}:\n{}'.format(msg, format_exc()), printMsg)
 
 def traceback(printMsg:bool=False):
     (etype, value, tb) = sys.exc_info()

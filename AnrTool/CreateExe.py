@@ -95,9 +95,14 @@ def createJiraExe(ico:str = None):
             rmtree('build')
 
 
+@create_decorator
+def createTestExe(ico:str = None):
+    call('pyinstaller -w -F -i {}  Test.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
+
 if __name__ == '__main__':
-    createAnrWindowExe(sep.join(['res','anr.ico']))
-    createJiraExe(sep.join(['res','systemui.ico']))
+    # createAnrWindowExe(sep.join(['res','anr.ico']))
+    # createJiraExe(sep.join(['res','systemui.ico']))
+    createTestExe(sep.join(['res','systemui.ico']))
     exit()
 
 

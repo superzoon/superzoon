@@ -1,20 +1,104 @@
-import paramiko
+# coding: utf-8
+from ftplib import FTP
+import time
+import tarfile
+import os, re
+from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 
-transport =paramiko.Transport(('192.168.43.140',22))
-transport.connect(username='pi',password='raspberrypi')
-sftp = paramiko.SFTPClient.from_transport(transport)
-sftp.put('text1', '/home/pi/python_code/python_ssh/socketsever.py')
-# sftp.get('remove_path', 'local_path')
-transport.close()
 
-'''
-SFTPCLient×÷ÎªÒ»¸ösftpµÄ¿Í»§¶Ë¶ÔÏó£¬¸ù¾İssh´«ÊäĞ­ÒéµÄsftp»á»°£¬ÊµÏÖÔ¶³ÌÎÄ¼ş²Ù×÷£¬ÈçÉÏ´«¡¢ÏÂÔØ¡¢È¨ÏŞ¡¢×´Ì¬ 
-from_transport(cls,t) ´´½¨Ò»¸öÒÑÁ¬Í¨µÄSFTP¿Í»§¶ËÍ¨µÀ
-put(localpath, remotepath, callback=None, confirm=True) ½«±¾µØÎÄ¼şÉÏ´«µ½·şÎñÆ÷ ²ÎÊıconfirm£ºÊÇ·ñµ÷ÓÃstat()·½·¨¼ì²éÎÄ¼ş×´Ì¬£¬·µ»Øls -lµÄ½á¹û
-get(remotepath, localpath, callback=None) ´Ó·şÎñÆ÷ÏÂÔØÎÄ¼şµ½±¾µØ
-mkdir() ÔÚ·şÎñÆ÷ÉÏ´´½¨Ä¿Â¼
-remove() ÔÚ·şÎñÆ÷ÉÏÉ¾³ıÄ¿Â¼
-rename() ÔÚ·şÎñÆ÷ÉÏÖØÃüÃûÄ¿Â¼
-stat() ²é¿´·şÎñÆ÷ÎÄ¼ş×´Ì¬
-listdir() ÁĞ³ö·şÎñÆ÷Ä¿Â¼ÏÂµÄÎÄ¼ş
-'''
+class FtpFile:
+    PATTERN = r'([d|-])([r|w|x|-]{9})\s[\d]\s(\w+)\s(\w+)\s+(\d+)\s+(\w+\s\d+\s\d+:\d+)\s(.*)'
+
+    def __init__(self, pwd, line):
+        self.pwd = pwd
+        self.line = line
+        match = re.match(FtpFile.PATTERN, line)
+        if match:
+            self.isFtp = True
+            self.isDir = True if match.group(1) == 'd' else False
+            self.rw = match.group(2)
+            self.user = match.group(3)
+            self.group = match.group(4)
+            self.len = int(match.group(5))
+            self.time = match.group(6)
+            self.name = match.group(7)
+        else:
+            self.isFtp = False
+
+    def __str__(self):
+        return '{} {}'.format(self.pwd, self.line)
+
+class FTPProxy():
+    def __init__(self,host:str, port:int, username:str, password:str, encoding = 'gbk'):
+        ftp = FTP()  # è®¾ç½®å˜é‡
+        ftp.encoding = encoding
+        ftp.set_debuglevel(0)  # æ‰“å¼€è°ƒè¯•çº§åˆ«2ï¼Œæ˜¾ç¤ºè¯¦ç»†ä¿¡æ¯
+        ftp.connect(host, port)  # è¿æ¥çš„ftp severå’Œç«¯å£
+        ftp.login(username, password)  # è¿æ¥çš„ç”¨æˆ·åï¼Œå¯†ç 
+        self.ftp = ftp
+
+    # è·å–å½“å‰ç›®å½•ä¸‹çš„æ–‡ä»¶åˆ—è¡¨
+    def list(self):
+        def getCallback(ss:dict,pwd:str):
+            def callback(line):
+                file = FtpFile(pwd, line)
+                if file.isFtp:
+                    ss[file.name]=file
+            return callback
+        dir = dict()
+        if self.ftp:
+            self.ftp.dir(getCallback(dir, self.ftp.pwd()))
+        return dir
+
+    # åˆ‡æ¢å·¥ä½œç›®å½•
+    def cd(self, name:str):
+        if self.ftp:
+            if name.startswith('/'):
+                self.ftp.cwd(name)
+            else:
+                self.ftp.cwd('/'.join([self.ftp.pwd(), name]))
+
+    #  åˆ é™¤ä½äº path çš„è¿œç¨‹æ–‡ä»¶
+    def delete(self, file):
+        if self.ftp:
+            if file.startswith('/'):
+                self.ftp.delete(file)
+            else:
+                self.ftp.delete('/'.join([self.ftp.pwd(), file]))
+
+    #åˆ›å»ºè¿œç¨‹ç›®å½•
+    def mkd(self, directory):
+        if self.ftp:
+            if directory.startswith('/'):
+                self.ftp.mkd(directory)
+            else:
+                self.ftp.mkd('/'.join([self.ftp.pwd(), directory]))
+
+    #åˆ é™¤è¿œç¨‹ç›®å½•
+    def rmd(self, directory):
+        if self.ftp:
+            if directory.startswith('/'):
+                self.ftp.rmd(directory)
+            else:
+                self.ftp.rmd('/'.join([self.ftp.pwd(), directory]))
+
+    # ä»ftpä¸‹è½½æ–‡ä»¶
+    def downloadfile(self, remotepath, localpath):
+        bufsize = 1024
+        fp = open(localpath, 'wb')
+        self.ftp.retrbinary('RETR ' + remotepath, fp.write, bufsize)
+        self.ftp.set_debuglevel(0)
+        self.ftp.close()
+
+    # ä»æœ¬åœ°ä¸Šä¼ æ–‡ä»¶åˆ°ftp
+    def uploadfile(self, remotepath, localpath):
+        bufsize = 1024
+        fp = open(localpath, 'rb')
+        self.ftp.storbinary('STOR ' + remotepath, fp, bufsize)
+        self.ftp.set_debuglevel(0)
+        self.ftp.close()
+
+    def quit(self):
+        if self.ftp:
+            self.ftp.quit()
+        self.ftp = None
