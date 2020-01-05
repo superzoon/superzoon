@@ -6,6 +6,8 @@ from Tool import toolConfig, logUtils
 import traceback,re
 import socket, os
 import getpass, time
+from ftplib import FTP
+import os
 def testLocal():
     user_name = getpass.getuser()  # 获取当前用户名
     hostname = socket.gethostname()  # 获取当前主机名
@@ -40,11 +42,12 @@ def ssh():
         # print( '\n,'.join([str(item) for item in ANDROID_FILE_CONFIG.values()]))
         time.sleep(20)
     transport.close()
-from ftplib import FTP
-import os
+
 if __name__ == '__main__':
-    testLocal()
-    print(os.listdir('//10.204.80.68/软件一部'))
+    host = USER_FILE_CONFIG[toolConfig.LABORATORY][toolConfig.HOST_NAME]
+    path = USER_FILE_CONFIG[toolConfig.LABORATORY][toolConfig.USER_PATH]
+    print(os.listdir('//{}/{}'.format(host, path)))
+
     logUtils.info('APP_CONFIG_PATH={}'.format(toolConfig.APP_CONFIG_PATH))
     username = USER_FILE_CONFIG[toolConfig.LABORATORY_FTP][toolConfig.USER_NAME]
     password = USER_FILE_CONFIG[toolConfig.LABORATORY_FTP][toolConfig.PASS_WORD]
