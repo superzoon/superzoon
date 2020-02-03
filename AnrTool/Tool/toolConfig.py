@@ -198,6 +198,8 @@ def __write_user_config__(configFile:str, config:dict):
             customerConf[COMPILER_SAMBA][USER_NAME] = config[COMPILER_SAMBA][USER_NAME]
         if PASS_WORD in config[COMPILER_SAMBA]:
             customerConf[COMPILER_SAMBA][PASS_WORD] = config[COMPILER_SAMBA][PASS_WORD]
+        if USER_PATH in config[COMPILER_SAMBA]:
+            customerConf[COMPILER_SAMBA][USER_PATH] = config[COMPILER_SAMBA][USER_PATH]
 
     customerConf.write(codecs.open(configFile, mode='w', encoding='utf-8-sig'))
     # with open(file, mode='w') as configFile:
@@ -253,7 +255,9 @@ def __read_user_config__(configFile:str, config:dict):
         if not USER_NAME in config[COMPILER_SAMBA]:
             config[COMPILER_SAMBA][USER_NAME] = 'xiaoliang'
         if not PASS_WORD in config[COMPILER_SAMBA]:
-            config[COMPILER_SAMBA][PASS_WORD] = '123456'
+            config[COMPILER_SAMBA][PASS_WORD] = '1234'
+        if USER_PATH in config[COMPILER_SAMBA]:
+            config[COMPILER_SAMBA][USER_PATH] = 'share'
 
     #读取参数
     if isfile(configFile) and configFile.endswith('.ini'):
@@ -316,6 +320,8 @@ def __read_user_config__(configFile:str, config:dict):
                 config[COMPILER_SAMBA][USER_NAME] = customerConf[COMPILER_SAMBA][USER_NAME]
             if PASS_WORD in customerConf[COMPILER_SAMBA]:
                 config[COMPILER_SAMBA][PASS_WORD] = customerConf[COMPILER_SAMBA][PASS_WORD]
+            if USER_PATH in config[COMPILER_SAMBA]:
+                config[COMPILER_SAMBA][USER_PATH] = customerConf[COMPILER_SAMBA][USER_PATH]
     else:
         logUtils.warning('配置文件{}错误'.format(configFile))
 

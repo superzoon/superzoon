@@ -1,7 +1,7 @@
 from multiprocessing import cpu_count,current_process
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from Tool.logUtils import debug
-from Tool.toolConfig import APP_DATA_PATH,APP_CONFIG_PATH,USER_FILE_CONFIG
+from Tool.toolConfig import APP_DATA_PATH,APP_CONFIG_PATH,USER_FILE_CONFIG,ANDROID_FILE_CONFIG
 from Tool import toolConfig, logUtils
 import traceback,re
 import socket, os
@@ -44,6 +44,7 @@ def ssh():
     transport.close()
 
 if __name__ == '__main__':
+    ANDROID_FILE_CONFIG
     host = USER_FILE_CONFIG[toolConfig.LABORATORY][toolConfig.HOST_NAME]
     path = USER_FILE_CONFIG[toolConfig.LABORATORY][toolConfig.USER_PATH]
     print(os.listdir('//{}/{}'.format(host, path)))
