@@ -24,6 +24,11 @@ def test1():
     stdin, stdout, stderr = ssh.exec_command('df -h')
     print(stdout.read().decode('utf-8'))
 
+    ssh = ssh.invoke_shell()
+    ssh.send('cd CTS/android-cts-10_r2-linux_x86-arm/android-cts/tools ; ls')
+    buff = ssh.recv(999)
+    print(buff)
+
     transport.close()
 def test2():
     # 配置私人密钥文件位置

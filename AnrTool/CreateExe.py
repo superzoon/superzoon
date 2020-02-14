@@ -8,6 +8,9 @@ from Tool.toolUtils import ( zip_single, checkFileCode)
 import re
 import  AnrWindow, JiraTool
 
+'''pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pyspider'''
+'''pip install -i https://mirrors.aliyun.com/pypi/simple/ pyspider'''
+
 SHARE_PATH = sep.join(['D:','Share'])
 
 def getVersion(pyName='AnrWindow.py'):
@@ -100,9 +103,9 @@ def createTestExe(ico:str = None):
     call('pyinstaller -w -F -i {}  Test.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
 
 if __name__ == '__main__':
-    # createAnrWindowExe(sep.join(['res','anr.ico']))
-    # createJiraExe(sep.join(['res','systemui.ico']))
-    createTestExe(sep.join(['res','systemui.ico']))
+    createAnrWindowExe(sep.join(['res','anr.ico']))
+    createJiraExe(sep.join(['res','systemui.ico']))
+    # createTestExe(sep.join(['res','systemui.ico']))
     exit()
 
 

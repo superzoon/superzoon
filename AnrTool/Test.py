@@ -19,6 +19,65 @@ def testLocal():
     if isfile(android_xml):
         print(os.environ['LOCALAPPDATA'])
 import paramiko;
+def sshclient_execmd(hostname, port, username, password, execmd):
+    # paramiko.util.log_to_file("paramiko.log")
+    s = paramiko.SSHClient()
+    s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    s.connect(hostname=hostname, port=port, username=username, password=password)
+    stdin, stdout, stderr = s.exec_command(execmd)
+    stdin.write("Y")  # Generally speaking, the first connection, need a simple interaction.
+    print
+    stdout.read()
+    s.close()
+
+if __name__ == '__main__':
+    print('start 1')
+    hostname = '10.206.197.99'
+    port = '22'
+    username = 'romcts'
+    password = '123456'
+    s = paramiko.SSHClient()
+    s.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    print('start 2')
+    try:
+        s.connect(hostname=hostname, port=port, username=username, password=password)
+    except  Exception as e:
+        pass
+    import time
+    toString= lambda buff: buff.replace(b'\r/',b'').decode('utf-8')
+    def getShell(ssh:paramiko.SSHClient):
+        def doShell(comm:str):
+            if not comm.endswith('\n'):
+                comm = comm+'\n'
+            ssh.send(comm)
+            time.sleep(0.1)
+            return ssh.recv(9999).replace(b'\r/',b'').decode('utf-8')
+        return doShell
+
+    ssh = s.invoke_shell()
+    time.sleep(0.1)
+    print(ssh.recv(9999).replace(b'\r/',b'').decode('utf-8'))
+    shell = getShell(ssh)
+
+    print('^^^^^^^^^^^^^^^^^^^^^^^^^')
+    print(shell('ls -al\n'))
+    print(shell('cd CTS/android-cts-10_r2-linux_x86-arm/android-cts/tools'))
+    print(shell('ls -al'))
+    print(shell('ls'))
+    print(shell('pwd'))
+
+
+    ssh.send('ls\n')
+    time.sleep(0.1)
+    buff:bytes = ssh.recv(999)
+    print(buff)
+    buff = buff.replace(b'\r/',b'')
+    print(buff)
+    print(buff.decode('utf-8'))
+    # stdin.write("Y")  # Generally speaking, the first connection, need a simple interaction.
+    time.sleep(11)
+
+    s.close()
 
 def ssh():
     logUtils.info('APP_CONFIG_PATH={}'.format(toolConfig.APP_CONFIG_PATH))
@@ -43,7 +102,7 @@ def ssh():
         time.sleep(20)
     transport.close()
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     ANDROID_FILE_CONFIG
     host = USER_FILE_CONFIG[toolConfig.LABORATORY][toolConfig.HOST_NAME]
     path = USER_FILE_CONFIG[toolConfig.LABORATORY][toolConfig.USER_PATH]
