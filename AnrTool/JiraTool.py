@@ -15,8 +15,8 @@ from Tool import widget,TEST,logUtils
 EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.004'
-CURRENT_UPDATE_CONTENT = '多线程操作修复'
+CURRENT_VERSION = '1.0.005'
+CURRENT_UPDATE_CONTENT = '支持systemui目录只下载systemui'
 
 def updateExe():
     update = False
@@ -260,7 +260,7 @@ class DownloadFrame():
             # messagebox.showwarning(title='有无效机型输入', message='请请输入有效机型，多个机型使用空格隔开！')
             # return False
 
-        if ERR > 1 :
+        if ERR > 1 and not self.savePath.__contains__('systemui'):
             messagebox.showwarning(title='输入参数不足', message='(Jira号，机型，版本号)至少输入两项，多个使用空格隔开！')
             return False
 

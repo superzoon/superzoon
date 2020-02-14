@@ -74,6 +74,8 @@ class __JiraLog__():
         self.reportDate = self.getValueFrRow('reportDate')
         self.androidVersion = self.getValueFrRow('androidVersion')
         self.jiraId = self.getValueFrRow('jiraId')
+        if not self.jiraId or len(self.jiraId)==0:
+            self.jiraId = 'NoJiraId'
         self.imei = self.getValueFrRow('imei')
         self.rooted = self.getValueFrRow('rooted')
         row['url'] = self.getUrl()
@@ -159,6 +161,8 @@ class __JiraLog__():
             # sort:str = data['sort']
             rows = data['rows']
             logs:__JiraLog__ = []
+
+            logUtils.info('getAllJiraLog  rows={}'.format(rows))
             for row in rows:
                 log = __JiraLog__(row)
                 logs.append(log)
@@ -186,9 +190,6 @@ def getAllJiraLog(jiraId:str=None, productModel:str=None, callbackMsg=None, orde
     :param hasFile:服务器是否有保存文件
     :return:所有可下载的log信息
     '''
-    logUtils.info('getAllJiraLog  jiraId={}, productModel={}, order={}, limit={}, productVersions={}, tfsId={}, hasFile={}, keyInfo={}'.format(
-        jiraId, productModel, order, limit, productVersion, tfsId, hasFile, keyInfo
-    ))
 
     'order=asc&limit=30&offset=0&productModel=NX629J&jiraId=LOG-67680&productVersion=NX629J_Z0_CN_VLF0P_V234&hasFile=Y&rooted=y'
     if callbackMsg:
@@ -217,6 +218,7 @@ def getAllJiraLog(jiraId:str=None, productModel:str=None, callbackMsg=None, orde
     '''
     for i in range(5):
         url = __LIST__URL__+'&'.join(filters).format(i)
+        logUtils.info('getAllJiraLog  url={}'.format(url))
         req = urllib.request.Request(url, headers=headers)
         resp: HTTPResponse = getOpener().open(req)
         text = json.loads(resp.read().decode('utf-8'))
@@ -250,10 +252,6 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
         keyInfo = 'com.android.systemui'
         GLOBAL_VALUES.packageNameDown = False
 
-    if not productModels or len(productModels)==0:
-        productModels = ['']
-    if not productVersions or len(productVersions)==0:
-        productVersions = ['']
     if not productModels and productVersions:
         for productVersion in productVersions:
             for log in getAllJiraLog(jiraId, None, callbackMsg, order, limit, productVersion, tfsId = tfsId, hasFile= hasFile, keyInfo= keyInfo):
@@ -317,6 +315,7 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
                             willDown = True
                         elif log.productVersion in productVersions:
                             willDown = True
+                        print('willDown={}, productVersions={}'.format(willDown, productVersions))
                         if willDown:
                             if GLOBAL_VALUES.packageNameDown:
                                 path = sep.join([outPath, log.logType, log.packageName, log.jiraId, __version__])
