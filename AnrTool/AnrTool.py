@@ -32,6 +32,24 @@ def parseNoTag(allAnr :Anr, allLine:LogLine, line:LogLine):
                 break
     return isParsed
 
+# 18:05:04.782 1437 1541 W NubiaAnrSystrace: system_server blocked at least 9343 ms
+def parseNubiaAnrSystrace(allAnr :Anr, allLine:LogLine, line:LogLine):
+    match = re.match('.*system_server blocked at least ([\d]+) ms', line.msg)
+    isParsed = False
+    if match:
+        delay = float(match.group(1))
+        for anr in allAnr:
+            if line.isDoubtLine(anr):
+                line.addDelay(delay)
+                allLine.append(line)
+                isParsed = True
+                break
+        if len(allAnr) == 0:
+            line.addDelay(delay)
+            allLine.append(line)
+            isParsed = True
+    return isParsed
+
 # IPCThreadState: IPCThreadState, binder thread pool (4 threads) starved for 9276 ms
 # IPCThreadState: IPCThreadState, Waiting for thread to be free. mExecutingThreadsCount=32 mMaxThreads=31
 #'IPCThreadState: set_thread_freeze_state, freeze=1, pid=29086, num=152'
@@ -503,9 +521,13 @@ def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_
 
     ##########################pid log###########################
     #保存SF的pid
-    if not isParsed and len(tag.strip()) == 0:
-        isParsed = parseNoTag(allAnr, allLine, line)
+    if not isParsed and tag.strip() == 'SurfaceFlinger'.strip().lower():
+        isParsed = parseSurfaceFlinger(allAnr, allLine, line)
 
+    ##########################parseNubiaAnrSystrace###########################
+    #保存anr systrace
+    if not isParsed and tag.strip() == 'NubiaAnrSystrace'.strip().lower():
+        isParsed = parseNubiaAnrSystrace(allAnr, allLine, line)
 
     ##########################解析完成###########################
     #如果有解析则打印该行
@@ -860,6 +882,15 @@ def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, ca
     #关闭文件流
     resonFile.close()
     return globalValuesList
+
+def test():
+    li = '10-11 07:10:00.024 1437 1541 W NubiaAnrSystrace: system_server blocked at least 9343 ms'
+    line =  LogLine(li)
+    print(line.isLogLine)
+    match = re.match('.*system_server blocked at least ([\d]+) ms', line.msg)
+    if match:
+        print(match.groups())
+    exit(0)
 
 if __name__ == '__main__':
     start = time.clock()

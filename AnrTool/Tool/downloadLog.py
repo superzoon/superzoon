@@ -268,22 +268,17 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
     if callbackMsg:
         callbackMsg('开始下载。。。')
     logDict = dict()#{productModel:{productVersion:[logId]}}
-    if GLOBAL_VALUES.packageNameDown:
-        parserPaths = []
-        parserLog = dict()
-    else:
-        parserPath = None
+    parserPaths = []
+    parserLog = dict()
     packageName = None
-    isAnr = True
     for log in logs:
         if GLOBAL_VALUES.packageNameDown:
-            parserPath = sep.join([outPath, log.packageName, log.jiraId])
-            if not parserPath in  parserPaths:
-                parserPaths.append(parserPath)
-                parserLog[parserPath] = log
-        elif not parserPath or len(parserPath) == 0:
-            parserPath = sep.join([outPath, log.jiraId])
-            isAnr = log.isAnr()
+            parserPath = sep.join([outPath, 'ANR', log.packageName, log.jiraId])
+        else:
+            parserPath = sep.join([outPath, 'ANR', log.jiraId])
+        if not parserPath in  parserPaths:
+            parserPaths.append(parserPath)
+            parserLog[parserPath] = log
         if not packageName or len(packageName) == 0:
             packageName = log.packageName
         model = log.productModel
@@ -344,38 +339,34 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
         time.sleep(1)
 
     if parse:
-        if GLOBAL_VALUES.packageNameDown:
-            GLOBAL_VALUES.parserOkCount = 0
-            GLOBAL_VALUES.parserNumber = 0
-            def getParserAction(path, packageName):
+        GLOBAL_VALUES.parserOkCount = 0
+        GLOBAL_VALUES.parserNumber = 0
+        def getParserAction(path, packageName):
+            workThread.LockUtil.acquire()
+            GLOBAL_VALUES.parserNumber = GLOBAL_VALUES.parserNumber + 1
+            workThread.LockUtil.release()
+            def action():
+                if path and isdir(path):
+                    parserZipLogDir(path, packageName=packageName, removeDir=True, callbackMsg=callbackMsg)
                 workThread.LockUtil.acquire()
-                GLOBAL_VALUES.parserNumber = GLOBAL_VALUES.parserNumber + 1
+                GLOBAL_VALUES.parserOkCount = GLOBAL_VALUES.parserOkCount+1
                 workThread.LockUtil.release()
-                def action():
-                    if path and isdir(path):
-                        parserZipLogDir(path, packageName=packageName, removeDir=True, callbackMsg=callbackMsg)
-                    workThread.LockUtil.acquire()
-                    GLOBAL_VALUES.parserOkCount = GLOBAL_VALUES.parserOkCount+1
-                    workThread.LockUtil.release()
-                    print('parserOkCount={},workNumber={}'.format(GLOBAL_VALUES.parserOkCount, GLOBAL_VALUES.parserNumber))
-                    count = GLOBAL_VALUES.parserOkCount - GLOBAL_VALUES.parserNumber
-                    if async and count==0:
-                        queue.put('{} 解析完成'.format(outPath.replace('\\', '/')))
-                return action
-            for path in parserPaths:
-                log:__JiraLog__ = parserLog[path]
-                if log and log.isAnr():
-                    action = getParserAction(path, log.packageName)
-                    if async:
-                        postAction(action)
-                    else:
-                        action()
-            if async:
-                logUtils.info(queue.get())
-                time.sleep(1)
-        elif parserPath and isdir(parserPath) and isAnr:
-            parserZipLogDir(parserPath, packageName=packageName, removeDir=True, callbackMsg=callbackMsg)
-            logUtils.info('{}解析完成'.format(parserPath))
+                print('parserOkCount={},workNumber={}'.format(GLOBAL_VALUES.parserOkCount, GLOBAL_VALUES.parserNumber))
+                count = GLOBAL_VALUES.parserOkCount - GLOBAL_VALUES.parserNumber
+                if async and count==0:
+                    queue.put('{} 解析完成'.format(outPath.replace('\\', '/')))
+            return action
+        for path in parserPaths:
+            log:__JiraLog__ = parserLog[path]
+            if log and log.isAnr():
+                action = getParserAction(path, log.packageName)
+                if async:
+                    postAction(action)
+                else:
+                    action()
+        if async:
+            logUtils.info(queue.get())
+            time.sleep(1)
         return True
     else:
         return True
