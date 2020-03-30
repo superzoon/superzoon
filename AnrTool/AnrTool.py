@@ -424,12 +424,18 @@ def parseOpenGLRenderer(allAnr :Anr, allLine:LogLine, line:LogLine):
 pattern_nubialog = '^.*\ delay=([\d]+)ms\ .*'
 pattern_nubialog_dispatching = '^ .*dispatching message.*\ dispatching=-([\d]+s)?([\d]+ms)?\s.*'
 pattern_nubialog_draw = '.*draw takes ([\d|\.]+) ms:.*'
+pattern_nubialog_transact = '.*onTransact .* delay=([\d]+)'
+pattern_nubialog_receive = '.*LoadedApk onReceive\(\) delay:([\d]+)ms receiver.*'
 def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
     isParsed = False
     delay = 0
     match = re.match(pattern_nubialog, line.msg)
     if not match:
         match = re.match(pattern_nubialog_draw, line.msg)
+    if not match:
+        match = re.match(pattern_nubialog_transact, line.msg)
+    if not match:
+        match = re.match(pattern_nubialog_receive, line.msg)
     if match:
         delay = float(match.group(1))
 
@@ -885,11 +891,17 @@ def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, ca
 
 def test():
     li = '10-11 07:10:00.024 1437 1541 W NubiaAnrSystrace: system_server blocked at least 9343 ms'
+    li = '03-29 16:27:15.084  1453 15126 D nubialog: onTransact com.android.server.audio.AudioService:23 delay=7982'
+    pattern_nubialog_transact = '.*onTransact .* delay=([\d]+)'
+    li = '03-29 16:27:15.084  2073  2276 I nubialog: LoadedApk onReceive() delay:7982ms receiver:com.android.systemui.volume.VolumeDialogControllerImpl$Receiver@df33650 intent:Intent { act=android.media.STREAM_DEVICES_CHANGED_ACTION flg=0x14000010 (has extras) }'
+    pattern_nubialog_receive = '.*LoadedApk onReceive\(\) delay:([\d]+)ms receiver.*'
+
     line =  LogLine(li)
     print(line.isLogLine)
-    match = re.match('.*system_server blocked at least ([\d]+) ms', line.msg)
+    match = re.match('.*LoadedApk onReceive\(\) delay:([\d]+)ms receiver.*', line.msg)
     if match:
         print(match.groups())
+    print('exit')
     exit(0)
 
 if __name__ == '__main__':
