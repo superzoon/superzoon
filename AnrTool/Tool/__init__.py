@@ -22,6 +22,8 @@ class GlobalValues:
         self.opener = None
         self.debug = True
         self.hungerBinders = dict()
+        self.only_filter = False
+        self.filters = []
 
     def setCallback(self,key:str, callback):
         if key:
@@ -78,6 +80,7 @@ class LogLine():
         self.isGslIoctlFailed = False
         self.isAnrCore = False
         self.file = ''
+        self.filter = False
         self.isDelayLine = False
         self.delayFloat = 0;
         self.delayStartTimeStr = ''

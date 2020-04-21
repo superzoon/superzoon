@@ -10,8 +10,7 @@ from Tool.toolUtils import *
 from Tool.anrTraces import *
 from Tool import Anr,GlobalValues, log, logUtils
 from Tool.systemLog import *
-from Tool import DEF_MAX_DELAY_TIME
-
+from Tool import DEF_MAX_DELAY_TIME,GLOBAL_VALUES
 DEFAULT_PACKAGE = 'com.android.systemui'
 def parseSurfaceFlinger(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not line.globalValues.pidMap.__contains__(line.pid):
@@ -464,6 +463,17 @@ def parseNubiaLog(allAnr :Anr, allLine:LogLine, line:LogLine):
             isParsed = True
     return isParsed
 
+def filterLine(allAnr :Anr, allLine:LogLine, line:LogLine):
+    for filter in GLOBAL_VALUES.filters:
+        if line.line.lower().__contains__(str(filter).lower()):
+            line.filter = True
+            line.file = str(line.globalValues.currentFile)
+            allLine.append(line)
+            return True
+    return False
+
+
+    pass
 def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_PACKAGE):
     isParsed = False
     tag = line.tag.lower()
@@ -535,6 +545,8 @@ def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_
     if not isParsed and tag.strip() == 'NubiaAnrSystrace'.strip().lower():
         isParsed = parseNubiaAnrSystrace(allAnr, allLine, line)
 
+    # 过滤该行
+    isParsed = filterLine(allAnr, allLine, line)
     ##########################解析完成###########################
     #如果有解析则打印该行
     if isParsed:
@@ -652,6 +664,13 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
                         parseLine(allAnr, allLine, temp, packageName)
 
     log('####################start write######################')
+    if GLOBAL_VALUES.only_filter:
+        for line in allLine:
+            if line.filter:
+                start = len(dirname(dirname(dirname(destDir))))+1
+                resonFile.writelines("\n filter: in file {} -> line={}\n".format(line.file[start:], line.linenum))
+                resonFile.writelines("\t{}\n".format(line.line.strip()))
+        return globalValues
     #将手机的信息写入到文件
 
     for (key, value) in propMsg.items():
@@ -661,6 +680,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     temp = '\n'
     globalValues.showMessage.append(temp)
     resonFile.writelines(temp)
+
     #讲对应的am anr添加到主要信息中
     for anr in allAnr:
         if not anr.anrCoreLine and anr.anrCoreReserveLine:
@@ -816,12 +836,17 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         #输出所有的分析行信息到文件
         resonFile.writelines("\n关键log:\n")
         for line in allLine:
-            if line.isAnrCore:
+            if line.filter:
                 start = len(dirname(dirname(dirname(destDir))))+1
-                resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file[start:], line.linenum))
-            resonFile.writelines("\t{}\n".format(line.line.strip()))
-            if line.isDelayLine:
-                resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
+                resonFile.writelines("\n filter: in file {} -> line={}\n".format(line.file[start:], line.linenum))
+                resonFile.writelines("\t{}\n".format(line.line.strip()))
+            else:
+                if line.isAnrCore:
+                    start = len(dirname(dirname(dirname(destDir))))+1
+                    resonFile.writelines("\n  My Anr core: in file {} -> line={}\n\n".format(line.file[start:], line.linenum))
+                resonFile.writelines("\t{}\n".format(line.line.strip()))
+                if line.isDelayLine:
+                    resonFile.writelines("\t\tstartTime:{}\n".format(line.delayStartTimeStr))
         resonFile.writelines("\n")
 
     # 判断是否有anr
@@ -863,6 +888,17 @@ def parseZipLog(fileName, resonFile:TextIOWrapper, packageName:str=DEFAULT_PACKA
     return globalValues
 
 def parserZipLogDir(foldPath, packageName =DEFAULT_PACKAGE, removeDir = True, callbackMsg = None):
+    if (isfile('filter.txt')):
+        GLOBAL_VALUES.only_filter = False
+        with open('filter.txt', encoding=toolUtils.checkFileCode('filter.txt')) as mFile:
+            lines = mFile.readlines()
+            GLOBAL_VALUES.filters = [line.strip() for line in lines]
+    elif (isfile('only_filter.txt')):
+        GLOBAL_VALUES.only_filter = True
+        with open('only_filter.txt', encoding=toolUtils.checkFileCode('filter.txt')) as mFile:
+            lines = mFile.readlines()
+            GLOBAL_VALUES.filters = [line.strip() for line in lines]
+
     #打印需要解析的路径
     msg = '--parserZipLogDir thread={} foldPath={}'.format(current_thread().getName(), foldPath)
     log(msg.replace('\\','/'))
