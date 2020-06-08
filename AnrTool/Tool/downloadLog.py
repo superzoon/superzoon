@@ -213,7 +213,7 @@ def getAllJiraLog(jiraId:str=None, productModel:str=None, callbackMsg=None, orde
         filters.append('keyInfo={}'.format(keyInfo))
     filters.append('hasFile={}'.format(hasFile))
     '''
-    url = 'http://log-list.server.nubia.cn/log/list.do?order=asc&limit=30&' \
+    url = 'https://log-list.server.nubia.cn/log/list.do?order=asc&limit=30&' \
           'offset=0&productModel=NX629J&tfsId=jEUd8c.RhJxQN&jiraId=LOG-495986&productVersion=NX629J_Z0_CN_VLF0P_V235&hasFile=Y'
     '''
     for i in range(5):

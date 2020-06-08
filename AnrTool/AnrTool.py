@@ -668,7 +668,7 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
         for line in allLine:
             if line.filter:
                 start = len(dirname(dirname(dirname(destDir))))+1
-                resonFile.writelines("\n filter: in file {} -> line={}\n".format(line.file[start:], line.linenum))
+                resonFile.writelines("filter: in file {} -> line={}\n".format(line.file[start:], line.linenum))
                 resonFile.writelines("\t{}\n".format(line.line.strip()))
         return globalValues
     #将手机的信息写入到文件
