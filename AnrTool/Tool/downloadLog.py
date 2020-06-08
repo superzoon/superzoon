@@ -1,6 +1,7 @@
 import http.cookiejar
 from http.client import HTTPResponse
 import urllib.request
+import ssl
 from urllib.request import OpenerDirector
 from queue import Queue
 from AnrTool import parseZipLog, parserZipLogDir, GlobalValues
@@ -10,7 +11,7 @@ from os import (startfile, walk, path, listdir, popen, remove, rename, makedirs,
 from os.path import (realpath, isdir, isfile, sep, dirname, abspath, exists, basename, getsize)
 from shutil import (copytree, rmtree, copyfile, move)
 from Tool import GLOBAL_VALUES, logUtils, workThread
-__HOST__URL__ = 'http://log-list.server.nubia.cn'
+__HOST__URL__ = 'https://log-list.server.nubia.cn'
 __CHECK__URL__ = __HOST__URL__+'/login/check.do'
 __LIST__URL__ = __HOST__URL__+'/log/list.do?'
 __DOWN__URL__ = __HOST__URL__+'/log/download/{}.do'
@@ -28,6 +29,7 @@ def __createDir__(path:str):
 
 def getOpener():
     if not GLOBAL_VALUES.opener:
+        ssl._create_default_https_context = ssl._create_unverified_context
         # 登录时需要POST的数据
         data = {'username': 'common',
                 'password': '888888', }
@@ -216,25 +218,28 @@ def getAllJiraLog(jiraId:str=None, productModel:str=None, callbackMsg=None, orde
     url = 'https://log-list.server.nubia.cn/log/list.do?order=asc&limit=30&' \
           'offset=0&productModel=NX629J&tfsId=jEUd8c.RhJxQN&jiraId=LOG-495986&productVersion=NX629J_Z0_CN_VLF0P_V235&hasFile=Y'
     '''
-    for i in range(5):
-        url = __LIST__URL__+'&'.join(filters).format(i)
+    size=0
+    while(True):
+        url = __LIST__URL__+'&'.join(filters).format(size*limit)
+        size = size+1
         logUtils.info('getAllJiraLog  url={}'.format(url))
         req = urllib.request.Request(url, headers=headers)
         resp: HTTPResponse = getOpener().open(req)
         text = json.loads(resp.read().decode('utf-8'))
         total, logs = __JiraLog__.parJson(text, url)
+        print('all log total={} size={}'.format(total, len(logs)))
         if not logs:
             break
         for log in logs:
             if not inList(log , allLog):
                 allLog.append(log)
         if len(logs) == 0 or len(allLog) >= total:
-            break
+            return allLog
     return allLog
 
-def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = False, async = False, order:str='asc',limit:int=30, productVersions=[], tfsId=None, hasFile='Y', keyInfo=None):
-    logUtils.info('download outPath={}, jiraId={}, productModels={}, parse={}, async={}, order={}, limit={}, productVersions={}, tfsId={}, hasFile={}, keyInfo={}'.format(
-        outPath, jiraId, productModels, parse, async, order, limit, productVersions, tfsId, hasFile, keyInfo
+def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = False, async_ = False, order:str='asc',limit:int=30, productVersions=[], tfsId=None, hasFile='Y', keyInfo=None):
+    logUtils.info('download outPath={}, jiraId={}, productModels={}, parse={}, async_={}, order={}, limit={}, productVersions={}, tfsId={}, hasFile={}, keyInfo={}'.format(
+        outPath, jiraId, productModels, parse, async_, order, limit, productVersions, tfsId, hasFile, keyInfo
     ))
     downLoadErrs.clear()
     '''
@@ -293,7 +298,7 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
             logList.append(log)
     GLOBAL_VALUES.downOkCount = 0
     GLOBAL_VALUES.downNumber = 0
-    if async:
+    if async_:
         queue = Queue(1)
     for model, versions in logDict.items():
         for version in sorted(versions.keys(), reverse=True):
@@ -326,15 +331,15 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
                     GLOBAL_VALUES.downOkCount = GLOBAL_VALUES.downOkCount + 1
                     workThread.LockUtil.release()
                     print('downOkCount={},downNumber={}'.format(GLOBAL_VALUES.downOkCount,  GLOBAL_VALUES.downNumber))
-                    if async and GLOBAL_VALUES.downOkCount >= GLOBAL_VALUES.downNumber:
+                    if async_ and GLOBAL_VALUES.downOkCount >= GLOBAL_VALUES.downNumber:
                         queue.put('{}下载完成'.format(outPath.replace('\\','/')))
                 return downloadAction
             action = getDownAction(model,version)
-            if async:
+            if async_:
                 postAction(action)
             else:
                 action()
-    if async:
+    if async_:
         print(queue.get())
         time.sleep(1)
 
@@ -353,18 +358,18 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
                 workThread.LockUtil.release()
                 print('parserOkCount={},workNumber={}'.format(GLOBAL_VALUES.parserOkCount, GLOBAL_VALUES.parserNumber))
                 count = GLOBAL_VALUES.parserOkCount - GLOBAL_VALUES.parserNumber
-                if async and count==0:
+                if async_ and count==0:
                     queue.put('{} 解析完成'.format(outPath.replace('\\', '/')))
             return action
         for path in parserPaths:
             log:__JiraLog__ = parserLog[path]
             if log and log.isAnr():
                 action = getParserAction(path, log.packageName)
-                if async:
+                if async_:
                     postAction(action)
                 else:
                     action()
-        if async:
+        if async_:
             logUtils.info(queue.get())
             time.sleep(1)
         return True
@@ -373,5 +378,5 @@ def download(outPath:str, callbackMsg, jiraId:str, productModels:str, parse = Fa
 
 if __name__ == '__main__':
     print('启动程序')
-    download('LOG-67680','NX629J','./', callbackMsg=lambda x:print(x))
+    download('./', callbackMsg=lambda x:print(x),jiraId='LOG-594301',productModels=['NX659J',])
     exit()

@@ -69,7 +69,7 @@ class DownloadFrame():
     def initView(self):
         width = self.width
         height = self.height
-        frame = tk.Frame(window, width=width, height=height)
+        frame = tk.Frame(self.window, width=width, height=height)
         MIN = 2
         MAX = 20
         left = 0
@@ -107,7 +107,7 @@ class DownloadFrame():
 
         left = left+width+MIN*2
         width = jiraWidth - left
-        jiraEntry = tk.Entry(window, show='', font=('Arial', 14))
+        jiraEntry = tk.Entry(self.window, show='', font=('Arial', 14))
         jiraEntry.place(x=left, y=top, anchor='nw', width=width, height=height)
         if TEST:
             jiraEntry.insert('insert', 'LOG-67680')
@@ -123,7 +123,7 @@ class DownloadFrame():
 
         left = left+width+MIN
         width = modelWidth - MIN - width - MAX/2
-        modelEntry = tk.Entry(window, show='', font=('Arial', 14))
+        modelEntry = tk.Entry(self.window, show='', font=('Arial', 14))
         modelEntry.place(x=left+MIN, y=top, anchor='nw', width=width, height=height)
         if TEST:
             modelEntry.insert('insert', 'NX629J')
@@ -139,7 +139,7 @@ class DownloadFrame():
 
         left = left+width+MIN
         width = versionWidth - width
-        versionEntry = tk.Entry(window, show='', font=('Arial', 14))
+        versionEntry = tk.Entry(self.window, show='', font=('Arial', 14))
         versionEntry.place(x=left+MIN, y=top, anchor='nw', width=width, height=height)
         self.versionEntry = versionEntry
 
@@ -161,7 +161,7 @@ class DownloadFrame():
 
         left = left+width+MIN
         width = self.width*0.7
-        saveEntry = tk.Entry(window, show='', font=('Arial', 14))
+        saveEntry = tk.Entry(self.window, show='', font=('Arial', 14))
         saveEntry.place(x=left+MIN, y=top, anchor='nw', width=width-MIN, height=height)
         self.saveEntry = saveEntry
 
@@ -170,7 +170,7 @@ class DownloadFrame():
 
         left = left+width+MIN
         width = saveWidth - left + self.padding - MAX/2
-        saveButton = tk.Button(window, text='下载', command=downloadJira , font=(14))
+        saveButton = tk.Button(self.window, text='下载', command=downloadJira , font=(14))
         saveButton.place(x=left+MIN*2, y=top, anchor='nw', width=width, height=height)
         self.saveButton = saveButton
 
@@ -180,7 +180,7 @@ class DownloadFrame():
         var = tk.BooleanVar()
         def checklistener():
             self.anrParse = var.get()
-        parseCheck = tk.Checkbutton(window, text='Anr解析', variable=var, onvalue=True, offvalue=False, command=checklistener )
+        parseCheck = tk.Checkbutton(self.window, text='Anr解析', variable=var, onvalue=True, offvalue=False, command=checklistener )
         def showParseCheck():
             self.parseCheck.place(x=left+MIN, y=top, anchor='nw', width=width, height=height)
             self.parseCheckShow = True
@@ -289,7 +289,7 @@ class DownloadFrame():
             def getAction( outPath, callback, jiraId, models, versions, anrParse):
                 def downloadAction():
                     downloadLog.download(outPath = outPath, callbackMsg=callback, jiraId = jiraId, productModels = models,
-                                         productVersions= versions,  parse=anrParse, async=(len(self.jiras)<=1))
+                                         productVersions= versions,  parse=anrParse, async_=(len(self.jiras)<=1))
                 return downloadAction
             for jiraId in self.jiras:
                 postAction(getAction( self.savePath, callbackMsg, jiraId, self.models, self.versions, self.anrParse))

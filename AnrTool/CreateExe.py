@@ -43,7 +43,7 @@ def create_decorator(func):
 
 @create_decorator
 def createAnrWindowExe(ico:str = None):
-    call('pyinstaller -w -F -i {}  AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
+    call('C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python36-32\\Scripts\\pyinstaller -w -F -i {}  AnrWindow.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
     dist = sep.join(['dist','AnrWindow.exe'])
 
     if isfile(dist):
@@ -71,7 +71,7 @@ def createAnrWindowExe(ico:str = None):
 
 @create_decorator
 def createJiraExe(ico:str = None):
-    call('pyinstaller -w -F -i {}  JiraTool.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
+    call('C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python36-32\\Scripts\\pyinstaller -w -F -i {}  JiraTool.py -p AnrTool.py -p Tool --hidden-import Tool'.format(ico))
     dist = sep.join(['dist','JiraTool.exe'])
     if isfile(dist):
 
