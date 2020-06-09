@@ -31,6 +31,18 @@ def sshclient_execmd(hostname, port, username, password, execmd):
     s.close()
 
 if __name__ == '__main__':
+
+    anr_pattern = '.*\[([\d]+),([\d]+),([\w|\.]+),.*\].*'
+    ll = '06-07 16:53:50.084  1483  1602 I am_anr  : [0,3188,com.android.systemui,818429453,Input dispatching timed out (Waiting to send non-key event because the touched window has not finished processing certain input events that were delivered to it over 500.0ms ago.  Wait queue length: 32.  Wait queue head age: 5697.8ms.)]'
+    from Tool import LogLine
+    line = LogLine(ll)
+    match = re.match(anr_pattern, line.msg)
+    isParsed = False
+    print(line.msg)
+    if match:
+        delay = match.group(3)
+        print(delay)
+    exit(0)
     print('start 1')
     hostname = '10.206.197.99'
     port = '22'

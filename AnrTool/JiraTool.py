@@ -15,8 +15,8 @@ from Tool import widget,TEST,logUtils
 EXE_PATH = '//MININT-578MFLI/Share/JiraTool/'
 VERSION_INI_FILE = EXE_PATH+'version.ini'
 
-CURRENT_VERSION = '1.0.005'
-CURRENT_UPDATE_CONTENT = '支持systemui目录只下载systemui'
+CURRENT_VERSION = '1.0.006'
+CURRENT_UPDATE_CONTENT = 'systemui目录只下载systemui\n修复https不能下载'
 
 def updateExe():
     update = False

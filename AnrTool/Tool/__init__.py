@@ -152,6 +152,7 @@ class Anr():
         self.anrTimeStr:str = None
         self.anrTimeFloat:float = 0 #ms
         self.systemAnr = None
+        self.eventAnr = None
         self.anr_broadcast_action:str = None
         self.anr_class_name:str = None
         self.anr_input_msg:str = None

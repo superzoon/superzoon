@@ -10,11 +10,23 @@ from Tool.toolUtils import *
 from Tool.anrTraces import *
 from Tool import Anr,GlobalValues, log, logUtils
 from Tool.systemLog import *
+from Tool.eventLog import *
 from Tool import DEF_MAX_DELAY_TIME,GLOBAL_VALUES
 DEFAULT_PACKAGE = 'com.android.systemui'
 def parseSurfaceFlinger(allAnr :Anr, allLine:LogLine, line:LogLine):
     if not line.globalValues.pidMap.__contains__(line.pid):
         line.globalValues.pidMap[line.pid] = line.tag
+
+# am_anr  : [0,3669,com.android.systemui,818429453,Input dispatching timed out (Waiting to send non-key event because the touched window has not finished processing certain input events that were delivered to it over 500.0ms ago.  Wait queue length: 9.  Wait queue head age: 5577.6ms.)]
+pattern_am_anr = '.*\s([\d]+)\.\d?ms\.\)\]'
+def parseAmAnr(allAnr :Anr, allLine:LogLine, line:LogLine):
+    match = re.match(pattern_am_anr, line.msg)
+    if match:
+        delay = float(match.group(1))
+        if delay > DEF_MAX_DELAY_TIME:
+            line.addDelay(delay)
+    allLine.append(line)
+    return True
 
 # '09-26 02:04:14.363   928   928 E         : freezerd, set_thread_freeze_state, freeze=0, pid=29086, num=139'
 def parseNoTag(allAnr :Anr, allLine:LogLine, line:LogLine):
@@ -544,6 +556,10 @@ def parseLine(allAnr :Anr, allLine:LogLine, line:LogLine, packageName = DEFAULT_
     #保存anr systrace
     if not isParsed and tag.strip() == 'NubiaAnrSystrace'.strip().lower():
         isParsed = parseNubiaAnrSystrace(allAnr, allLine, line)
+    ##########################parseNubiaAnrSystrace###########################
+    #保存anr systrace
+    if not isParsed and tag.strip() == 'am_anr'.strip().lower():
+        isParsed = parseAmAnr(allAnr, allLine, line)
 
     # 过滤该行
     isParsed = filterLine(allAnr, allLine, line)
@@ -607,6 +623,9 @@ def parseLogDir(destDir:str, resonFile:TextIOWrapper, packageName:str=DEFAULT_PA
     # 从systemui解析有多少个anr
     systemLog = SystemLog(systemFiles, allAnr, globalValues, packageName)
     systemLog.findAllAnr()
+    if len(allAnr)==0:
+        eventLog = EventLog(eventFiles, allAnr, globalValues, packageName)
+        eventLog.findAllAnr()
     #解析所有的anr trace
     mainStacks = list()
     blockStacks = dict()
