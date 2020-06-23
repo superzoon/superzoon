@@ -128,7 +128,13 @@ class __JiraLog__():
                 z = zipfile.ZipFile(temp, 'a')
                 readme = self.logId+'.txt'
                 with open(readme, "w") as code:
-                    code.write(self.__str__(showTitle=True))
+                    for key,value in self.row.items():
+                        space=''
+                        keylen=20-len(key)
+                        while keylen>0:
+                            space = '{} '.format(space)
+                            keylen = keylen-1
+                        code.write('{}{}:  {}\n'.format(key, space, value))
                     code.flush()
                     code.close()
                 try:
