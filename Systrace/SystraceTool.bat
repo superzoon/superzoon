@@ -3,7 +3,7 @@
 
 @echo Example: main.py -b 32768 -t 15 gfx input view sched freq
 
-@echo Options:
+@echo Options: SystraceTool.exe  --from-file trace_raw.atrace
 @echo   -h, --help            show this help message and exit
 @echo   -o FILE               write trace output to FILE
 @echo   -j, --json            write a JSON file
@@ -102,8 +102,8 @@
 @echo          ion - ION allocation (HAL)
 @echo 
 @echo NOTE: more categories may be available with adb root
+@echo "list-categories gfx input view wm am sm hal power ss aidl sched idle res dalvik load rs freq binder_driver binder_lock"
 
 
-@echo "list-categories gfx input view wm am sm hal power ss aidl sched idle freq binder_driver binder_lock"
-SystraceTool\SystraceTool.exe -b 10240 -t 5 -a com.android.systemui gfx input view wm am sm -o d:\systrace_trace_viewer.html
+SystraceTool.exe -b 10240 -t 5 -a com.android.systemui gfx input view wm am res dalvik load rs sm hal power aidl sched freq -o d:\systrace_trace_viewer.html
 pause
