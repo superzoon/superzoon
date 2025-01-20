@@ -1,7 +1,0 @@
-#配置覆盖的文件(以key=value方式覆盖原有的，如果没有就添加),有多个配置文件用,分开 例如： OVERLAYS_MAP = file1:overlays_file1,file2:overlays_file2
-OVERLAYS_MAP = ProjectConfig.mk:device/zechin/zechin6580_weg_m/ProjectConfig.mk, full_zechin6580_weg_m.mk:device/zechin/zechin6580_weg_m/full_zechin6580_weg_m.mk
-#翻译
-flash = 字库 
-network = 网络
-customer = 客户
-battery = 电池

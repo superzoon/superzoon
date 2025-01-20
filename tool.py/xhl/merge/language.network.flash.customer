@@ -1,7 +1,0 @@
-#配置覆盖的文件(以key=value方式覆盖原有的，如果没有就添加),有多个配置文件用,分开 例如： OVERLAYS_MAP = file1:overlays_file1,file2:overlays_file2
-OVERLAYS_MAP = build.prop:xhl/out/system/build.prop, customer.prop:xhl/out/system/xhl/customer.prop
-#翻译
-language = 语言
-network = 网络
-flash = 字库
-customer = 客户
