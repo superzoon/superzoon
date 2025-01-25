@@ -1,14 +1,31 @@
 import pandas as pd
 import numpy as np
 import akshare as ak
-from sqlalchemy import create_engine,text,MetaData
+from sqlalchemy import create_engine, text, MetaData
 import sqlite3
 
-def __save_to_db__(df, table_name,replace=True):
-    engine = create_engine('sqlite:///ak_dongcai.db', echo=False)  # echo=True 用于调试
+
+def __save_to_db__(df, table_name, replace=True):
+    engine = create_engine('sqlite:///assets/ak_dongcai.db', echo=False)  # echo=True 用于调试
     conn = engine.connect()
-    df.to_sql(table_name, index=False, con=conn, if_exists= 'replace' if replace else 'append', chunksize=1000)
+    df.to_sql(table_name, index=False, con=conn, if_exists='replace' if replace else 'append', chunksize=1000)
     conn.close()
+
+def isInSS(code:str, name:str):
+    if name.__contains__('ST'):
+        return False
+    elif name.__contains__('st'):
+        return False
+    elif code.startswith('60'):#上交主板
+        return True
+    elif code.startswith('68'):#上交科创
+        return True
+    elif code.startswith('00'):#深交主板
+        return True
+    elif code.startswith('30'):#深交科创
+        return True
+    else:
+        return False
 
 def banKuai(updateDB=True, debug=False):
     '''
@@ -20,13 +37,14 @@ def banKuai(updateDB=True, debug=False):
     :return:
     '''
     df = ak.stock_board_industry_name_em()
-    if debug : print(df)
+    if debug: print(df)
     if updateDB: __save_to_db__(df, 'bankuai')
     return df
 
-def  banKuaiHangQing(symbol, start_date, end_date,
-                      period="日k", adjust="hfq",
-                      updateDB=True, debug=False):
+
+def banKuaiHangQing(symbol, start_date, end_date,
+                    period="日k", adjust="hfq",
+                    updateDB=True, debug=False):
     '''
     东方财富-指数-日频
     接口:stock_board_industry_hist_em
@@ -46,25 +64,26 @@ def  banKuaiHangQing(symbol, start_date, end_date,
     :return:
     '''
     table_name = 'bankuai_hangqing'
-    df = ak.stock_board_industry_hist_em(symbol, start_date,end_date, period, adjust)
+    df = ak.stock_board_industry_hist_em(symbol, start_date, end_date, period, adjust)
     df.sort_values(by='日期', ascending=False, inplace=True)
-    df['板块'] = symbol
-    if debug : print(df)
+    df.insert(loc=df.columns.get_loc('开盘'), column='板块', value=symbol)
+    if debug: print(df)
     if updateDB:
-        engine = create_engine('sqlite:///ak_dongcai.db', echo=False)  # echo=True 用于调试
+        engine = create_engine('sqlite:///assets/ak_dongcai.db', echo=False)  # echo=True 用于调试
         conn = engine.connect()
         metaData = MetaData()
         metaData.reflect(bind=engine)
-        if debug:print(metaData.tables)
-        #删除相同板块的数据
+        if debug: print(metaData.tables)
+        # 删除相同板块的数据
         if table_name in metaData.tables:
             exec_str = 'DELETE FROM {} WHERE "板块" = "{}";'.format(table_name, symbol)
             conn.execute(text(exec_str))
-        df.to_sql(table_name, index=False, con=conn, if_exists= 'append', chunksize=1000)
+        df.to_sql(table_name, index=False, con=conn, if_exists='append', chunksize=1000)
         conn.commit()
         conn.close()
 
     return df
+
 
 def banKuaiChengFen(symbol, updateDB=True, debug=False):
     '''
@@ -78,29 +97,30 @@ def banKuaiChengFen(symbol, updateDB=True, debug=False):
     symbol        str     symbol="小金属"；可以通过ak.stock_board_industry_name_em()查看所有东方财富行业板块行业代码
     :return:
     '''
-    table_name='bankuai_chengfen'
+    table_name = 'bankuai_chengfen'
     df = ak.stock_board_industry_cons_em(symbol)
-    df['板块'] = symbol
+    df.insert(loc=df.columns.get_loc('序号'), column='板块', value=symbol)
     del df['序号']
-    if debug : print(df)
+    if debug: print(df)
 
     if updateDB:
-        engine = create_engine('sqlite:///ak_dongcai.db', echo=False)  # echo=True 用于调试
+        engine = create_engine('sqlite:///assets/ak_dongcai.db', echo=False)  # echo=True 用于调试
         conn = engine.connect()
         metaData = MetaData()
         metaData.reflect(bind=engine)
-        if debug:print(metaData.tables)
-        #删除相同板块的数据
+        if debug: print(metaData.tables)
+        # 删除相同板块的数据
         if table_name in metaData.tables:
             exec_str = 'DELETE FROM {} WHERE "板块" = "{}";'.format(table_name, symbol)
             conn.execute(text(exec_str))
-        df.to_sql(table_name, index=False, con=conn, if_exists= 'append', chunksize=1000)
+        df.to_sql(table_name, index=False, con=conn, if_exists='append', chunksize=1000)
         conn.commit()
         conn.close()
     return df
 
-def guPiaoHangQing(symbol,start_date,end_date,period='daily',adjust='hfq',timeout=None,
-                      updateDB=True, debug=False):
+
+def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='hfq', timeout=None,
+                   updateDB=True, debug=False):
     '''
     接口：stock_zh_a_hist
     目标地址：https://quote.eastmoney.com/concept/sh603777.html?from=classic(实例)
@@ -115,20 +135,20 @@ def guPiaoHangQing(symbol,start_date,end_date,period='daily',adjust='hfq',timeou
     :return:
     '''
     table_name = 'gupiao_hangqing'
-    df = ak.stock_zh_a_hist(symbol, period=period, start_date=start_date, end_date=end_date,
-                                            adjust=adjust)
+    df = ak.stock_zh_a_hist(symbol, period=period, start_date=start_date, end_date=end_date, adjust=adjust)
+    df.insert(loc=df.columns.get_loc('股票代码'), column='股票名称', value=name)
     df.sort_values(by='日期', ascending=False, inplace=True)
-    if debug : print(df)
+    if debug: print(df)
     if updateDB:
-        engine = create_engine('sqlite:///ak_dongcai.db', echo=False)  # echo=True 用于调试
+        engine = create_engine('sqlite:///assets/ak_dongcai.db', echo=False)  # echo=True 用于调试
         conn = engine.connect()
         metaData = MetaData()
         metaData.reflect(bind=engine)
-        #删除相同板块的数据
+        # 删除相同板块的数据
         if table_name in metaData.tables:
             conn.execute(text('DELETE FROM {} WHERE "股票代码" = "{}";'.format(table_name, symbol)))
             conn.commit()
-        df.to_sql(table_name, index=False, con=conn, if_exists= 'append', chunksize=1000)
+        df.to_sql(table_name, index=False, con=conn, if_exists='append', chunksize=1000)
         conn.commit()
         conn.close()
     return df
