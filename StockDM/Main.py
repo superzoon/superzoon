@@ -14,7 +14,7 @@ read_from_csv = True
 
 
 def 你好(name: str = 'world'):
-    print('hellow {}, time={}'.format(name, datetime.now().strftime('%Y%m%d%H%M%S')))
+    print('{}, time={}'.format(name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
 
 def getDateSpace(days: int = 365):
@@ -80,7 +80,7 @@ def max_expect(df: pd.DataFrame, name: str, index: int, count: int = 5):
 
 
 def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
-    print(_bankuai.columns, _gupiao.columns)
+    #print(_bankuai.columns, _gupiao.columns)
     bankuai = _bankuai.loc[_bankuai['日期'] == _gupiao['日期']]
     gupiao = _gupiao.loc[_bankuai['日期'] == _gupiao['日期']]
     train_data = pd.DataFrame()
@@ -114,10 +114,10 @@ def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['expect'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data['price'] - 1
 
     train_data = train_data.dropna()
-    print(train_data)
+    #print(train_data)
 
     train_data.to_csv('train_data.csv')
-    print(train_data.columns)
+    #print(train_data.columns)
     return train_data
 
 
@@ -133,7 +133,7 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     from tensorflow.python.keras.models import save_model, load_model
     import matplotlib.pyplot as plt
 
-    你好('训练{}板块的{}'.format(bankuai, gupiao))
+    你好('训练 {}---{}'.format(bankuai, gupiao))
     features = ['RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5', 'price_10']
     X = df[features]
     y = df['expect']
@@ -141,9 +141,11 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
     model_path = 'stock_20.h5'
     if os.path.isfile(model_path):
+        print('加载模型{}'.format(model_path))
         # 加载模型
         model = load_model(model_path)
     else:
+        print('创建神经网络模型64X32X1')
         # 构建神经网络模型
         model = Sequential()
         model.add(Dense(64, input_dim=len(features), activation='relu'))
@@ -152,7 +154,7 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         model.compile(loss='mean_squared_error', optimizer='adam')
 
     # 训练 10000 轮
-    history = model.fit(X_train, y_train, epochs=10000, batch_size=32, validation_data=(X_test, y_test), verbose=0)
+    history = model.fit(X_train, y_train, epochs=1000, batch_size=32, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
     y_pred = model.predict(X_test)
@@ -182,7 +184,7 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
 
 
 if __name__ == '__main__':
-    你好('world start')
+    你好('训练开启')
 
     # 读取所有的板块
     if read_from_csv:
@@ -192,36 +194,37 @@ if __name__ == '__main__':
         bankuai = dc.banKuai()
         bankuai.to_csv(os.path.join('assets', 'bankuai.csv'))
 
-    # 遍历所有的板块
-    for bankuai_name in bankuai['板块名称']:
+    for i in range(10):
+        # 遍历所有的板块
+        for bankuai_name in bankuai['板块名称']:
 
-        # 读取板块的行情数据
-        if read_from_csv:
-            bankuaihangqing = pd.DataFrame(pd.read_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name))))
-        else:
-            bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
-            bankuaihangqing.to_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name)))
-
-        # 读取板块所有的成分股
-        bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
-        chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
-
-        # 遍历该板块所有的成分股
-        for index, row in chengfen.iterrows():
-            if not isInSS(row['代码'], row['名称']):
-                continue
-            print('{}_{}.csv'.format(row['代码'], row['名称']))
-
-            # 获取股票的行情数据
+            # 读取板块的行情数据
             if read_from_csv:
-                gupiaohangqing = pd.DataFrame(
-                    pd.read_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))))
+                bankuaihangqing = pd.DataFrame(pd.read_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name))))
             else:
-                gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
-                gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+                bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
+                bankuaihangqing.to_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name)))
 
-            # 清洗数据
-            df = train(bankuaihangqing, gupiaohangqing)
-            # 训练模型
-            training_model(bankuai_name, row['名称'], df)
-    你好('world end')
+            # 读取板块所有的成分股
+            bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
+            chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
+
+            # 遍历该板块所有的成分股
+            for index, row in chengfen.iterrows():
+                if not isInSS(row['代码'], row['名称']):
+                    continue
+                print('{}_{}.csv'.format(row['代码'], row['名称']))
+
+                # 获取股票的行情数据
+                if read_from_csv:
+                    gupiaohangqing = pd.DataFrame(
+                        pd.read_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))))
+                else:
+                    gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
+                    gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+
+                # 清洗数据
+                df = train(bankuaihangqing, gupiaohangqing)
+                # 训练模型
+                training_model(bankuai_name, row['名称'], df)
+    你好('训练结束')
