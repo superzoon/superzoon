@@ -11,21 +11,23 @@ def __save_to_db__(df, table_name, replace=True):
     df.to_sql(table_name, index=False, con=conn, if_exists='replace' if replace else 'append', chunksize=1000)
     conn.close()
 
-def isInSS(code:str, name:str):
+
+def isInSS(code: str, name: str):
     if name.__contains__('ST'):
         return False
     elif name.__contains__('st'):
         return False
-    elif code.startswith('60'):#上交主板
+    elif code.startswith('60'):  # 上交主板
         return True
-    elif code.startswith('68'):#上交科创
+    elif code.startswith('68'):  # 上交科创
         return True
-    elif code.startswith('00'):#深交主板
+    elif code.startswith('00'):  # 深交主板
         return True
-    elif code.startswith('30'):#深交科创
+    elif code.startswith('30'):  # 深交科创
         return True
     else:
         return False
+
 
 def banKuai(updateDB=True, debug=False):
     '''
