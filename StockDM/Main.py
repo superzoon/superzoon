@@ -163,7 +163,7 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         model.compile(loss='mean_squared_error', optimizer='adam')
 
     # 训练 10000 轮
-    history = model.fit(X_train, y_train, epochs=10000, batch_size=32, validation_data=(X_test, y_test), verbose=0)
+    history = model.fit(X_train, y_train, epochs=2000, batch_size=128, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
     y_pred = model.predict(X_test)
@@ -171,9 +171,9 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     print(f"Initial training MSE: {mse}")
 
     # 收集本次训练的测试损失
-    if len(test_losses) > 500000:
-        test_losses = test_losses[1::5]
     test_losses.extend(history.history['val_loss'])
+
+    test_losses = test_losses[1::5]
     with open('losses.txt', mode='a') as f:
         f.write('{}\n'.format(history.history['val_loss']))
         f.flush()
