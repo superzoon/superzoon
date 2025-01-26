@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 
+import threading
+import time
 from aktools import dongcai as dc
 from datetime import datetime, timedelta
 
@@ -80,9 +82,16 @@ def max_expect(df: pd.DataFrame, name: str, index: int, count: int = 5):
 
 
 def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
-    #print(_bankuai.columns, _gupiao.columns)
-    bankuai = _bankuai.loc[_bankuai['日期'] == _gupiao['日期']]
-    gupiao = _gupiao.loc[_bankuai['日期'] == _gupiao['日期']]
+    # print(_bankuai.columns, _gupiao.columns)
+    # 按行对齐，去除多余的行
+    bankuai = pd.DataFrame(_bankuai)
+    bankuai.set_index('日期')
+    gupiao = pd.DataFrame(_gupiao)
+    gupiao.set_index('日期')
+    bankuai, gupiao = bankuai.align(gupiao, join='inner', axis=0)
+    # bankuai = _bankuai.loc[_bankuai['日期'] == _gupiao['日期']]
+    # gupiao = _gupiao.loc[_bankuai['日期'] == _gupiao['日期']]
+
     train_data = pd.DataFrame()
     # 日期
     train_data.insert(0, 'Datetime', gupiao['日期'])
@@ -114,24 +123,24 @@ def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['expect'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data['price'] - 1
 
     train_data = train_data.dropna()
-    #print(train_data)
+    # print(train_data)
 
     train_data.to_csv('train_data.csv')
-    #print(train_data.columns)
+    # print(train_data.columns)
     return train_data
 
 
-test_losses = []
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+test_losses = []
 
 def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
+    global test_losses
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error
-    from tensorflow.python.keras import Sequential
+    from tensorflow.python.keras import Sequential, layers, optimizers
     from tensorflow.python.keras.layers import Dense
     from tensorflow.python.keras.models import save_model, load_model
-    import matplotlib.pyplot as plt
 
     你好('训练 {}---{}'.format(bankuai, gupiao))
     features = ['RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5', 'price_10']
@@ -162,6 +171,8 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     print(f"Initial training MSE: {mse}")
 
     # 收集本次训练的测试损失
+    if len(test_losses) > 500000:
+        test_losses = test_losses[1::5]
     test_losses.extend(history.history['val_loss'])
     with open('losses', mode='a') as f:
         f.write('{}\n'.format(history.history['val_loss']))
@@ -169,23 +180,35 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         f.close()
 
     # 保存模型
-    model_path = 'regression_model.h5'
     save_model(model, model_path)
 
-    # 绘制训练的测试结果图像（折线图）
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, len(test_losses) + 1), test_losses, marker='o', linestyle='-')
-    plt.xlabel('Epochs')
-    plt.ylabel('Test Mean Squared Error')
-    plt.title('Test MSE over Training Epochs')
-    plt.grid(True)
-    plt.tight_layout()
+
+# 绘制折线图的函数
+def plot_losses():
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+    import numpy as np
+    fig, ax = plt.subplots()
+    line, = ax.plot([], [])
+
+    def init():
+        line.set_data([], [])
+        return line,
+
+    def update(frame):
+        x = np.arange(len(test_losses))
+        y = test_losses
+        line.set_data(x, y)
+        ax.relim()
+        ax.autoscale_view()
+        return line,
+
+    ani = animation.FuncAnimation(fig, update, init_func=init, interval=1000, blit=True, cache_frame_data=False)
     plt.show()
 
 
-if __name__ == '__main__':
+def launch_traing():
     你好('训练开启')
-
     # 读取所有的板块
     if read_from_csv:
         bankuai = pd.DataFrame(pd.read_csv(os.path.join('assets', 'bankuai.csv')))
@@ -194,7 +217,8 @@ if __name__ == '__main__':
         bankuai = dc.banKuai()
         bankuai.to_csv(os.path.join('assets', 'bankuai.csv'))
 
-    for i in range(10):
+    for i in range(100):
+        print('训练大轮询{}'.format(i))
         # 遍历所有的板块
         for bankuai_name in bankuai['板块名称']:
 
@@ -208,7 +232,7 @@ if __name__ == '__main__':
             # 读取板块所有的成分股
             bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
             chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
-
+            # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
             # 遍历该板块所有的成分股
             for index, row in chengfen.iterrows():
                 if not isInSS(row['代码'], row['名称']):
@@ -227,4 +251,13 @@ if __name__ == '__main__':
                 df = train(bankuaihangqing, gupiaohangqing)
                 # 训练模型
                 training_model(bankuai_name, row['名称'], df)
+
+                time.sleep(1)
     你好('训练结束')
+
+
+if __name__ == '__main__':
+    update_thread = threading.Thread(target=launch_traing)
+    update_thread.daemon = True
+    update_thread.start()
+    plot_losses()
