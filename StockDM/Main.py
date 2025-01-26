@@ -154,16 +154,16 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         # 加载模型
         model = load_model(model_path)
     else:
-        print('创建神经网络模型64X32X1')
+        print('创建神经网络模型128X64X1')
         # 构建神经网络模型
         model = Sequential()
-        model.add(Dense(64, input_dim=len(features), activation='relu'))
-        model.add(Dense(32, activation='relu'))
+        model.add(Dense(64, input_dim=len(features), activation='linear'))
+        model.add(Dense(32, activation='linear'))
         model.add(Dense(1))
         model.compile(loss='mean_squared_error', optimizer='adam')
 
     # 训练 10000 轮
-    history = model.fit(X_train, y_train, epochs=1000, batch_size=32, validation_data=(X_test, y_test), verbose=0)
+    history = model.fit(X_train, y_train, epochs=10000, batch_size=32, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
     y_pred = model.predict(X_test)
@@ -174,7 +174,7 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     if len(test_losses) > 500000:
         test_losses = test_losses[1::5]
     test_losses.extend(history.history['val_loss'])
-    with open('losses', mode='a') as f:
+    with open('losses.txt', mode='a') as f:
         f.write('{}\n'.format(history.history['val_loss']))
         f.flush()
         f.close()

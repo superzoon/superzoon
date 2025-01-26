@@ -6,3 +6,4 @@ __pycache__
 */*.db
 *.db
 StockDM/train_data.csv
+StockDM/losses.txt
