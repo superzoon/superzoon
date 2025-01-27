@@ -101,10 +101,14 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(2, 'name', gupiao['股票名称'])
     # 股票价格
     train_data.insert(3, 'price', gupiao['收盘'])
+    # 股票价格
+    train_data.insert(4, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
+    # 股票价格
+    train_data.insert(5, 'dshadow', (gupiao['收盘'] - gupiao['最低']) / gupiao['收盘'])
     # 股票相对板块的涨幅
-    train_data.insert(4, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
+    train_data.insert(6, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
     # 股票成交金额
-    train_data.insert(5, 'Turnover', gupiao['成交额'])
+    train_data.insert(7, 'Turnover', gupiao['成交额'])
     # 股票相对板块多日涨幅
     train_data['RF_5'] = [multiply_rf(train_data, 'RF', i, 5) for i in range(len(train_data))]
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
@@ -117,26 +121,26 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     # 股票成交多日均线比
     train_data['price_5'] = [mean_price(train_data, 'price', i, 5) for i in range(len(train_data))]
-    train_data['price_10'] = [mean_price(train_data, 'price', i, 5) for i in range(len(train_data))]
+    train_data['price_10'] = [mean_price(train_data, 'price', i, 10) for i in range(len(train_data))]
 
     # 预取价格
     train_data = train_data.dropna()
-    return train_data[0:1]
+    return train_data[0:3]
 
 
 if __name__ == '__main__':
     你好('预测开启')
     df = pd.DataFrame()
+    data_space = getDateSpace()
     # 读取所有的板块
     if read_from_csv:
         bankuai = pd.DataFrame(pd.read_csv(os.path.join('assets', 'bankuai.csv')))
     else:
-        data_space = getDateSpace()
         bankuai = dc.banKuai()
         bankuai.to_csv(os.path.join('assets', 'bankuai.csv'))
 
     # 遍历所有的板块
-    number = 0;
+    number = 0
     for bankuai_name in bankuai['板块名称']:
 
         # 读取板块的行情数据
@@ -159,9 +163,9 @@ if __name__ == '__main__':
             print('{} {}_{}.csv'.format(number, row['代码'], row['名称']))
 
             # 获取股票的行情数据
-            if read_from_csv:
-                gupiaohangqing = pd.DataFrame(
-                    pd.read_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))))
+            gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
+            if read_from_csv and os.path.isfile(gupiao_path):
+                gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path))
             else:
                 gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
                 gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
@@ -176,15 +180,31 @@ if __name__ == '__main__':
     # 预测模型
     from tensorflow.keras.models import load_model
 
-    model_path = 'stock_20.h5'
+    src_model_path = 'stock_20.h5'
+    model_path = 'stock_20_back.h5'
+    import shutil
+    try:
+        # 复制文件
+        shutil.copy2(src_model_path, model_path)
+        print(f"文件 {src_model_path} 已成功拷贝到 {model_path}。")
+    except FileNotFoundError:
+        print(f"源文件 {src_model_path} 未找到，请检查文件路径。")
+    except PermissionError:
+        print("没有足够的权限进行文件拷贝操作，请检查文件权限。")
+    except Exception as e:
+        print(f"发生未知错误: {e}")
+
     loaded_model = load_model(model_path)
-    features = ['RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5', 'price_10']
+    features = ['ushadow', 'dshadow', 'RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5',
+                'price_10']
     X = df[features]
     predictions = loaded_model.predict(X)
     df['expext'] = predictions
     df.sort_values(by='expext', ascending=False, inplace=True)
-    df.reset_index()
+    df.reset_index(inplace=True)
     df = df.loc[:, ['Datetime','code','name','expext']]
     df.to_csv('expect.csv')
+
+    print(df.tail(20))
     print(df.head(20))
     你好('预测结束')

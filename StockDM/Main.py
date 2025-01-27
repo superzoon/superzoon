@@ -101,10 +101,14 @@ def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(2, 'name', gupiao['股票名称'])
     # 股票价格
     train_data.insert(3, 'price', gupiao['收盘'])
+    # 股票价格
+    train_data.insert(4, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
+    # 股票价格
+    train_data.insert(5, 'dshadow', (gupiao['收盘'] - gupiao['最低']) / gupiao['收盘'])
     # 股票相对板块的涨幅
-    train_data.insert(4, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
+    train_data.insert(6, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
     # 股票成交金额
-    train_data.insert(5, 'Turnover', gupiao['成交额'])
+    train_data.insert(7, 'Turnover', gupiao['成交额'])
     # 股票相对板块多日涨幅
     train_data['RF_5'] = [multiply_rf(train_data, 'RF', i, 5) for i in range(len(train_data))]
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
@@ -117,7 +121,7 @@ def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     # 股票成交多日均线比
     train_data['price_5'] = [mean_price(train_data, 'price', i, 5) for i in range(len(train_data))]
-    train_data['price_10'] = [mean_price(train_data, 'price', i, 5) for i in range(len(train_data))]
+    train_data['price_10'] = [mean_price(train_data, 'price', i, 10) for i in range(len(train_data))]
 
     # 预取价格
     train_data['expect'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data['price'] - 1
@@ -134,6 +138,7 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 test_losses = []
 
+
 def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     global test_losses
     from sklearn.model_selection import train_test_split
@@ -143,11 +148,17 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     from tensorflow.python.keras.models import save_model, load_model
 
     你好('训练 {}---{}'.format(bankuai, gupiao))
-    features = ['RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5', 'price_10']
+    features = ['ushadow', 'dshadow', 'RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5',
+                'price_10']
     X = df[features]
     y = df['expect']
-    # 划分训练集和测试集
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
+    # 进行数据集划分
+    if len(X) > 0 and len(y) > 0:
+        # 划分训练集和测试集
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
+    else:
+        print(df)
+        return
     model_path = 'stock_20.h5'
     if os.path.isfile(model_path):
         print('加载模型{}'.format(model_path))
@@ -163,7 +174,7 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         model.compile(loss='mean_squared_error', optimizer='adam')
 
     # 训练 10000 轮
-    history = model.fit(X_train, y_train, epochs=2000, batch_size=128, validation_data=(X_test, y_test), verbose=0)
+    history = model.fit(X_train, y_train, epochs=2000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
     y_pred = model.predict(X_test)
@@ -232,17 +243,17 @@ def launch_traing():
             # 读取板块所有的成分股
             bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
             chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
-            # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
+            #chengfen = pd.DataFrame({'代码':['301581'],'名称':['黄山谷捷']})#测试训练过程出现错误的股票
             # 遍历该板块所有的成分股
             for index, row in chengfen.iterrows():
                 if not isInSS(row['代码'], row['名称']):
                     continue
-                print('{}_{}.csv'.format(row['代码'], row['名称']))
+                print('{} {}_{}.csv'.format(i, row['代码'], row['名称']))
 
                 # 获取股票的行情数据
-                if read_from_csv:
-                    gupiaohangqing = pd.DataFrame(
-                        pd.read_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))))
+                gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
+                if read_from_csv and os.path.isfile(gupiao_path):
+                    gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path))
                 else:
                     gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
                     gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
