@@ -130,6 +130,35 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
 if __name__ == '__main__':
     你好('预测开启')
+
+    src_model_path = 'stock_20.h5'
+    model_path = 'stock_20_back.h5'
+    import shutil
+    import msvcrt
+
+    with open('lock_file', 'w') as lock_file:
+        try:
+            # 获取排他锁
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+            print(f"Process {os.getpid()} acquired the lock.")
+            # 模拟一些耗时操作
+            # 复制文件
+            shutil.copy2(src_model_path, model_path)
+            print(f"文件 {src_model_path} 已成功拷贝到 {model_path}。")
+        except FileNotFoundError:
+            print(f"源文件 {src_model_path} 未找到，请检查文件路径。")
+        except PermissionError:
+            print("没有足够的权限进行文件拷贝操作，请检查文件权限。")
+        except Exception as e:
+            print(f"发生未知错误: {e}")
+        finally:
+            # 释放锁
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            print(f"Process {os.getpid()} released the lock.")
+
+    if not os.path.isfile(model_path):
+        print('没有模型文件')
+        exit(0)
     df = pd.DataFrame()
     data_space = getDateSpace()
     # 读取所有的板块
@@ -179,21 +208,6 @@ if __name__ == '__main__':
 
     # 预测模型
     from tensorflow.keras.models import load_model
-
-    src_model_path = 'stock_20.h5'
-    model_path = 'stock_20_back.h5'
-    import shutil
-    try:
-        # 复制文件
-        shutil.copy2(src_model_path, model_path)
-        print(f"文件 {src_model_path} 已成功拷贝到 {model_path}。")
-    except FileNotFoundError:
-        print(f"源文件 {src_model_path} 未找到，请检查文件路径。")
-    except PermissionError:
-        print("没有足够的权限进行文件拷贝操作，请检查文件权限。")
-    except Exception as e:
-        print(f"发生未知错误: {e}")
-
     loaded_model = load_model(model_path)
     features = ['ushadow', 'dshadow', 'RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5',
                 'price_10']

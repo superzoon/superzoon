@@ -143,9 +143,10 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     global test_losses
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error
-    from tensorflow.python.keras import Sequential, layers, optimizers
-    from tensorflow.python.keras.layers import Dense
     from tensorflow.python.keras.models import save_model, load_model
+    from tensorflow.python.keras import Sequential, layers, optimizers
+    from tensorflow.python.keras.layers import Dense, LSTM
+    from tensorflow.python.keras.callbacks import EarlyStopping
 
     你好('训练 {}---{}'.format(bankuai, gupiao))
     features = ['ushadow', 'dshadow', 'RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5',
@@ -174,6 +175,8 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         model.compile(loss='mean_squared_error', optimizer='adam')
 
     # 训练 10000 轮
+    #early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+    #history = model.fit(X_train, y_train, epochs=2000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
     history = model.fit(X_train, y_train, epochs=2000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
@@ -191,7 +194,21 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         f.close()
 
     # 保存模型
-    save_model(model, model_path)
+    import msvcrt
+    with open('lock_file', 'w') as lock_file:
+        try:
+            # 获取排他锁
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+            print(f"Process {os.getpid()} acquired the lock.")
+            # 模拟一些耗时操作
+            save_model(model, model_path)
+        except Exception as e:
+            print(f"发生未知错误: {e}")
+        finally:
+            # 释放锁
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            print(f"Process {os.getpid()} released the lock.")
+
 
 
 # 绘制折线图的函数
@@ -220,6 +237,7 @@ def plot_losses():
 
 def launch_traing():
     你好('训练开启')
+    count = 0
     # 读取所有的板块
     if read_from_csv:
         bankuai = pd.DataFrame(pd.read_csv(os.path.join('assets', 'bankuai.csv')))
@@ -248,7 +266,8 @@ def launch_traing():
             for index, row in chengfen.iterrows():
                 if not isInSS(row['代码'], row['名称']):
                     continue
-                print('{} {}_{}.csv'.format(i, row['代码'], row['名称']))
+                count = count + 1
+                print('{}-{} {}_{}.csv'.format(i,count, row['代码'], row['名称']))
 
                 # 获取股票的行情数据
                 gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
