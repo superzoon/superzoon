@@ -1,3 +1,4 @@
+import pandas
 import pandas as pd
 import numpy as np
 import os
@@ -13,7 +14,7 @@ print(pd.__version__)
 print(np.__version__)
 
 read_from_csv = True
-
+model_day_len = 20
 
 def 你好(name: str = 'world'):
     print('{}, time={}'.format(name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
@@ -81,7 +82,7 @@ def max_expect(df: pd.DataFrame, name: str, index: int, count: int = 5):
         return np.nan
 
 
-def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
+def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # print(_bankuai.columns, _gupiao.columns)
     # 按行对齐，去除多余的行
     bankuai = pd.DataFrame(_bankuai)
@@ -114,6 +115,10 @@ def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
     train_data['RF_15'] = [multiply_rf(train_data, 'RF', i, 15) for i in range(len(train_data))]
     train_data['RF_20'] = [multiply_rf(train_data, 'RF', i, 20) for i in range(len(train_data))]
+    train_data['RF_25'] = [multiply_rf(train_data, 'RF', i, 25) for i in range(len(train_data))]
+    train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
+    train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
+    train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
 
     # 股票成交多日金额比
     train_data['Turnover_5'] = [mean_col(train_data, 'Turnover', i, 5) for i in range(len(train_data))]
@@ -129,7 +134,7 @@ def train(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data = train_data.dropna()
     # print(train_data)
 
-    train_data.to_csv('train_data.csv')
+    train_data.to_csv('train_data_{}.csv'.format(model_day_len))
     # print(train_data.columns)
     return train_data
 
@@ -139,7 +144,7 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 test_losses = []
 
 
-def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
+def training_model(df: pd.DataFrame):
     global test_losses
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error
@@ -148,19 +153,26 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     from tensorflow.python.keras.layers import Dense, LSTM
     from tensorflow.python.keras.callbacks import EarlyStopping
 
-    你好('训练 {}---{}'.format(bankuai, gupiao))
-    features = ['ushadow', 'dshadow', 'RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5',
-                'price_10']
+    你好(r'学习开始 {}'.format(model_day_len))
+    features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'price_5',
+                'price_10', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
+    if model_day_len >= 30:
+        features.extend(['RF_25', 'RF_30'])
+    if model_day_len >= 40:
+        features.extend(['RF_35', 'RF_40'])
+
+
     X = df[features]
     y = df['expect']
     # 进行数据集划分
+    print('进行数据集划分')
     if len(X) > 0 and len(y) > 0:
         # 划分训练集和测试集
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
     else:
         print(df)
         return
-    model_path = 'stock_20.h5'
+    model_path = 'stock_{}.h5'.format(model_day_len)
     if os.path.isfile(model_path):
         print('加载模型{}'.format(model_path))
         # 加载模型
@@ -174,12 +186,14 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
         model.add(Dense(1))
         model.compile(loss='mean_squared_error', optimizer='adam')
 
-    # 训练 10000 轮
+    # 训练 1000 轮
+    print('训练 1000 轮')
     #early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-    #history = model.fit(X_train, y_train, epochs=2000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
-    history = model.fit(X_train, y_train, epochs=2000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
+    #history = model.fit(X_train, y_train, epochs=1000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
+    history = model.fit(X_train, y_train, epochs=1000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
+    print('测试集上进行评估')
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
     print(f"Initial training MSE: {mse}")
@@ -188,14 +202,14 @@ def training_model(bankuai: str, gupiao: str, df: pd.DataFrame):
     test_losses.extend(history.history['val_loss'])
 
     test_losses = test_losses[1::5]
-    with open('losses.txt', mode='a') as f:
+    with open('losses_{}.txt'.format(model_day_len), mode='w') as f:
         f.write('{}\n'.format(history.history['val_loss']))
         f.flush()
         f.close()
 
     # 保存模型
     import msvcrt
-    with open('lock_file', 'w') as lock_file:
+    with open('lock_file_{}'.format(model_day_len), 'w') as lock_file:
         try:
             # 获取排他锁
             msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
@@ -248,6 +262,7 @@ def launch_traing():
 
     for i in range(100):
         print('训练大轮询{}'.format(i))
+        df = pd.DataFrame()
         # 遍历所有的板块
         for bankuai_name in bankuai['板块名称']:
 
@@ -278,11 +293,15 @@ def launch_traing():
                     gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
 
                 # 清洗数据
-                df = train(bankuaihangqing, gupiaohangqing)
-                # 训练模型
-                training_model(bankuai_name, row['名称'], df)
+                temp_df = clean_data(bankuaihangqing, gupiaohangqing)
 
-                time.sleep(1)
+                # 按行拼接DataFrame
+                df = pd.concat([df, temp_df], axis=0)
+
+                time.sleep(0.1)
+        # 训练模型
+        training_model(df)
+
     你好('训练结束')
 
 

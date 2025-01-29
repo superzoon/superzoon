@@ -14,6 +14,7 @@ print(np.__version__)
 
 read_from_csv = True
 
+model_day_len = 40
 
 def 你好(name: str = 'world'):
     print('{}, time={}'.format(name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
@@ -114,6 +115,10 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
     train_data['RF_15'] = [multiply_rf(train_data, 'RF', i, 15) for i in range(len(train_data))]
     train_data['RF_20'] = [multiply_rf(train_data, 'RF', i, 20) for i in range(len(train_data))]
+    train_data['RF_25'] = [multiply_rf(train_data, 'RF', i, 25) for i in range(len(train_data))]
+    train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
+    train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
+    train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
 
     # 股票成交多日金额比
     train_data['Turnover_5'] = [mean_col(train_data, 'Turnover', i, 5) for i in range(len(train_data))]
@@ -131,12 +136,12 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 if __name__ == '__main__':
     你好('预测开启')
 
-    src_model_path = 'stock_20.h5'
-    model_path = 'stock_20_back.h5'
+    src_model_path = 'stock_{}.h5'.format(model_day_len)
+    model_path = 'stock_{}_back.h5'.format(model_day_len)
     import shutil
     import msvcrt
 
-    with open('lock_file', 'w') as lock_file:
+    with open('lock_file_{}'.format(model_day_len), 'w') as lock_file:
         try:
             # 获取排他锁
             msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
@@ -205,19 +210,26 @@ if __name__ == '__main__':
 
             # 使用 concat 函数按行拼接
             df = pd.concat([df, temp_df], ignore_index=True)
+        if not read_from_csv:
+            time.sleep(5)
 
     # 预测模型
     from tensorflow.keras.models import load_model
     loaded_model = load_model(model_path)
-    features = ['ushadow', 'dshadow', 'RF_5', 'RF_10', 'RF_15', 'RF_20', 'Turnover_5', 'Turnover_10', 'price_5',
-                'price_10']
+    features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'price_5',
+                'price_10', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
+    if model_day_len >= 30:
+        features.extend(['RF_25', 'RF_30'])
+    if model_day_len >= 40:
+        features.extend(['RF_35', 'RF_40'])
+
     X = df[features]
     predictions = loaded_model.predict(X)
     df['expext'] = predictions
     df.sort_values(by='expext', ascending=False, inplace=True)
     df.reset_index(inplace=True)
     df = df.loc[:, ['Datetime','code','name','expext']]
-    df.to_csv('expect.csv')
+    df.to_csv('expect_{}.csv'.format(model_day_len))
 
     print(df.tail(20))
     print(df.head(20))

@@ -15,21 +15,19 @@ if __name__ == '__main__':
         losses = []
         for line in lines:
             values=line.replace('[','').replace(']','').replace(' ','').split(',')
+            print(len(values))
             # 使用map()函数将字符串元素转换为浮点数
             float_list = list(map(float, values))
             losses.extend(float_list)
 
-
-
-        print(len(losses))
-        losses = losses[0::500]
-        print(len(losses))
+        losses = losses[1::1000]
+        print('losses len = {}'.format(len(losses)))
 
         # 生成横坐标，即losses数组的索引
         x = range(len(losses))
 
         # 创建图形
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(100, 5))
 
         # 绘制折线图
         plt.plot(x, losses, marker='o', linestyle='-', color='b')
