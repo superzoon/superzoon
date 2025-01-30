@@ -16,6 +16,7 @@ read_from_csv = True
 
 model_day_len = 40
 
+
 def 你好(name: str = 'world'):
     print('{}, time={}'.format(name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
@@ -119,6 +120,10 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
     train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
     train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
+    train_data['RF_45'] = [multiply_rf(train_data, 'RF', i, 45) for i in range(len(train_data))]
+    train_data['RF_50'] = [multiply_rf(train_data, 'RF', i, 50) for i in range(len(train_data))]
+    train_data['RF_55'] = [multiply_rf(train_data, 'RF', i, 55) for i in range(len(train_data))]
+    train_data['RF_60'] = [multiply_rf(train_data, 'RF', i, 60) for i in range(len(train_data))]
 
     # 股票成交多日金额比
     train_data['Turnover_5'] = [mean_col(train_data, 'Turnover', i, 5) for i in range(len(train_data))]
@@ -178,15 +183,21 @@ if __name__ == '__main__':
     for bankuai_name in bankuai['板块名称']:
 
         # 读取板块的行情数据
-        if read_from_csv:
-            bankuaihangqing = pd.DataFrame(pd.read_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name))))
+        cheng_fen_hangqing_path = os.path.join('assets', r'{}.csv'.format(bankuai_name))
+        if read_from_csv and os.path.isfile(cheng_fen_hangqing_path):
+            bankuaihangqing = pd.DataFrame(pd.read_csv(cheng_fen_hangqing_path))
         else:
             bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
-            bankuaihangqing.to_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name)))
+            bankuaihangqing.to_csv(cheng_fen_hangqing_path)
 
         bankuaihangqing = bankuaihangqing.loc[0:60]
         # 读取板块所有的成分股
-        bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
+        cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
+        if read_from_csv and os.path.isfile(cheng_fen_name_path):
+            bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path))
+        else:
+            bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
+            bankuaichengfen.to_csv(cheng_fen_name_path)
         chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
         # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
         # 遍历该板块所有的成分股
@@ -194,7 +205,7 @@ if __name__ == '__main__':
             if not isInSS(row['代码'], row['名称']):
                 continue
             number = number + 1
-            print('{} {}_{}.csv'.format(number, row['代码'], row['名称']))
+            print('{}:{}_{}'.format(number, row['代码'], row['名称']), end=' ')
 
             # 获取股票的行情数据
             gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
@@ -215,6 +226,7 @@ if __name__ == '__main__':
 
     # 预测模型
     from tensorflow.keras.models import load_model
+
     loaded_model = load_model(model_path)
     features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'price_5',
                 'price_10', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
@@ -222,13 +234,17 @@ if __name__ == '__main__':
         features.extend(['RF_25', 'RF_30'])
     if model_day_len >= 40:
         features.extend(['RF_35', 'RF_40'])
+    if model_day_len >= 50:
+        features.extend(['RF_45', 'RF_50'])
+    if model_day_len >= 60:
+        features.extend(['RF_55', 'RF_60'])
 
     X = df[features]
     predictions = loaded_model.predict(X)
     df['expext'] = predictions
     df.sort_values(by='expext', ascending=False, inplace=True)
     df.reset_index(inplace=True)
-    df = df.loc[:, ['Datetime','code','name','expext']]
+    df = df.loc[:, ['Datetime', 'code', 'name', 'expext']]
     df.to_csv('expect_{}.csv'.format(model_day_len))
 
     print(df.tail(20))

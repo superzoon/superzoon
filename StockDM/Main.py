@@ -14,7 +14,8 @@ print(pd.__version__)
 print(np.__version__)
 
 read_from_csv = True
-model_day_len = 20
+model_day_len = 50
+
 
 def 你好(name: str = 'world'):
     print('{}, time={}'.format(name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
@@ -119,6 +120,10 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
     train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
     train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
+    train_data['RF_45'] = [multiply_rf(train_data, 'RF', i, 45) for i in range(len(train_data))]
+    train_data['RF_50'] = [multiply_rf(train_data, 'RF', i, 50) for i in range(len(train_data))]
+    train_data['RF_55'] = [multiply_rf(train_data, 'RF', i, 55) for i in range(len(train_data))]
+    train_data['RF_60'] = [multiply_rf(train_data, 'RF', i, 60) for i in range(len(train_data))]
 
     # 股票成交多日金额比
     train_data['Turnover_5'] = [mean_col(train_data, 'Turnover', i, 5) for i in range(len(train_data))]
@@ -160,7 +165,10 @@ def training_model(df: pd.DataFrame):
         features.extend(['RF_25', 'RF_30'])
     if model_day_len >= 40:
         features.extend(['RF_35', 'RF_40'])
-
+    if model_day_len >= 50:
+        features.extend(['RF_45', 'RF_50'])
+    if model_day_len >= 60:
+        features.extend(['RF_55', 'RF_60'])
 
     X = df[features]
     y = df['expect']
@@ -177,8 +185,16 @@ def training_model(df: pd.DataFrame):
         print('加载模型{}'.format(model_path))
         # 加载模型
         model = load_model(model_path)
-    else:
+    elif model_day_len >= 50:
         print('创建神经网络模型128X64X1')
+        # 构建神经网络模型
+        model = Sequential()
+        model.add(Dense(128, input_dim=len(features), activation='linear'))
+        model.add(Dense(64, activation='linear'))
+        model.add(Dense(1))
+        model.compile(loss='mean_squared_error', optimizer='adam')
+    else:
+        print('创建神经网络模型64X32X1')
         # 构建神经网络模型
         model = Sequential()
         model.add(Dense(64, input_dim=len(features), activation='linear'))
@@ -186,11 +202,11 @@ def training_model(df: pd.DataFrame):
         model.add(Dense(1))
         model.compile(loss='mean_squared_error', optimizer='adam')
 
-    # 训练 1000 轮
-    print('训练 1000 轮')
-    #early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-    #history = model.fit(X_train, y_train, epochs=1000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
-    history = model.fit(X_train, y_train, epochs=1000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
+    # 训练 5000 轮
+    print('训练 5000 轮')
+    # early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+    # history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
+    history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
     print('测试集上进行评估')
@@ -222,7 +238,6 @@ def training_model(df: pd.DataFrame):
             # 释放锁
             msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
             print(f"Process {os.getpid()} released the lock.")
-
 
 
 # 绘制折线图的函数
@@ -267,22 +282,30 @@ def launch_traing():
         for bankuai_name in bankuai['板块名称']:
 
             # 读取板块的行情数据
-            if read_from_csv:
-                bankuaihangqing = pd.DataFrame(pd.read_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name))))
+            cheng_fen_hangqing_path = os.path.join('assets', r'{}.csv'.format(bankuai_name))
+            if read_from_csv and os.path.isfile(cheng_fen_hangqing_path):
+                bankuaihangqing = pd.DataFrame(pd.read_csv(cheng_fen_hangqing_path))
             else:
                 bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
-                bankuaihangqing.to_csv(os.path.join('assets', r'{}.csv'.format(bankuai_name)))
+                bankuaihangqing.to_csv(cheng_fen_hangqing_path)
 
+            bankuaihangqing = bankuaihangqing.loc[0:60]
             # 读取板块所有的成分股
-            bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
+            cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
+            if read_from_csv and os.path.isfile(cheng_fen_name_path):
+                bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path))
+            else:
+                bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
+                bankuaichengfen.to_csv(cheng_fen_name_path)
+
             chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
-            #chengfen = pd.DataFrame({'代码':['301581'],'名称':['黄山谷捷']})#测试训练过程出现错误的股票
+            # chengfen = pd.DataFrame({'代码':['301581'],'名称':['黄山谷捷']})#测试训练过程出现错误的股票
             # 遍历该板块所有的成分股
             for index, row in chengfen.iterrows():
                 if not isInSS(row['代码'], row['名称']):
                     continue
                 count = count + 1
-                print('{}-{} {}_{}.csv'.format(i,count, row['代码'], row['名称']))
+                print('{}-{}:{}_{}'.format(i, count, row['代码'], row['名称']), end=' ')
 
                 # 获取股票的行情数据
                 gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
