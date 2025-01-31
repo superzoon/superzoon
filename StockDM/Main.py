@@ -116,14 +116,19 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
     train_data['RF_15'] = [multiply_rf(train_data, 'RF', i, 15) for i in range(len(train_data))]
     train_data['RF_20'] = [multiply_rf(train_data, 'RF', i, 20) for i in range(len(train_data))]
-    train_data['RF_25'] = [multiply_rf(train_data, 'RF', i, 25) for i in range(len(train_data))]
-    train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
-    train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
-    train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
-    train_data['RF_45'] = [multiply_rf(train_data, 'RF', i, 45) for i in range(len(train_data))]
-    train_data['RF_50'] = [multiply_rf(train_data, 'RF', i, 50) for i in range(len(train_data))]
-    train_data['RF_55'] = [multiply_rf(train_data, 'RF', i, 55) for i in range(len(train_data))]
-    train_data['RF_60'] = [multiply_rf(train_data, 'RF', i, 60) for i in range(len(train_data))]
+
+    if model_day_len >= 30:
+        train_data['RF_25'] = [multiply_rf(train_data, 'RF', i, 25) for i in range(len(train_data))]
+        train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
+    if model_day_len >= 40:
+        train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
+        train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
+    if model_day_len >= 50:
+        train_data['RF_45'] = [multiply_rf(train_data, 'RF', i, 45) for i in range(len(train_data))]
+        train_data['RF_50'] = [multiply_rf(train_data, 'RF', i, 50) for i in range(len(train_data))]
+    if model_day_len >= 60:
+        train_data['RF_55'] = [multiply_rf(train_data, 'RF', i, 55) for i in range(len(train_data))]
+        train_data['RF_60'] = [multiply_rf(train_data, 'RF', i, 60) for i in range(len(train_data))]
 
     # 股票成交多日金额比
     train_data['Turnover_5'] = [mean_col(train_data, 'Turnover', i, 5) for i in range(len(train_data))]
@@ -136,8 +141,9 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # 预取价格
     train_data['expect'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data['price'] - 1
 
+    #print(train_data)
     train_data = train_data.dropna()
-    # print(train_data)
+    #print(train_data)
 
     train_data.to_csv('train_data_{}.csv'.format(model_day_len))
     # print(train_data.columns)
@@ -203,16 +209,16 @@ def training_model(df: pd.DataFrame):
         model.compile(loss='mean_squared_error', optimizer='adam')
 
     # 训练 5000 轮
-    print('训练 5000 轮')
+    你好('训练 5000 轮 train len = {}'.format(len(X_train)))
     # early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
     # history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
     history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
     # 在测试集上进行评估
-    print('测试集上进行评估')
+    你好('测试集上进行评估')
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
-    print(f"Initial training MSE: {mse}")
+    你好(f"Initial training MSE: {mse}")
 
     # 收集本次训练的测试损失
     test_losses.extend(history.history['val_loss'])
@@ -289,11 +295,11 @@ def launch_traing():
                 bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
                 bankuaihangqing.to_csv(cheng_fen_hangqing_path)
 
-            bankuaihangqing = bankuaihangqing.loc[0:60]
+            #bankuaihangqing = bankuaihangqing.loc[0:60]
             # 读取板块所有的成分股
             cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
             if read_from_csv and os.path.isfile(cheng_fen_name_path):
-                bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path))
+                bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path, dtype={'代码': str}))
             else:
                 bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
                 bankuaichengfen.to_csv(cheng_fen_name_path)
@@ -301,11 +307,12 @@ def launch_traing():
             chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
             # chengfen = pd.DataFrame({'代码':['301581'],'名称':['黄山谷捷']})#测试训练过程出现错误的股票
             # 遍历该板块所有的成分股
+            print('{} {} {}'.format(i,bankuai_name, len(chengfen)), end=' == > ')
             for index, row in chengfen.iterrows():
                 if not isInSS(row['代码'], row['名称']):
                     continue
                 count = count + 1
-                print('{}-{}:{}_{}'.format(i, count, row['代码'], row['名称']), end=' ')
+                print('{}:{}_{}'.format(count, row['代码'], row['名称']), end=' ')
 
                 # 获取股票的行情数据
                 gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
@@ -315,6 +322,7 @@ def launch_traing():
                     gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
                     gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
 
+
                 # 清洗数据
                 temp_df = clean_data(bankuaihangqing, gupiaohangqing)
 
@@ -322,6 +330,7 @@ def launch_traing():
                 df = pd.concat([df, temp_df], axis=0)
 
                 time.sleep(0.1)
+            print(' ');print('')
         # 训练模型
         training_model(df)
 

@@ -14,7 +14,7 @@ print(np.__version__)
 
 read_from_csv = True
 
-model_day_len = 40
+model_day_len = 50
 
 
 def 你好(name: str = 'world'):
@@ -190,17 +190,18 @@ if __name__ == '__main__':
             bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
             bankuaihangqing.to_csv(cheng_fen_hangqing_path)
 
-        bankuaihangqing = bankuaihangqing.loc[0:60]
+        bankuaihangqing = bankuaihangqing.loc[0:model_day_len+10]
         # 读取板块所有的成分股
         cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
         if read_from_csv and os.path.isfile(cheng_fen_name_path):
-            bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path))
+            bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path, dtype={'代码': str}))
         else:
             bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
             bankuaichengfen.to_csv(cheng_fen_name_path)
         chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
         # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
         # 遍历该板块所有的成分股
+        print('{} {}'.format(bankuai_name, len(chengfen)), end=' == > ')
         for index, row in chengfen.iterrows():
             if not isInSS(row['代码'], row['名称']):
                 continue
@@ -221,6 +222,7 @@ if __name__ == '__main__':
 
             # 使用 concat 函数按行拼接
             df = pd.concat([df, temp_df], ignore_index=True)
+        print(' ')
         if not read_from_csv:
             time.sleep(5)
 
