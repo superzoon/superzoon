@@ -14,7 +14,7 @@ print(pd.__version__)
 print(np.__version__)
 
 read_from_csv = True
-model_day_len = 50
+model_day_len = 60
 
 
 def 你好(name: str = 'world'):
@@ -112,22 +112,40 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # 股票成交金额
     train_data.insert(7, 'Turnover', gupiao['成交额'])
     # 股票相对板块多日涨幅
-    train_data['RF_5'] = [multiply_rf(train_data, 'RF', i, 5) for i in range(len(train_data))]
+    train_data['RF_2'] = [multiply_rf(train_data, 'RF', i, 2) for i in range(len(train_data))]
+    train_data['RF_4'] = [multiply_rf(train_data, 'RF', i, 4) for i in range(len(train_data))]
+    train_data['RF_6'] = [multiply_rf(train_data, 'RF', i, 6) for i in range(len(train_data))]
+    train_data['RF_8'] = [multiply_rf(train_data, 'RF', i, 8) for i in range(len(train_data))]
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
-    train_data['RF_15'] = [multiply_rf(train_data, 'RF', i, 15) for i in range(len(train_data))]
+    train_data['RF_12'] = [multiply_rf(train_data, 'RF', i, 12) for i in range(len(train_data))]
+    train_data['RF_14'] = [multiply_rf(train_data, 'RF', i, 14) for i in range(len(train_data))]
+    train_data['RF_16'] = [multiply_rf(train_data, 'RF', i, 16) for i in range(len(train_data))]
+    train_data['RF_18'] = [multiply_rf(train_data, 'RF', i, 18) for i in range(len(train_data))]
     train_data['RF_20'] = [multiply_rf(train_data, 'RF', i, 20) for i in range(len(train_data))]
 
     if model_day_len >= 30:
-        train_data['RF_25'] = [multiply_rf(train_data, 'RF', i, 25) for i in range(len(train_data))]
+        train_data['RF_22'] = [multiply_rf(train_data, 'RF', i, 22) for i in range(len(train_data))]
+        train_data['RF_24'] = [multiply_rf(train_data, 'RF', i, 24) for i in range(len(train_data))]
+        train_data['RF_26'] = [multiply_rf(train_data, 'RF', i, 26) for i in range(len(train_data))]
+        train_data['RF_28'] = [multiply_rf(train_data, 'RF', i, 28) for i in range(len(train_data))]
         train_data['RF_30'] = [multiply_rf(train_data, 'RF', i, 30) for i in range(len(train_data))]
     if model_day_len >= 40:
-        train_data['RF_35'] = [multiply_rf(train_data, 'RF', i, 35) for i in range(len(train_data))]
+        train_data['RF_32'] = [multiply_rf(train_data, 'RF', i, 32) for i in range(len(train_data))]
+        train_data['RF_34'] = [multiply_rf(train_data, 'RF', i, 34) for i in range(len(train_data))]
+        train_data['RF_36'] = [multiply_rf(train_data, 'RF', i, 36) for i in range(len(train_data))]
+        train_data['RF_38'] = [multiply_rf(train_data, 'RF', i, 38) for i in range(len(train_data))]
         train_data['RF_40'] = [multiply_rf(train_data, 'RF', i, 40) for i in range(len(train_data))]
     if model_day_len >= 50:
-        train_data['RF_45'] = [multiply_rf(train_data, 'RF', i, 45) for i in range(len(train_data))]
+        train_data['RF_42'] = [multiply_rf(train_data, 'RF', i, 42) for i in range(len(train_data))]
+        train_data['RF_44'] = [multiply_rf(train_data, 'RF', i, 44) for i in range(len(train_data))]
+        train_data['RF_46'] = [multiply_rf(train_data, 'RF', i, 46) for i in range(len(train_data))]
+        train_data['RF_48'] = [multiply_rf(train_data, 'RF', i, 48) for i in range(len(train_data))]
         train_data['RF_50'] = [multiply_rf(train_data, 'RF', i, 50) for i in range(len(train_data))]
     if model_day_len >= 60:
-        train_data['RF_55'] = [multiply_rf(train_data, 'RF', i, 55) for i in range(len(train_data))]
+        train_data['RF_52'] = [multiply_rf(train_data, 'RF', i, 52) for i in range(len(train_data))]
+        train_data['RF_54'] = [multiply_rf(train_data, 'RF', i, 54) for i in range(len(train_data))]
+        train_data['RF_56'] = [multiply_rf(train_data, 'RF', i, 56) for i in range(len(train_data))]
+        train_data['RF_58'] = [multiply_rf(train_data, 'RF', i, 58) for i in range(len(train_data))]
         train_data['RF_60'] = [multiply_rf(train_data, 'RF', i, 60) for i in range(len(train_data))]
 
     # 股票成交多日金额比
@@ -139,11 +157,14 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['price_10'] = [mean_price(train_data, 'price', i, 10) for i in range(len(train_data))]
 
     # 预取价格
-    train_data['expect'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data['price'] - 1
+    train_data['expect_max'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data[
+        'price'] - 1
+    train_data['expect_min'] = train_data['price'].rolling(window=5, min_periods=5).min().shift(1) / train_data[
+        'price'] - 1
 
-    #print(train_data)
+    # print(train_data)
     train_data = train_data.dropna()
-    #print(train_data)
+    # print(train_data)
 
     train_data.to_csv('train_data_{}.csv'.format(model_day_len))
     # print(train_data.columns)
@@ -159,91 +180,97 @@ def training_model(df: pd.DataFrame):
     global test_losses
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error
+    import tensorflow as tf
     from tensorflow.python.keras.models import save_model, load_model
     from tensorflow.python.keras import Sequential, layers, optimizers
     from tensorflow.python.keras.layers import Dense, LSTM
     from tensorflow.python.keras.callbacks import EarlyStopping
 
     你好(r'学习开始 {}'.format(model_day_len))
-    features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'price_5',
-                'price_10', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
+
+    features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'price_5', 'price_10',
+                'RF_2', 'RF_4', 'RF_6', 'RF_8', 'RF_10',
+                'RF_12', 'RF_14', 'RF_16', 'RF_18', 'RF_20']
     if model_day_len >= 30:
-        features.extend(['RF_25', 'RF_30'])
+        features.extend(['RF_22', 'RF_24', 'RF_26', 'RF_28', 'RF_30'])
     if model_day_len >= 40:
-        features.extend(['RF_35', 'RF_40'])
+        features.extend(['RF_32', 'RF_34', 'RF_36', 'RF_38', 'RF_40'])
     if model_day_len >= 50:
-        features.extend(['RF_45', 'RF_50'])
+        features.extend(['RF_42', 'RF_44', 'RF_46', 'RF_48', 'RF_50'])
     if model_day_len >= 60:
-        features.extend(['RF_55', 'RF_60'])
+        features.extend(['RF_52', 'RF_54', 'RF_56', 'RF_58', 'RF_60'])
 
     X = df[features]
-    y = df['expect']
-    # 进行数据集划分
-    print('进行数据集划分')
-    if len(X) > 0 and len(y) > 0:
-        # 划分训练集和测试集
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
-    else:
-        print(df)
-        return
-    model_path = 'stock_{}.h5'.format(model_day_len)
-    if os.path.isfile(model_path):
-        print('加载模型{}'.format(model_path))
-        # 加载模型
-        model = load_model(model_path)
-    elif model_day_len >= 50:
-        print('创建神经网络模型128X64X1')
-        # 构建神经网络模型
-        model = Sequential()
-        model.add(Dense(128, input_dim=len(features), activation='linear'))
-        model.add(Dense(64, activation='linear'))
-        model.add(Dense(1))
-        model.compile(loss='mean_squared_error', optimizer='adam')
-    else:
-        print('创建神经网络模型64X32X1')
-        # 构建神经网络模型
-        model = Sequential()
-        model.add(Dense(64, input_dim=len(features), activation='linear'))
-        model.add(Dense(32, activation='linear'))
-        model.add(Dense(1))
-        model.compile(loss='mean_squared_error', optimizer='adam')
+    for i in range(2):
+        y = df['expect_max'] if i == 0 else df['expect_min']
+        # 进行数据集划分
+        print('进行数据集划分')
+        if len(X) > 0 and len(y) > 0:
+            # 划分训练集和测试集
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
+        else:
+            print(df)
+            return
+        model_path = ('stock_{}_max.h5' if i == 0 else 'stock_{}_min.h5').format(model_day_len)
+        if os.path.isfile(model_path):
+            print('加载模型{}'.format(model_path))
+            # 加载模型
+            model = load_model(model_path)
+        elif model_day_len >= 100:
+            print('创建神经网络模型128X64X1')
+            # 构建神经网络模型
+            model = Sequential()
+            model.add(Dense(128, input_dim=len(features), activation='linear'))
+            model.add(Dense(64, activation='linear'))
+            model.add(Dense(1))
+            model.compile(loss='mean_squared_error', optimizer='adam')
+        else:
+            print('创建神经网络模型64X32X1')
+            # 构建神经网络模型
+            model = Sequential()
+            model.add(Dense(64, input_dim=len(features), activation='linear'))
+            model.add(Dense(32, activation='linear'))
+            model.add(Dense(1))
+            model.compile(loss='mean_squared_error', optimizer='adam')
 
-    # 训练 5000 轮
-    你好('训练 5000 轮 train len = {}'.format(len(X_train)))
-    # early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-    # history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
-    history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
+        # 训练 5000 轮
+        你好('训练 5000 轮 train len = {}'.format(len(X_train)))
+        # early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+        # history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
+        history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
-    # 在测试集上进行评估
-    你好('测试集上进行评估')
-    y_pred = model.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
-    你好(f"Initial training MSE: {mse}")
+        # 在测试集上进行评估
+        你好('测试集上进行评估')
+        # 确保输入数据的形状一致
+        X_test_tensor = tf.convert_to_tensor(X_test.values, dtype=tf.float32)
+        y_pred = model.predict(X_test_tensor)
+        mse = mean_squared_error(y_test, y_pred)
+        你好(f"Initial training MSE: {mse}")
 
-    # 收集本次训练的测试损失
-    test_losses.extend(history.history['val_loss'])
+        # 收集本次训练的测试损失
+        test_losses.extend(history.history['val_loss'])
 
-    test_losses = test_losses[1::5]
-    with open('losses_{}.txt'.format(model_day_len), mode='w') as f:
-        f.write('{}\n'.format(history.history['val_loss']))
-        f.flush()
-        f.close()
+        test_losses = test_losses[1::5]
+        with open('losses_{}.txt'.format(model_day_len), mode='w') as f:
+            f.write('{}\n'.format(history.history['val_loss']))
+            f.flush()
+            f.close()
 
-    # 保存模型
-    import msvcrt
-    with open('lock_file_{}'.format(model_day_len), 'w') as lock_file:
-        try:
-            # 获取排他锁
-            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
-            print(f"Process {os.getpid()} acquired the lock.")
-            # 模拟一些耗时操作
-            save_model(model, model_path)
-        except Exception as e:
-            print(f"发生未知错误: {e}")
-        finally:
-            # 释放锁
-            msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
-            print(f"Process {os.getpid()} released the lock.")
+        # 保存模型
+        import msvcrt
+        with open('lock_file_{}'.format(model_day_len), 'w') as lock_file:
+            try:
+                # 获取排他锁
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+                print(f"Process {os.getpid()} acquired the lock.")
+                # 模拟一些耗时操作
+                save_model(model, model_path)
+            except Exception as e:
+                print(f"发生未知错误: {e}")
+            finally:
+                # 释放锁
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                print(f"Process {os.getpid()} released the lock.")
 
 
 # 绘制折线图的函数
@@ -281,7 +308,7 @@ def launch_traing():
         bankuai = dc.banKuai()
         bankuai.to_csv(os.path.join('assets', 'bankuai.csv'))
 
-    for i in range(100):
+    for i in range(10):
         print('训练大轮询{}'.format(i))
         df = pd.DataFrame()
         # 遍历所有的板块
@@ -295,7 +322,7 @@ def launch_traing():
                 bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
                 bankuaihangqing.to_csv(cheng_fen_hangqing_path)
 
-            #bankuaihangqing = bankuaihangqing.loc[0:60]
+            # bankuaihangqing = bankuaihangqing.loc[0:60]
             # 读取板块所有的成分股
             cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
             if read_from_csv and os.path.isfile(cheng_fen_name_path):
@@ -307,7 +334,7 @@ def launch_traing():
             chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
             # chengfen = pd.DataFrame({'代码':['301581'],'名称':['黄山谷捷']})#测试训练过程出现错误的股票
             # 遍历该板块所有的成分股
-            print('{} {} {}'.format(i,bankuai_name, len(chengfen)), end=' == > ')
+            print('{} {} {}'.format(i, bankuai_name, len(chengfen)), end=' == > ')
             for index, row in chengfen.iterrows():
                 if not isInSS(row['代码'], row['名称']):
                     continue
@@ -322,15 +349,16 @@ def launch_traing():
                     gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
                     gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
 
-
                 # 清洗数据
                 temp_df = clean_data(bankuaihangqing, gupiaohangqing)
 
                 # 按行拼接DataFrame
                 df = pd.concat([df, temp_df], axis=0)
-
                 time.sleep(0.1)
-            print(' ');print('')
+                # break
+            print('')
+            print('')
+            # break
         # 训练模型
         training_model(df)
 
