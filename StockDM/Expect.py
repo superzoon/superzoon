@@ -97,7 +97,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # 日期
     train_data.insert(0, 'Datetime', gupiao['日期'])
     # 代码
-    train_data.insert(1, 'code', gupiao['股票代码'])
+    train_data.insert(1, 'code', gupiao['股票代码'].astype(str))
     # 名称
     train_data.insert(2, 'name', gupiao['股票名称'])
     # 板块名称
@@ -203,15 +203,14 @@ if __name__ == '__main__':
             # 获取股票的行情数据
             gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
             if read_from_csv and os.path.isfile(gupiao_path):
-                gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path))
+                gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
             else:
                 gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
                 gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
 
-            gupiaohangqing = gupiaohangqing.loc[0:60]
+            gupiaohangqing = gupiaohangqing.loc[0:70]
             # 清洗数据
             temp_df = clean_data(bankuaihangqing, gupiaohangqing)
-
             # 使用 concat 函数按行拼接
             df = pd.concat([df, temp_df], ignore_index=True)
             # print(df)
@@ -268,20 +267,20 @@ if __name__ == '__main__':
             features.extend(['RF_42', 'RF_44', 'RF_46', 'RF_48', 'RF_50'])
         if model_day_len >= 60:
             features.extend(['RF_52', 'RF_54', 'RF_56', 'RF_58', 'RF_60'])
-
         # print(features)
         # print('columns')
         # print(df)
-        X = df[features]
-        predictions = loaded_model.predict(X)
+        x = df[features]
+        predictions = loaded_model.predict(x)
         save_df = pd.DataFrame()
         save_df['Datetime'] = df['Datetime']
-        save_df['code'] = df['code']
+        save_df['code'] = df['code'].apply(dc.reassign_code)
         save_df['name'] = df['name']
         save_df['bankuai'] = df['bankuai_name']
         save_df['expext'] = predictions * 100
         save_df.sort_values(by='expext', ascending=False, inplace=True)
         save_df.reset_index(inplace=True)
+        del save_df['index']
         save_df.to_csv(('expect_{}_max.csv' if (i % 2) == 0 else 'expect_{}_min.csv').format(model_day_len))
 
         print(save_df.tail(20))

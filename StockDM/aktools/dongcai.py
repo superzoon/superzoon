@@ -12,6 +12,19 @@ def __save_to_db__(df, table_name, replace=True):
     conn.close()
 
 
+def reassign_code(code):
+    if code.startswith('60'):
+        return 'SH.ZB_' + code
+    elif code.startswith('68'):
+        return 'SH.KC_' + code
+    elif code.startswith('00'):
+        return 'SZ.ZB_' + code
+    elif code.startswith('30'):
+        return 'SH.KC_' + code
+    else:
+        return 'A_' + code
+
+
 def isInSS(code: str, name: str):
     if name.__contains__('ST'):
         return False

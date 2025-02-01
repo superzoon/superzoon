@@ -200,14 +200,14 @@ def training_model(df: pd.DataFrame):
     if model_day_len >= 60:
         features.extend(['RF_52', 'RF_54', 'RF_56', 'RF_58', 'RF_60'])
 
-    X = df[features]
+    x = df[features]
     for i in range(2):
         y = df['expect_max'] if i == 0 else df['expect_min']
         # 进行数据集划分
         print('进行数据集划分')
-        if len(X) > 0 and len(y) > 0:
+        if len(x) > 0 and len(y) > 0:
             # 划分训练集和测试集
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.05, random_state=42)
         else:
             print(df)
             return
@@ -234,16 +234,16 @@ def training_model(df: pd.DataFrame):
             model.compile(loss='mean_squared_error', optimizer='adam')
 
         # 训练 5000 轮
-        你好('训练 5000 轮 train len = {}'.format(len(X_train)))
+        你好('训练 5000 轮 train len = {}'.format(len(x_train)))
         # early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
         # history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0, callbacks=[early_stopping])
-        history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
+        history = model.fit(x_train, y_train, epochs=5000, batch_size=1024, validation_data=(X_test, y_test), verbose=0)
 
         # 在测试集上进行评估
         你好('测试集上进行评估')
         # 确保输入数据的形状一致
-        X_test_tensor = tf.convert_to_tensor(X_test.values, dtype=tf.float32)
-        y_pred = model.predict(X_test_tensor)
+        x_test_tensor = tf.convert_to_tensor(x_test.values, dtype=tf.float32)
+        y_pred = model.predict(x_test_tensor)
         mse = mean_squared_error(y_test, y_pred)
         你好(f"Initial training MSE: {mse}")
 
@@ -344,7 +344,7 @@ def launch_traing():
                 # 获取股票的行情数据
                 gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
                 if read_from_csv and os.path.isfile(gupiao_path):
-                    gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path))
+                    gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
                 else:
                     gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
                     gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
