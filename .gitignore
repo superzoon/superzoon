@@ -5,6 +5,7 @@ __pycache__
 *log.txt
 */*.db
 *.db
-StockDM/train_data.csv
+StockDM/train_data*.csv
 StockDM/losses.txt
 StockDM/test.py
+StockDM/pre_data.csv

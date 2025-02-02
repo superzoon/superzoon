@@ -17,3 +17,6 @@ if __name__ == '__main__':
 
     # 打印拼接后的结果
     print(result)
+
+    for i in range(5):
+        print(i)

@@ -155,7 +155,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     # 预取价格
     train_data = train_data.dropna()
-    return train_data[0:2]
+    return train_data[0:1]
 
 
 if __name__ == '__main__':
@@ -163,64 +163,67 @@ if __name__ == '__main__':
 
     df = pd.DataFrame()
     data_space = getDateSpace()
-    # 读取所有的板块
-    if read_from_csv:
-        bankuai = pd.DataFrame(pd.read_csv(os.path.join('assets', 'bankuai.csv')))
-    else:
-        bankuai = dc.banKuai()
-        bankuai.to_csv(os.path.join('assets', 'bankuai.csv'))
-
-    # 遍历所有的板块
-    number = 0
-    for bankuai_name in bankuai['板块名称']:
-
-        # 读取板块的行情数据
-        cheng_fen_hangqing_path = os.path.join('assets', r'{}.csv'.format(bankuai_name))
-        if read_from_csv and os.path.isfile(cheng_fen_hangqing_path):
-            bankuaihangqing = pd.DataFrame(pd.read_csv(cheng_fen_hangqing_path))
+    if True and os.path.isfile('pre_data.csv'):
+        df= pd.DataFrame(pd.read_csv('pre_data.csv', dtype={'code': str}))
+    else :
+        # 读取所有的板块
+        if read_from_csv:
+            bankuai = pd.DataFrame(pd.read_csv(os.path.join('assets', 'bankuai.csv')))
         else:
-            bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
-            bankuaihangqing.to_csv(cheng_fen_hangqing_path)
+            bankuai = dc.banKuai()
+            bankuai.to_csv(os.path.join('assets', 'bankuai.csv'))
 
-        bankuaihangqing = bankuaihangqing.loc[0:70]
-        # 读取板块所有的成分股
-        cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
-        if read_from_csv and os.path.isfile(cheng_fen_name_path):
-            bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path, dtype={'代码': str}))
-        else:
-            bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
-            bankuaichengfen.to_csv(cheng_fen_name_path)
-        chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
-        # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
-        # 遍历该板块所有的成分股
-        print('{} {}'.format(bankuai_name, len(chengfen)), end=' == > ')
-        for index, row in chengfen.iterrows():
-            if not isInSS(row['代码'], row['名称']):
-                continue
-            number = number + 1
-            print('{}:{}_{}'.format(number, row['代码'], row['名称']), end=' ')
+        # 遍历所有的板块
+        number = 0
+        for bankuai_name in bankuai['板块名称']:
 
-            # 获取股票的行情数据
-            gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
-            if read_from_csv and os.path.isfile(gupiao_path):
-                gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
+            # 读取板块的行情数据
+            cheng_fen_hangqing_path = os.path.join('assets', r'{}.csv'.format(bankuai_name))
+            if read_from_csv and os.path.isfile(cheng_fen_hangqing_path):
+                bankuaihangqing = pd.DataFrame(pd.read_csv(cheng_fen_hangqing_path))
             else:
-                gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
-                gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+                bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
+                bankuaihangqing.to_csv(cheng_fen_hangqing_path)
 
-            gupiaohangqing = gupiaohangqing.loc[0:70]
-            # 清洗数据
-            temp_df = clean_data(bankuaihangqing, gupiaohangqing)
-            # 使用 concat 函数按行拼接
-            df = pd.concat([df, temp_df], ignore_index=True)
-            # print(df)
+            bankuaihangqing = bankuaihangqing.loc[0:70]
+            # 读取板块所有的成分股
+            cheng_fen_name_path = os.path.join('assets', r'{}_成分.csv'.format(bankuai_name))
+            if read_from_csv and os.path.isfile(cheng_fen_name_path):
+                bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path, dtype={'代码': str}))
+            else:
+                bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
+                bankuaichengfen.to_csv(cheng_fen_name_path)
+            chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
+            # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
+            # 遍历该板块所有的成分股
+            print('{} {}'.format(bankuai_name, len(chengfen)), end=' == > ')
+            for index, row in chengfen.iterrows():
+                if not isInSS(row['代码'], row['名称']):
+                    continue
+                number = number + 1
+                print('{}:{}_{}'.format(number, row['代码'], row['名称']), end=' ')
+
+                # 获取股票的行情数据
+                gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称']))
+                if read_from_csv and os.path.isfile(gupiao_path):
+                    gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
+                else:
+                    gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
+                    gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+
+                gupiaohangqing = gupiaohangqing.loc[0:70]
+                # 清洗数据
+                temp_df = clean_data(bankuaihangqing, gupiaohangqing)
+                # 使用 concat 函数按行拼接
+                df = pd.concat([df, temp_df], ignore_index=True)
+                # print(df)
+                # break
+            print('')
+            print('')
+            if not read_from_csv:
+                time.sleep(5)
             # break
-        print('')
-        print('')
-        if not read_from_csv:
-            time.sleep(5)
-        # break
-
+        df.to_csv('pre_data.csv')
     for i in range(2 * 2, 7 * 2):
         model_day_len = int(int(i * 0.5) * 10)
         print('model_day_len = {}'.format(model_day_len))
@@ -281,8 +284,44 @@ if __name__ == '__main__':
         save_df.sort_values(by='expext', ascending=False, inplace=True)
         save_df.reset_index(inplace=True)
         del save_df['index']
-        save_df.to_csv(('expect_{}_max.csv' if (i % 2) == 0 else 'expect_{}_min.csv').format(model_day_len))
+        save_df.to_csv(('expect_{}_optimistic.csv' if (i % 2) == 0 else 'expect_{}_pessimistic.csv').format(model_day_len), index=False)
 
-        print(save_df.tail(20))
-        print(save_df.head(20))
+    for i in range(2, 7):
+        model_day_len = int(i * 10)
+        #乐观数据
+        optimistic_path = 'expect_{}_optimistic.csv'.format(model_day_len)
+        #悲观数据
+        pessimistic_path = 'expect_{}_pessimistic.csv'.format(model_day_len)
+        if os.path.isfile(optimistic_path) and os.path.isfile(pessimistic_path):
+            optimistic_df = pd.DataFrame(pd.read_csv(optimistic_path))
+            optimistic_df.rename(columns={'expext': 'optimistic'}, inplace=True)
+            pessimistic_df = pd.DataFrame(pd.read_csv(pessimistic_path))
+            pessimistic_df.rename(columns={'expext': 'pessimistic'}, inplace=True)
+
+            optimistic_df = pd.merge(optimistic_df, pessimistic_df[['Datetime','code','pessimistic']], on=['Datetime','code'], how='left')
+            optimistic_df.sort_values(by='optimistic', ascending=False, inplace=True)
+            optimistic_df.to_csv(optimistic_path)
+
+            pessimistic_df = pd.merge(pessimistic_df, optimistic_df[['Datetime','code','optimistic']], on=['Datetime','code'], how='left')
+            pessimistic_df.sort_values(by='pessimistic', ascending=False, inplace=True)
+            pessimistic_df.to_csv(pessimistic_path)
+
+            #分组显示
+            my_df = optimistic_df.loc[0:100]
+            expect_df = pd.DataFrame()
+            # 统计每个名称的出现次数
+            counts = my_df['bankuai'].value_counts()
+            for item in counts.items():
+                expect_df = pd.concat([expect_df, my_df[my_df['bankuai']==item[0]]], ignore_index=True)
+
+            expect_df.to_csv('expect_{}.csv'.format(model_day_len), index=False)
+            #根据bankuai列分组，然后按照每个组的大小进行排序
+            # my_df = my_df.groupby('bankuai', group_keys=False) \
+            #   .apply(lambda x: x.sort_values(by='optimistic', ascending=False)) \
+            #   .reset_index(drop=True) \
+            #   .sort_values(by='bankuai', key=lambda x: x.map(counts), ascending=False) \
+            #   .reset_index(drop=True)
+            # print(my_df)
+            # my_df.to_csv('expect_{}.csv'.format(model_day_len))
+            # my_df = None
     你好('预测结束')
