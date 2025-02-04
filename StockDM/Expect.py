@@ -114,7 +114,9 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(8, 'Turnover', gupiao['成交额'])
 
     # 股票相对板块多日涨幅
+    train_data['RF_1'] = [multiply_rf(train_data, 'RF', i, 1) for i in range(len(train_data))]
     train_data['RF_2'] = [multiply_rf(train_data, 'RF', i, 2) for i in range(len(train_data))]
+    train_data['RF_3'] = [multiply_rf(train_data, 'RF', i, 4) for i in range(len(train_data))]
     train_data['RF_4'] = [multiply_rf(train_data, 'RF', i, 4) for i in range(len(train_data))]
     train_data['RF_6'] = [multiply_rf(train_data, 'RF', i, 6) for i in range(len(train_data))]
     train_data['RF_8'] = [multiply_rf(train_data, 'RF', i, 8) for i in range(len(train_data))]
@@ -148,10 +150,12 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # 股票成交多日金额比
     train_data['Turnover_5'] = [mean_col(train_data, 'Turnover', i, 5) for i in range(len(train_data))]
     train_data['Turnover_10'] = [mean_col(train_data, 'Turnover', i, 10) for i in range(len(train_data))]
+    train_data['Turnover_20'] = [mean_col(train_data, 'Turnover', i, 20) for i in range(len(train_data))]
 
     # 股票成交多日均线比
     train_data['price_5'] = [mean_price(train_data, 'price', i, 5) for i in range(len(train_data))]
     train_data['price_10'] = [mean_price(train_data, 'price', i, 10) for i in range(len(train_data))]
+    train_data['price_20'] = [mean_price(train_data, 'price', i, 20) for i in range(len(train_data))]
 
     # 预取价格
     train_data = train_data.dropna()
@@ -163,8 +167,8 @@ if __name__ == '__main__':
 
     df = pd.DataFrame()
     data_space = getDateSpace()
-    if True and os.path.isfile('pre_data.csv'):
-        df= pd.DataFrame(pd.read_csv('pre_data.csv', dtype={'code': str}))
+    if True and os.path.isfile('pre_expect_data.csv'):
+        df= pd.DataFrame(pd.read_csv('pre_expect_data.csv', dtype={'code': str}))
     else :
         # 读取所有的板块
         if read_from_csv:
@@ -223,7 +227,7 @@ if __name__ == '__main__':
             if not read_from_csv:
                 time.sleep(5)
             # break
-        df.to_csv('pre_data.csv')
+        df.to_csv('pre_expect_data.csv')
     for i in range(2 * 2, 7 * 2):
         model_day_len = int(int(i * 0.5) * 10)
         print('model_day_len = {}'.format(model_day_len))
@@ -231,7 +235,8 @@ if __name__ == '__main__':
         model_path = ('stock_{}_max_back.h5' if (i % 2) == 0 else 'stock_{}_min_back.h5').format(model_day_len)
         import shutil
         import msvcrt
-
+        if not os.path.isfile(src_model_path):
+            continue
         with open('lock_file_{}'.format(model_day_len), 'w') as lock_file:
             try:
                 # 获取排他锁
@@ -259,8 +264,8 @@ if __name__ == '__main__':
         from tensorflow.keras.models import load_model
 
         loaded_model = load_model(model_path)
-        features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'price_5', 'price_10',
-                    'RF_2', 'RF_4', 'RF_6', 'RF_8', 'RF_10',
+        features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'Turnover_20', 'price_5', 'price_10', 'price_20',
+                    'RF_1', 'RF_2', 'RF_3', 'RF_4', 'RF_6', 'RF_8', 'RF_10',
                     'RF_12', 'RF_14', 'RF_16', 'RF_18', 'RF_20']
         if model_day_len >= 30:
             features.extend(['RF_22', 'RF_24', 'RF_26', 'RF_28', 'RF_30'])
