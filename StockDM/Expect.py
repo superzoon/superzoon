@@ -159,7 +159,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     # 预取价格
     train_data = train_data.dropna()
-    return train_data[0:1]
+    return train_data[0:5]
 
 
 if __name__ == '__main__':
@@ -284,8 +284,11 @@ if __name__ == '__main__':
         save_df['Datetime'] = df['Datetime']
         save_df['code'] = df['code'].apply(dc.reassign_code)
         save_df['name'] = df['name']
-        save_df['bankuai'] = df['bankuai_name']
-        save_df['expext'] = predictions * 100
+        if 'bankuai_name' in df.columns:
+            save_df['bankuai'] = df['bankuai_name']
+        else :
+            save_df['bankuai'] = df['name']
+        save_df['expext'] = predictions
         save_df.sort_values(by='expext', ascending=False, inplace=True)
         save_df.reset_index(inplace=True)
         del save_df['index']

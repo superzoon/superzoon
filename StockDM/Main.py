@@ -111,6 +111,8 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(6, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
     # 股票成交金额
     train_data.insert(7, 'Turnover', gupiao['成交额'])
+    # 名称
+    train_data['bankuai_name'] = bankuai['板块']
     # 股票相对板块多日涨幅
     train_data['RF_1'] = [multiply_rf(train_data, 'RF', i, 1) for i in range(len(train_data))]
     train_data['RF_2'] = [multiply_rf(train_data, 'RF', i, 2) for i in range(len(train_data))]
@@ -157,8 +159,9 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     train_data = train_data.dropna()
     # 预取价格
-    train_data['expect_max'] = train_data['price'].rolling(window=5, min_periods=5).max().shift(1) / train_data['price'] - 1
-    train_data['expect_min'] = train_data['price'].rolling(window=5, min_periods=5).min().shift(1) / train_data['price'] - 1
+    price = train_data['price'].rolling(window=5, min_periods=5)
+    train_data['expect_max'] = (price.max().shift(1) / train_data['price'] - 1) * 100
+    train_data['expect_min'] = (price.min().shift(1) / train_data['price'] - 1) * 100
 
     # print(train_data)
 
@@ -221,11 +224,11 @@ def training_model(df: pd.DataFrame):
             model.add(Dense(1))
             model.compile(loss='mean_squared_error', optimizer='adam')
 
-        # 训练 5000 轮
-        你好('训练 5000 轮 train len = {}'.format(len(x_train)))
+        # 训练 2000 轮
+        你好('训练 2000 轮 train len = {}'.format(len(x_train)))
         # early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-        # history = model.fit(X_train, y_train, epochs=5000, batch_size=1024, validation_data=(x_test, y_test), verbose=0, callbacks=[early_stopping])
-        history = model.fit(x_train, y_train, epochs=5000, batch_size=1024, validation_data=(x_test, y_test), verbose=0)
+        # history = model.fit(X_train, y_train, epochs=2000, batch_size=1024, validation_data=(x_test, y_test), verbose=0, callbacks=[early_stopping])
+        history = model.fit(x_train, y_train, epochs=2000, batch_size=1024, validation_data=(x_test, y_test), verbose=0)
 
         # 在测试集上进行评估
         你好('测试集上进行评估')
@@ -379,7 +382,7 @@ def launch_traing():
         full_df = full_df.dropna().reset_index(drop=True)
         full_df.to_csv('pre_training_data.csv')
 
-    for i in range(10):
+    for i in range(1):
         print('训练大轮询{}'.format(i))
         # 训练模型
         training_model(full_df)
@@ -388,7 +391,8 @@ def launch_traing():
 
 
 if __name__ == '__main__':
-    update_thread = threading.Thread(target=launch_traing)
-    update_thread.daemon = True
-    update_thread.start()
+    # update_thread = threading.Thread(target=launch_traing)
+    # update_thread.daemon = True
+    # update_thread.start()
+    launch_traing()
     plot_losses()
