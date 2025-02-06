@@ -159,7 +159,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     # 预取价格
     train_data = train_data.dropna()
-    return train_data[0:5]
+    return train_data[0:1]
 
 
 if __name__ == '__main__':

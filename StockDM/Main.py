@@ -101,18 +101,18 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(1, 'code', gupiao['股票代码'])
     # 名称
     train_data.insert(2, 'name', gupiao['股票名称'])
+    # 板块名称
+    train_data.insert(3, 'bankuai_name', bankuai['板块'])
     # 股票价格
-    train_data.insert(3, 'price', gupiao['收盘'])
+    train_data.insert(4, 'price', gupiao['收盘'])
     # 股票价格
-    train_data.insert(4, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
+    train_data.insert(5, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
     # 股票价格
-    train_data.insert(5, 'dshadow', (gupiao['收盘'] - gupiao['最低']) / gupiao['收盘'])
+    train_data.insert(6, 'dshadow', (gupiao['收盘'] - gupiao['最低']) / gupiao['收盘'])
     # 股票相对板块的涨幅
-    train_data.insert(6, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
+    train_data.insert(7, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
     # 股票成交金额
-    train_data.insert(7, 'Turnover', gupiao['成交额'])
-    # 名称
-    train_data['bankuai_name'] = bankuai['板块']
+    train_data.insert(8, 'Turnover', gupiao['成交额'])
     # 股票相对板块多日涨幅
     train_data['RF_1'] = [multiply_rf(train_data, 'RF', i, 1) for i in range(len(train_data))]
     train_data['RF_2'] = [multiply_rf(train_data, 'RF', i, 2) for i in range(len(train_data))]
