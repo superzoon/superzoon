@@ -172,8 +172,8 @@ def show_loss():
 def launch_traing():
     你好('训练开启')
     count = 0
-    read_from_csv = True
-    if True and os.path.isfile('pre_training_data.csv'):
+    read_from_csv = False
+    if False and os.path.isfile('pre_training_data.csv'):
         full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
     else:
         full_df = pd.DataFrame()
@@ -250,6 +250,7 @@ def launch_traing():
         expect_df.dropna().to_csv('pre_expect_data.csv', index=False)
         full_df = full_df.dropna().reset_index(drop=True)
         full_df.to_csv('pre_training_data.csv', index=False)
+        full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
 
     print(full_df.head(5))
     for i in range(1):

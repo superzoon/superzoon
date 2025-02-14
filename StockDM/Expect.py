@@ -1,3 +1,5 @@
+from unittest.mock import inplace
+
 import pandas
 import pandas as pd
 import numpy as np
@@ -29,7 +31,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 if __name__ == '__main__':
     你好('预测开启')
 
-    read_from_csv = True
+    read_from_csv = False
     df = pd.DataFrame()
     data_space = dc.getDateSpace()
     if True and os.path.isfile('pre_expect_data.csv'):
@@ -168,7 +170,8 @@ if __name__ == '__main__':
             # 删除全为空值的列
             item_df = item_df.dropna(axis=1, how='all')
             optimistic_df = item_df.sort_values(by='optimistic', ascending=False)
-            optimistic_df.reset_index(inplace=True)
+            optimistic_df = optimistic_df.reset_index()
+            del optimistic_df['index']
             optimistic_df.to_csv('{}_{}'.format(date, optimistic_path), index = False)
 
             #分组显示
@@ -192,7 +195,8 @@ if __name__ == '__main__':
             item_df = item_df[columns]
 
             pessimistic_df = item_df.sort_values(by='pessimistic', ascending=False)
-            pessimistic_df.reset_index(inplace=True)
+            pessimistic_df = pessimistic_df.reset_index()
+            del pessimistic_df['index']
             pessimistic_df.to_csv('{}_{}'.format(date, pessimistic_path), index = False)
 
             #分组显示
