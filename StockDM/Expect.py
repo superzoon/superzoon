@@ -1,3 +1,4 @@
+from time import sleep
 from unittest.mock import inplace
 
 import pandas
@@ -26,19 +27,28 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data = dc.clean_data(_bankuai, _gupiao)
 
     return train_data[0:2]
-def loadGuPiaoHangQing(listName:list, count:int=1):
-    if count > 50:
-        return
-    newList = list()
-    for keys in listName:
-        try:
-            temp = dc.guPiaoHangQing(keys[0], keys[1], keys[2], keys[3])
-            temp.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
-        except:
-            newList.append(keys)
+import multiprocessing
+class LoadGuPiaoHangQing(multiprocessing.Process):
+    def __init__(self, arg1, arg2, arg3, arg4):
+        super().__init__()
+        self.symbol = arg1
+        self.name = arg2
+        self.start_date = arg3
+        self.end_date = arg4
+    def run(self):
+        self.loadGuPiaoHangQing(self.symbol, self.name, self.start_date, self.end_date, 0)
 
-    if len(newList) > 0:
-        loadGuPiaoHangQing(newList, count + 1)
+    def loadGuPiaoHangQing(self, symbol, name, start_date, end_date, count:int=1):
+        print('{} {} {} {} {}'.format(count, symbol, name, start_date, end_date))
+        if count > 10:
+            return np.nan
+        sleep(1)
+        try:
+            temp_load = dc.guPiaoHangQing(symbol, name, start_date, end_date)
+            temp_load.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+            return temp_load
+        except:
+            return self.loadGuPiaoHangQing(symbol, name, start_date, end_date, count + 1)
 
 if __name__ == '__main__':
     你好('预测开启')
@@ -46,6 +56,8 @@ if __name__ == '__main__':
     read_from_csv = False
     df = pd.DataFrame()
     data_space = dc.getDateSpace()
+    print(data_space)
+    sleep(1)
     if False and os.path.isfile('pre_expect_data.csv'):
         df= pd.DataFrame(pd.read_csv('pre_expect_data.csv', dtype={'code': str}))
     else :
@@ -68,7 +80,7 @@ if __name__ == '__main__':
                 bankuaihangqing = pd.DataFrame(pd.read_csv(cheng_fen_hangqing_path))
             else:
                 bankuaihangqing = dc.banKuaiHangQing(bankuai_name, data_space[0], data_space[1])
-                bankuaihangqing.to_csv(cheng_fen_hangqing_path)
+                bankuaihangqing.to_csv(cheng_fen_hangqing_path, index=False)
 
             bankuaihangqing = bankuaihangqing.reset_index(drop=True)
             bankuaihangqing = bankuaihangqing.iloc[0:70]
@@ -79,9 +91,9 @@ if __name__ == '__main__':
                 bankuaichengfen = pd.DataFrame(pd.read_csv(cheng_fen_name_path, dtype={'代码': str}))
             else:
                 bankuaichengfen = dc.banKuaiChengFen(bankuai_name)
-                bankuaichengfen.to_csv(cheng_fen_name_path)
+                bankuaichengfen.to_csv(cheng_fen_name_path, index=False)
             chengfen = bankuaichengfen.loc[:, ['代码', '名称']]
-            # chengfen = pd.DataFrame({'代码':['603887'],'名称':['城地香江']})#测试训练过程出现错误的股票
+            #chengfen = pd.DataFrame({'代码':['301587'],'名称':['中瑞股份']})#测试训练过程出现错误的股票
             # 遍历该板块所有的成分股
             print('{} {}'.format(bankuai_name, len(chengfen)), end=' == > ')
             for index, row in chengfen.iterrows():
@@ -95,12 +107,8 @@ if __name__ == '__main__':
                 if read_from_csv and os.path.isfile(gupiao_path):
                     gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
                 else:
-                    try:
-                        gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
-                        gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
-                    except:
-                        errorList.append([row['代码'], row['名称'], data_space[0], data_space[1]])
-                        continue
+                    gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
+                    gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])), index=False)
 
                 gupiaohangqing = gupiaohangqing.reset_index(drop=True)
                 gupiaohangqing = gupiaohangqing.iloc[0:70]
@@ -109,14 +117,13 @@ if __name__ == '__main__':
                 # 使用 concat 函数按行拼接
                 df = pd.concat([df, temp_df], ignore_index=True)
                 #break
-                time.sleep(0.1)
             print('')
             print('')
             if not read_from_csv:
                 time.sleep(5)
             #break
         if len(errorList) > 0:
-            loadGuPiaoHangQing(errorList, 0)
+            print(errorList)
         df.to_csv('pre_expect_data.csv', index=False)
     for i in range(3 , 6):
         model_day_len = int(i * 10)

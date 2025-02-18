@@ -3,6 +3,7 @@ import numpy as np
 import akshare as ak
 from sqlalchemy import create_engine, text, MetaData
 import sqlite3
+import os
 
 from datetime import datetime, timedelta
 
@@ -227,7 +228,7 @@ def isInSS(code: str, name: str):
         return False
 
 
-def banKuai(updateDB=True, debug=False):
+def banKuai(updateDB=False, debug=False):
     '''
     东方财富-行业板块
     接口：stock_board_industry_name_em
@@ -244,7 +245,7 @@ def banKuai(updateDB=True, debug=False):
 
 def banKuaiHangQing(symbol, start_date, end_date,
                     period="日k", adjust="qfq",
-                    updateDB=True, debug=False):
+                    updateDB=False, debug=False):
     '''
     东方财富-指数-日频
     接口:stock_board_industry_hist_em
@@ -285,7 +286,7 @@ def banKuaiHangQing(symbol, start_date, end_date,
     return df
 
 
-def banKuaiChengFen(symbol, updateDB=True, debug=False):
+def banKuaiChengFen(symbol, updateDB=False, debug=False):
     '''
     东方财富-成分股
     接口：stock_board_industry_cons_em
@@ -320,7 +321,7 @@ def banKuaiChengFen(symbol, updateDB=True, debug=False):
 
 
 def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='qfq', timeout=None,
-                   updateDB=True, debug=False):
+                   updateDB=False, debug=False):
     '''
     接口：stock_zh_a_hist
     目标地址：https://quote.eastmoney.com/concept/sh603777.html?from=classic(实例)
@@ -334,10 +335,34 @@ def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='q
     timeout       float   timeout=None; 默认不设置超市参数
     :return:
     '''
+
+    gupiao_path = os.path.join('assets', r'{}_{}.csv'.format(symbol, name))
+    full = list()
+    if os.path.isfile(gupiao_path):
+        gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
+        gupiaohangqing['日期'] = pd.to_datetime(gupiaohangqing['日期'])
+        if len(gupiaohangqing) > 0:
+            daydate = gupiaohangqing.loc[0, '日期']
+            # 计算下一天的日期
+            next_day_obj = daydate + timedelta(days=1)
+            start_date = next_day_obj.strftime('%Y%m%d')
+            # 定义日期字符串的格式
+            date_format = '%Y%m%d'
+            if datetime.strptime(start_date, date_format) > datetime.strptime(end_date, date_format):
+                print(' realy, ', end='')
+                return gupiaohangqing['日期','股票名称','股票代码','开盘','收盘','最高','最低','成交量','成交额','振幅','涨跌幅','涨跌额','换手率']
+        full.append(gupiaohangqing)
+
     table_name = 'gupiao_hangqing'
     df = ak.stock_zh_a_hist(symbol, period=period, start_date=start_date, end_date=end_date, adjust=adjust)
-    df.insert(loc=df.columns.get_loc('股票代码'), column='股票名称', value=name)
+    if len(df) > 0:
+        df.insert(loc=df.columns.get_loc('股票代码'), column='股票名称', value=name)
+        df['日期'] = pd.to_datetime(df['日期'])
+        full.append(df)
+    df = pd.concat(full, ignore_index=True)
+    # 将日期列中的 datetime.date 对象转换为 pandas.Timestamp 对象
     df.sort_values(by='日期', ascending=False, inplace=True)
+    df.reset_index(inplace=True)
     if debug: print(df)
     if updateDB:
         engine = create_engine('sqlite:///assets/ak_dongcai.db', echo=False)  # echo=True 用于调试
@@ -351,4 +376,4 @@ def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='q
         df.to_sql(table_name, index=False, con=conn, if_exists='append', chunksize=1000)
         conn.commit()
         conn.close()
-    return df
+    return df['日期','股票名称','股票代码','开盘','收盘','最高','最低','成交量','成交额','振幅','涨跌幅','涨跌额','换手率']
