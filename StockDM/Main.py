@@ -172,7 +172,7 @@ def show_loss():
 def launch_traing():
     你好('训练开启')
     count = 0
-    read_from_csv = False
+    read_from_csv = True
     if False and os.path.isfile('pre_training_data.csv'):
         full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
     else:

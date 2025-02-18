@@ -26,7 +26,19 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data = dc.clean_data(_bankuai, _gupiao)
 
     return train_data[0:2]
+def loadGuPiaoHangQing(listName:list, count:int=1):
+    if count > 50:
+        return
+    newList = list()
+    for keys in listName:
+        try:
+            temp = dc.guPiaoHangQing(keys[0], keys[1], keys[2], keys[3])
+            temp.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+        except:
+            newList.append(keys)
 
+    if len(newList) > 0:
+        loadGuPiaoHangQing(newList, count + 1)
 
 if __name__ == '__main__':
     你好('预测开启')
@@ -34,7 +46,7 @@ if __name__ == '__main__':
     read_from_csv = False
     df = pd.DataFrame()
     data_space = dc.getDateSpace()
-    if True and os.path.isfile('pre_expect_data.csv'):
+    if False and os.path.isfile('pre_expect_data.csv'):
         df= pd.DataFrame(pd.read_csv('pre_expect_data.csv', dtype={'code': str}))
     else :
         # 读取所有的板块
@@ -46,6 +58,8 @@ if __name__ == '__main__':
 
         # 遍历所有的板块
         number = 0
+
+        errorList = list()
         for bankuai_name in bankuai['板块名称']:
 
             # 读取板块的行情数据
@@ -81,8 +95,12 @@ if __name__ == '__main__':
                 if read_from_csv and os.path.isfile(gupiao_path):
                     gupiaohangqing = pd.DataFrame(pd.read_csv(gupiao_path, dtype={'股票代码': str}))
                 else:
-                    gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
-                    gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+                    try:
+                        gupiaohangqing = dc.guPiaoHangQing(row['代码'], row['名称'], data_space[0], data_space[1])
+                        gupiaohangqing.to_csv(os.path.join('assets', r'{}_{}.csv'.format(row['代码'], row['名称'])))
+                    except:
+                        errorList.append([row['代码'], row['名称'], data_space[0], data_space[1]])
+                        continue
 
                 gupiaohangqing = gupiaohangqing.reset_index(drop=True)
                 gupiaohangqing = gupiaohangqing.iloc[0:70]
@@ -90,13 +108,15 @@ if __name__ == '__main__':
                 temp_df = clean_data(bankuaihangqing, gupiaohangqing)
                 # 使用 concat 函数按行拼接
                 df = pd.concat([df, temp_df], ignore_index=True)
-                # break
+                #break
                 time.sleep(0.1)
             print('')
             print('')
             if not read_from_csv:
                 time.sleep(5)
             #break
+        if len(errorList) > 0:
+            loadGuPiaoHangQing(errorList, 0)
         df.to_csv('pre_expect_data.csv', index=False)
     for i in range(3 , 6):
         model_day_len = int(i * 10)
@@ -172,7 +192,7 @@ if __name__ == '__main__':
             optimistic_df = item_df.sort_values(by='optimistic', ascending=False)
             optimistic_df = optimistic_df.reset_index()
             del optimistic_df['index']
-            optimistic_df.to_csv('{}_{}'.format(date, optimistic_path), index = False)
+            optimistic_df.to_csv('{}_{}'.format(date, optimistic_path), index = True)
 
             #分组显示
             my_df = optimistic_df.loc[0:200]
@@ -182,7 +202,7 @@ if __name__ == '__main__':
             for item in counts.items():
                 expect_df = pd.concat([expect_df, my_df[my_df['bankuai']==item[0]]], ignore_index=True)
             #expect_df.reset_index(inplace=True)
-            expect_df.to_csv('{}_bankuai_{}.csv'.format(date, optimistic_path), index=False)
+            expect_df.to_csv('{}_bankuai_{}.csv'.format(date, optimistic_path), index=True)
 
             # 获取列名列表
             columns = item_df.columns.tolist()
@@ -197,7 +217,7 @@ if __name__ == '__main__':
             pessimistic_df = item_df.sort_values(by='pessimistic', ascending=False)
             pessimistic_df = pessimistic_df.reset_index()
             del pessimistic_df['index']
-            pessimistic_df.to_csv('{}_{}'.format(date, pessimistic_path), index = False)
+            pessimistic_df.to_csv('{}_{}'.format(date, pessimistic_path), index = True)
 
             #分组显示
             my_df = pessimistic_df.iloc[0:200]
@@ -207,7 +227,7 @@ if __name__ == '__main__':
             for item in counts.items():
                 expect_df = pd.concat([expect_df, my_df[my_df['bankuai']==item[0]]], ignore_index=True)
             #expect_df.reset_index(inplace=True)
-            expect_df.to_csv('{}_bankuai_{}.csv'.format(date, pessimistic_path), index=False)
+            expect_df.to_csv('{}_bankuai_{}.csv'.format(date, pessimistic_path), index=True)
 
             #根据bankuai列分组，然后按照每个组的大小进行排序
             # my_df = my_df.groupby('bankuai', group_keys=False) \

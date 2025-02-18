@@ -106,6 +106,10 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(3, 'bankuai_name', bankuai['板块'])
     # 股票价格
     train_data.insert(4, 'price', gupiao['收盘'])
+
+    # train_data['price_next'] = train_data['price'].shift(1)
+    # print(train_data.head(5))
+    # exit(0)
     # 股票价格
     train_data.insert(5, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
     # 股票价格
@@ -114,6 +118,9 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(7, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
     # 股票成交金额
     train_data.insert(8, 'Turnover', gupiao['成交额'])
+
+    train_data['price_high'] = gupiao['最高']
+    train_data['price_low'] = gupiao['最低']
     # 股票相对板块多日涨幅
     train_data['RF_5'] = [multiply_rf(train_data, 'RF', i, 5) for i in range(len(train_data))]
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
@@ -156,9 +163,12 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     train_data = train_data.dropna()
     # 预取价格
-    price = train_data['price'].rolling(window=2, min_periods=2)
-    train_data['expect_max'] = (price.max().shift(1) / train_data['price'] - 1) * 100
-    train_data['expect_min'] = (price.min().shift(1) / train_data['price'] - 1) * 100
+    price = train_data['price'].rolling(window=5, min_periods=5)
+    train_data['expect_max_5'] = (price.max().shift(1) / train_data['price'] - 1) * 100
+    train_data['expect_min_5'] = (price.min().shift(1) / train_data['price'] - 1) * 100
+
+    train_data['expect_max'] = (train_data['price_high'].shift(1) / train_data['price'] - 1) * 100
+    train_data['expect_min'] = (train_data['price_low'].shift(1) / train_data['price'] - 1) * 100
 
     #下一个交易日涨跌
     train_data['next_rf_1'] = [next_value(gupiao, '涨跌幅', i ,-1) for i in range(len(train_data))]
@@ -233,7 +243,7 @@ def banKuai(updateDB=True, debug=False):
 
 
 def banKuaiHangQing(symbol, start_date, end_date,
-                    period="日k", adjust="hfq",
+                    period="日k", adjust="qfq",
                     updateDB=True, debug=False):
     '''
     东方财富-指数-日频
@@ -309,7 +319,7 @@ def banKuaiChengFen(symbol, updateDB=True, debug=False):
     return df
 
 
-def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='hfq', timeout=None,
+def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='qfq', timeout=None,
                    updateDB=True, debug=False):
     '''
     接口：stock_zh_a_hist
