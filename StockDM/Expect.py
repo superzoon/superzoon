@@ -1,5 +1,4 @@
 from time import sleep
-from unittest.mock import inplace
 
 import pandas
 import pandas as pd
@@ -165,23 +164,28 @@ if __name__ == '__main__':
         #print(df)
         #print(features)
         x = df[features]
-        predictions = pd.DataFrame(loaded_model.predict(x), columns=['optimistic','pessimistic'])
-       # print(predictions)
+        predictions = pd.DataFrame(loaded_model.predict(x), columns=['next_rf_1', 'expect_max', 'expect_min', 'expect_max_5', 'expect_min_5'])
+        # print(predictions)
         save_df = pd.DataFrame()
-        save_df['Datetime'] = df['Datetime']
-        save_df['code'] = df['code'].apply(dc.reassign_code)
-        save_df['name'] = df['name']
+        save_df['日期'] = df['Datetime']
+        save_df['代码'] = df['code'].apply(dc.reassign_code)
+        save_df['股票名称'] = df['name']
         if 'bankuai_name' in df.columns:
-            save_df['bankuai'] = df['bankuai_name']
+            save_df['板块'] = df['bankuai_name']
         else :
-            save_df['bankuai'] = df['name']
-        save_df['optimistic'] = predictions['optimistic']
-        save_df['pessimistic'] = predictions['pessimistic']
-        save_df['next_rf'] = df['next_rf_1']
+            save_df['板块'] = df['name']
+        save_df['预期'] = predictions['next_rf_1']
+        save_df['乐观系数'] = predictions['expect_max']
+        save_df['悲观系数'] = predictions['expect_min']
+        save_df['后期乐观'] = predictions['expect_max_5']
+        save_df['后期悲观'] = predictions['expect_min_5']
+        save_df['实际涨幅'] = df['next_rf_1']
         save_df.reset_index(inplace=True)
         del save_df['index']
         print(save_df.head(5))
 
+        #预期数据
+        expect_path = 'expect_{}.csv'.format(model_day_len)
         #乐观数据
         optimistic_path = 'expect_{}_optimistic.csv'.format(model_day_len)
         #悲观数据
@@ -190,51 +194,62 @@ if __name__ == '__main__':
         full_df = save_df
 
         #full_df = full_df[[col for col in full_df.columns if col != 'next_rf'] + ['next_rf']]
-        grouped = full_df.groupby('Datetime')
+        grouped = full_df.groupby('日期')
         for date, item_df in grouped:
+            date = datetime.strptime(date, '%Y-%m-%d') if isinstance(x, datetime) else date
+
             if len(item_df) < 10:
                 continue
             # 删除全为空值的列
             item_df = item_df.dropna(axis=1, how='all')
-            optimistic_df = item_df.sort_values(by='optimistic', ascending=False)
+
+            #预期
+            pro_df = item_df.sort_values(by='预期', ascending=False)
+            pro_df = pro_df.reset_index()
+            del pro_df['index']
+            pro_df.to_csv('{}_{}'.format(date, expect_path), index = True)
+
+            #乐观预估
+            optimistic_df = item_df.sort_values(by='乐观系数', ascending=False)
             optimistic_df = optimistic_df.reset_index()
             del optimistic_df['index']
             optimistic_df.to_csv('{}_{}'.format(date, optimistic_path), index = True)
 
             #分组显示
-            my_df = optimistic_df.loc[0:200]
-            expect_df = pd.DataFrame()
-            # 统计每个名称的出现次数
-            counts = my_df['bankuai'].value_counts()
-            for item in counts.items():
-                expect_df = pd.concat([expect_df, my_df[my_df['bankuai']==item[0]]], ignore_index=True)
-            #expect_df.reset_index(inplace=True)
-            expect_df.to_csv('{}_bankuai_{}.csv'.format(date, optimistic_path), index=True)
+            # my_df = optimistic_df.loc[0:200]
+            # expect_df = pd.DataFrame()
+            # # 统计每个名称的出现次数
+            # counts = my_df['板块'].value_counts()
+            # for item in counts.items():
+            #     expect_df = pd.concat([expect_df, my_df[my_df['板块']==item[0]]], ignore_index=True)
+            # #expect_df.reset_index(inplace=True)
+            # expect_df.to_csv('{}_bankuai_{}.csv'.format(date, optimistic_path), index=True)
 
             # 获取列名列表
             columns = item_df.columns.tolist()
             # 找到 a 和 b 列的索引
-            index_a = columns.index('optimistic')
-            index_b = columns.index('pessimistic')
+            index_a = columns.index('乐观系数')
+            index_b = columns.index('悲观系数')
             # 交换 a 和 b 列的位置
             columns[index_a], columns[index_b] = columns[index_b], columns[index_a]
             # 根据新的列名顺序重新排列 DataFrame
             item_df = item_df[columns]
 
-            pessimistic_df = item_df.sort_values(by='pessimistic', ascending=False)
+            #悲观预估
+            pessimistic_df = item_df.sort_values(by='悲观系数', ascending=False)
             pessimistic_df = pessimistic_df.reset_index()
             del pessimistic_df['index']
             pessimistic_df.to_csv('{}_{}'.format(date, pessimistic_path), index = True)
 
             #分组显示
-            my_df = pessimistic_df.iloc[0:200]
-            expect_df = pd.DataFrame()
-            # 统计每个名称的出现次数
-            counts = my_df['bankuai'].value_counts()
-            for item in counts.items():
-                expect_df = pd.concat([expect_df, my_df[my_df['bankuai']==item[0]]], ignore_index=True)
-            #expect_df.reset_index(inplace=True)
-            expect_df.to_csv('{}_bankuai_{}.csv'.format(date, pessimistic_path), index=True)
+            # my_df = pessimistic_df.iloc[0:200]
+            # expect_df = pd.DataFrame()
+            # # 统计每个名称的出现次数
+            # counts = my_df['板块'].value_counts()
+            # for item in counts.items():
+            #     expect_df = pd.concat([expect_df, my_df[my_df['板块']==item[0]]], ignore_index=True)
+            # #expect_df.reset_index(inplace=True)
+            # expect_df.to_csv('{}_bankuai_{}.csv'.format(date, pessimistic_path), index=True)
 
             #根据bankuai列分组，然后按照每个组的大小进行排序
             # my_df = my_df.groupby('bankuai', group_keys=False) \

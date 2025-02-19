@@ -13,7 +13,7 @@ from aktools.dongcai import isInSS
 print(pd.__version__)
 print(np.__version__)
 
-model_day_len =30
+model_day_len =50
 
 
 def 你好(name: str = 'world'):
@@ -23,11 +23,6 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # print(_bankuai.columns, _gupiao.columns)
     # 按行对齐，去除多余的行
     train_data = dc.clean_data(_bankuai, _gupiao)
-    # 预取价格
-    price = train_data['price'].rolling(window=5, min_periods=5)
-    train_data['expect_max'] = (price.max().shift(1) / train_data['price'] - 1) * 100
-    train_data['expect_min'] = (price.min().shift(1) / train_data['price'] - 1) * 100
-
     # print(train_data)
 
     return train_data
@@ -54,7 +49,8 @@ def training_model(df: pd.DataFrame):
     x = df[features]
     features_count = int(len(features) * 1)
     hide_count = int(features_count * 2)#int(features_count * 2 / 3 + 1)
-    y = df[['expect_max', 'expect_min']]
+
+    y = df[['next_rf_1', 'expect_max', 'expect_min', 'expect_max_5', 'expect_min_5']]
     # 进行数据集划分
     print('进行数据集划分')
     if len(x) > 0 and len(y) > 0:
@@ -69,17 +65,17 @@ def training_model(df: pd.DataFrame):
         # 加载模型
         model = load_model(model_path)
     else:
-        print('创建神经网络模型{}X{}X1'.format(features_count, hide_count))
+        print('创建神经网络模型{}X{}X{}'.format(features_count, hide_count, len(y.columns)))
         # 构建神经网络模型
         model = Sequential()
         model.add(Dense(features_count, input_dim=len(features), activation='linear'))
         model.add(Dense(hide_count, activation='linear'))
         model.add(Dense(features_count, activation='linear'))
-        model.add(Dense(2))
+        model.add(Dense(len(y.columns)))
         model.compile(loss='mean_squared_error', optimizer='adam')
 
-    # 训练 2000 轮
-    你好('训练 2000 轮 train len = {}'.format(len(x_train)))
+    # 训练 10000 轮
+    你好('训练 10000 轮 train len = {}'.format(len(x_train)))
     #early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
     #history = model.fit(x_train, y_train, epochs=10000, batch_size=512, validation_data=(x_test, y_test), verbose=0, callbacks=[early_stopping])
     history = model.fit(x_train, y_train, epochs=10000, batch_size=1024, validation_data=(x_test, y_test), verbose=0)
@@ -246,13 +242,13 @@ def launch_traing():
 
             if not read_from_csv:
                 time.sleep(5)
-        expect_df = full_df[full_df['expect_max'].isna()].drop(['expect_max', 'expect_min'], axis=1, inplace=False)
-        expect_df.dropna().to_csv('pre_expect_data.csv', index=False)
+
+        expect_df = full_df[full_df['expect_max_5'].isna()]
+        expect_df.to_csv('pre_expect_data.csv', index=False)
         full_df = full_df.dropna().reset_index(drop=True)
         full_df.to_csv('pre_training_data.csv', index=False)
         full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
 
-    print(full_df.head(5))
     for i in range(1):
         print('训练大轮询{}'.format(i))
         # 训练模型

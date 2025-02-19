@@ -123,6 +123,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['price_high'] = gupiao['最高']
     train_data['price_low'] = gupiao['最低']
     # 股票相对板块多日涨幅
+    train_data['RF_1'] = [multiply_rf(train_data, 'RF', i, 1) for i in range(len(train_data))]
     train_data['RF_5'] = [multiply_rf(train_data, 'RF', i, 5) for i in range(len(train_data))]
     train_data['RF_10'] = [multiply_rf(train_data, 'RF', i, 10) for i in range(len(train_data))]
     train_data['RF_15'] = [multiply_rf(train_data, 'RF', i, 15) for i in range(len(train_data))]
@@ -168,6 +169,10 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['expect_max_5'] = (price.max().shift(1) / train_data['price'] - 1) * 100
     train_data['expect_min_5'] = (price.min().shift(1) / train_data['price'] - 1) * 100
 
+    # price = train_data['price_high'].rolling(window=1, min_periods=1)
+    # train_data['expect_max'] = (price.max().shift(1) / train_data['price'] - 1) * 100
+    # price = train_data['price_low'].rolling(window=1, min_periods=1)
+    # train_data['expect_min'] = (price.min().shift(1) / train_data['price'] - 1) * 100
     train_data['expect_max'] = (train_data['price_high'].shift(1) / train_data['price'] - 1) * 100
     train_data['expect_min'] = (train_data['price_low'].shift(1) / train_data['price'] - 1) * 100
 
@@ -179,7 +184,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
 def getFeature(model_day_len:int = 20):
     features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'Turnover_20', 'price_5', 'price_10', 'price_20',
-                'RF', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
+                'RF_1', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
     if model_day_len >= 30:
         features.extend(['RF_25', 'RF_30'])
         features.extend(['Turnover_25', 'Turnover_30'])
@@ -244,7 +249,7 @@ def banKuai(updateDB=False, debug=False):
 
 
 def banKuaiHangQing(symbol, start_date, end_date,
-                    period="日k", adjust="qfq",
+                    period="日k", adjust="hfq",
                     updateDB=False, debug=False):
     '''
     东方财富-指数-日频
@@ -320,7 +325,7 @@ def banKuaiChengFen(symbol, updateDB=False, debug=False):
     return df
 
 
-def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='qfq', timeout=None,
+def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='hfq', timeout=None,
                    updateDB=False, debug=False):
     '''
     接口：stock_zh_a_hist
@@ -350,7 +355,7 @@ def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='q
             date_format = '%Y%m%d'
             if datetime.strptime(start_date, date_format) > datetime.strptime(end_date, date_format):
                 print(' realy, ', end='')
-                return gupiaohangqing['日期','股票名称','股票代码','开盘','收盘','最高','最低','成交量','成交额','振幅','涨跌幅','涨跌额','换手率']
+                return gupiaohangqing[['日期','股票名称','股票代码','开盘','收盘','最高','最低','成交量','成交额','振幅','涨跌幅','涨跌额','换手率']]
         full.append(gupiaohangqing)
 
     table_name = 'gupiao_hangqing'
@@ -363,6 +368,7 @@ def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='q
     # 将日期列中的 datetime.date 对象转换为 pandas.Timestamp 对象
     df.sort_values(by='日期', ascending=False, inplace=True)
     df.reset_index(inplace=True)
+    df = df[0:365]
     if debug: print(df)
     if updateDB:
         engine = create_engine('sqlite:///assets/ak_dongcai.db', echo=False)  # echo=True 用于调试
@@ -376,4 +382,4 @@ def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='q
         df.to_sql(table_name, index=False, con=conn, if_exists='append', chunksize=1000)
         conn.commit()
         conn.close()
-    return df['日期','股票名称','股票代码','开盘','收盘','最高','最低','成交量','成交额','振幅','涨跌幅','涨跌额','换手率']
+    return df[['日期','股票名称','股票代码','开盘','收盘','最高','最低','成交量','成交额','振幅','涨跌幅','涨跌额','换手率']]
