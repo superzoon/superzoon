@@ -178,6 +178,10 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
     #下一个交易日涨跌
     train_data['next_rf_1'] = [next_value(gupiao, '涨跌幅', i ,-1) for i in range(len(train_data))]
+    train_data['next_rf_2'] = [next_value(gupiao, '涨跌幅', i ,-2) for i in range(len(train_data))]
+    train_data['next_rf_3'] = [next_value(gupiao, '涨跌幅', i ,-3) for i in range(len(train_data))]
+    train_data['next_rf_4'] = [next_value(gupiao, '涨跌幅', i ,-4) for i in range(len(train_data))]
+    train_data['next_rf_5'] = [next_value(gupiao, '涨跌幅', i ,-5) for i in range(len(train_data))]
     # print(train_data)
 
     return train_data

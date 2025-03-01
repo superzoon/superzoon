@@ -13,7 +13,7 @@ from aktools.dongcai import isInSS
 print(pd.__version__)
 print(np.__version__)
 
-model_day_len =50
+model_day_len =30
 
 
 def 你好(name: str = 'world'):
@@ -47,10 +47,11 @@ def training_model(df: pd.DataFrame):
 
     features = dc.getFeature(model_day_len)
     x = df[features]
+    y = df[['next_rf_1',
+            # 'expect_max', 'expect_min',
+            'expect_max_5', 'expect_min_5']]
     features_count = int(len(features) * 1)
-    hide_count = int(features_count * 2)#int(features_count * 2 / 3 + 1)
-
-    y = df[['next_rf_1', 'expect_max', 'expect_min', 'expect_max_5', 'expect_min_5']]
+    hide_count = int(len(y.columns)*3) #int(features_count * 2)#int(features_count * 2 / 3 + 1)
     # 进行数据集划分
     print('进行数据集划分')
     if len(x) > 0 and len(y) > 0:
@@ -168,8 +169,8 @@ def show_loss():
 def launch_traing():
     你好('训练开启')
     count = 0
-    read_from_csv = True
-    if False and os.path.isfile('pre_training_data.csv'):
+    read_from_csv = False
+    if True and os.path.isfile('pre_training_data.csv'):
         full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
     else:
         full_df = pd.DataFrame()
@@ -249,7 +250,10 @@ def launch_traing():
         full_df.to_csv('pre_training_data.csv', index=False)
         full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
 
-    for i in range(1):
+
+    full_df.sort_values(by='Datetime', ascending=True, inplace=True)
+    print(full_df.head(10))
+    for i in range(3):
         print('训练大轮询{}'.format(i))
         # 训练模型
         training_model(full_df)

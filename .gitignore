@@ -5,6 +5,7 @@ __pycache__
 *log.txt
 */*.db
 *.db
+StockDM/old
 StockDM/.idea
 StockDM/losses*.txt
 StockDM/test.py

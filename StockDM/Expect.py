@@ -7,6 +7,9 @@ import os
 
 import threading
 import time
+
+from sqlalchemy import false
+
 from aktools import dongcai as dc
 from datetime import datetime, timedelta
 
@@ -25,7 +28,7 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     # 预取价格
     train_data = dc.clean_data(_bankuai, _gupiao)
 
-    return train_data[0:2]
+    return train_data[0:5]
 import multiprocessing
 class LoadGuPiaoHangQing(multiprocessing.Process):
     def __init__(self, arg1, arg2, arg3, arg4):
@@ -52,7 +55,7 @@ class LoadGuPiaoHangQing(multiprocessing.Process):
 if __name__ == '__main__':
     你好('预测开启')
 
-    read_from_csv = False
+    read_from_csv = True
     df = pd.DataFrame()
     data_space = dc.getDateSpace()
     print(data_space)
@@ -124,6 +127,7 @@ if __name__ == '__main__':
         if len(errorList) > 0:
             print(errorList)
         df.to_csv('pre_expect_data.csv', index=False)
+        df= pd.DataFrame(pd.read_csv('pre_expect_data.csv', dtype={'code': str}))
     for i in range(3 , 6):
         model_day_len = int(i * 10)
         print('model_day_len = {}'.format(model_day_len))
@@ -164,7 +168,9 @@ if __name__ == '__main__':
         #print(df)
         #print(features)
         x = df[features]
-        predictions = pd.DataFrame(loaded_model.predict(x), columns=['next_rf_1', 'expect_max', 'expect_min', 'expect_max_5', 'expect_min_5'])
+        predictions = pd.DataFrame(loaded_model.predict(x), columns=['next_rf_1',
+                                                                     # 'expect_max', 'expect_min',
+                                                                     'expect_max_5', 'expect_min_5'])
         # print(predictions)
         save_df = pd.DataFrame()
         save_df['日期'] = df['Datetime']
@@ -175,11 +181,15 @@ if __name__ == '__main__':
         else :
             save_df['板块'] = df['name']
         save_df['预期'] = predictions['next_rf_1']
-        save_df['乐观系数'] = predictions['expect_max']
-        save_df['悲观系数'] = predictions['expect_min']
+        # save_df['乐观系数'] = predictions['expect_max']
+        # save_df['悲观系数'] = predictions['expect_min']
         save_df['后期乐观'] = predictions['expect_max_5']
         save_df['后期悲观'] = predictions['expect_min_5']
         save_df['实际涨幅'] = df['next_rf_1']
+        save_df['1日涨幅'] = df['next_rf_2']
+        save_df['3日涨幅'] = df['next_rf_3']
+        save_df['4日涨幅'] = df['next_rf_4']
+        save_df['5日涨幅'] = df['next_rf_5']
         save_df.reset_index(inplace=True)
         del save_df['index']
         print(save_df.head(5))
@@ -210,7 +220,7 @@ if __name__ == '__main__':
             pro_df.to_csv('{}_{}'.format(date, expect_path), index = True)
 
             #乐观预估
-            optimistic_df = item_df.sort_values(by='乐观系数', ascending=False)
+            optimistic_df = item_df.sort_values(by='后期乐观', ascending=False)
             optimistic_df = optimistic_df.reset_index()
             del optimistic_df['index']
             optimistic_df.to_csv('{}_{}'.format(date, optimistic_path), index = True)
@@ -225,18 +235,8 @@ if __name__ == '__main__':
             # #expect_df.reset_index(inplace=True)
             # expect_df.to_csv('{}_bankuai_{}.csv'.format(date, optimistic_path), index=True)
 
-            # 获取列名列表
-            columns = item_df.columns.tolist()
-            # 找到 a 和 b 列的索引
-            index_a = columns.index('乐观系数')
-            index_b = columns.index('悲观系数')
-            # 交换 a 和 b 列的位置
-            columns[index_a], columns[index_b] = columns[index_b], columns[index_a]
-            # 根据新的列名顺序重新排列 DataFrame
-            item_df = item_df[columns]
-
-            #悲观预估
-            pessimistic_df = item_df.sort_values(by='悲观系数', ascending=False)
+             #悲观预估
+            pessimistic_df = item_df.sort_values(by='后期悲观', ascending=False)
             pessimistic_df = pessimistic_df.reset_index()
             del pessimistic_df['index']
             pessimistic_df.to_csv('{}_{}'.format(date, pessimistic_path), index = True)
