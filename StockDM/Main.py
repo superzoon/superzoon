@@ -169,7 +169,7 @@ def show_loss():
 def launch_traing():
     你好('训练开启')
     count = 0
-    read_from_csv = False
+    read_from_csv = True
     if True and os.path.isfile('pre_training_data.csv'):
         full_df = pd.DataFrame(pd.read_csv('pre_training_data.csv'))
     else:
@@ -253,7 +253,7 @@ def launch_traing():
 
     full_df.sort_values(by='Datetime', ascending=True, inplace=True)
     print(full_df.head(10))
-    for i in range(3):
+    for i in range(1):
         print('训练大轮询{}'.format(i))
         # 训练模型
         training_model(full_df)

@@ -4,7 +4,7 @@ import akshare as ak
 from sqlalchemy import create_engine, text, MetaData
 import sqlite3
 import os
-
+# pip install --upgrade akshare
 from datetime import datetime, timedelta
 
 def __save_to_db__(df, table_name, replace=True):
@@ -107,18 +107,20 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data.insert(3, 'bankuai_name', bankuai['板块'])
     # 股票价格
     train_data.insert(4, 'price', gupiao['收盘'])
+    # 股票价格
+    train_data.insert(5, 'bk_price', bankuai['收盘'])
 
     # train_data['price_next'] = train_data['price'].shift(1)
     # print(train_data.head(5))
     # exit(0)
     # 股票价格
-    train_data.insert(5, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
+    train_data.insert(6, 'ushadow', (gupiao['最高'] - gupiao['收盘']) / gupiao['收盘'])
     # 股票价格
-    train_data.insert(6, 'dshadow', (gupiao['收盘'] - gupiao['最低']) / gupiao['收盘'])
+    train_data.insert(7, 'dshadow', (gupiao['收盘'] - gupiao['最低']) / gupiao['收盘'])
     # 股票相对板块的涨幅
-    train_data.insert(7, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
+    train_data.insert(8, 'RF', (gupiao['涨跌幅'] - bankuai['涨跌幅']) / 100)
     # 股票成交金额
-    train_data.insert(8, 'Turnover', gupiao['成交额'])
+    train_data.insert(9, 'Turnover', gupiao['成交额'])
 
     train_data['price_high'] = gupiao['最高']
     train_data['price_low'] = gupiao['最低']
@@ -163,6 +165,20 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
     train_data['price_55'] = [mean_price(train_data, 'price', i, 55) for i in range(len(train_data))]
     train_data['price_60'] = [mean_price(train_data, 'price', i, 60) for i in range(len(train_data))]
 
+
+    # 板块成交多日均线比
+    train_data['bk_price_5'] = [mean_price(train_data, 'bk_price', i, 5) for i in range(len(train_data))]
+    train_data['bk_price_10'] = [mean_price(train_data, 'bk_price', i, 10) for i in range(len(train_data))]
+    train_data['bk_price_20'] = [mean_price(train_data, 'bk_price', i, 20) for i in range(len(train_data))]
+    train_data['bk_price_25'] = [mean_price(train_data, 'bk_price', i, 25) for i in range(len(train_data))]
+    train_data['bk_price_30'] = [mean_price(train_data, 'bk_price', i, 30) for i in range(len(train_data))]
+    train_data['bk_price_35'] = [mean_price(train_data, 'bk_price', i, 35) for i in range(len(train_data))]
+    train_data['bk_price_40'] = [mean_price(train_data, 'bk_price', i, 40) for i in range(len(train_data))]
+    train_data['bk_price_45'] = [mean_price(train_data, 'bk_price', i, 45) for i in range(len(train_data))]
+    train_data['bk_price_50'] = [mean_price(train_data, 'bk_price', i, 50) for i in range(len(train_data))]
+    train_data['bk_price_55'] = [mean_price(train_data, 'bk_price', i, 55) for i in range(len(train_data))]
+    train_data['bk_price_60'] = [mean_price(train_data, 'bk_price', i, 60) for i in range(len(train_data))]
+
     train_data = train_data.dropna()
     # 预取价格
     price = train_data['price'].rolling(window=5, min_periods=5)
@@ -188,23 +204,27 @@ def clean_data(_bankuai: pd.DataFrame, _gupiao: pd.DataFrame):
 
 def getFeature(model_day_len:int = 20):
     features = ['ushadow', 'dshadow', 'Turnover_5', 'Turnover_10', 'Turnover_20', 'price_5', 'price_10', 'price_20',
-                'RF_1', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
+                 'bk_price_5', 'bk_price_10', 'bk_price_20','RF_1', 'RF_5', 'RF_10', 'RF_15', 'RF_20']
     if model_day_len >= 30:
         features.extend(['RF_25', 'RF_30'])
         features.extend(['Turnover_25', 'Turnover_30'])
         features.extend(['price_25', 'price_30'])
+        features.extend(['bk_price_25', 'bk_price_30'])
     if model_day_len >= 40:
         features.extend(['RF_35', 'RF_40'])
         features.extend(['Turnover_35', 'Turnover_40'])
         features.extend(['price_35', 'price_40'])
+        features.extend(['bk_price_35', 'bk_price_40'])
     if model_day_len >= 50:
         features.extend(['RF_45', 'RF_50'])
         features.extend(['Turnover_45', 'Turnover_50'])
         features.extend(['price_45', 'price_50'])
+        features.extend(['bk_price_45', 'bk_price_50'])
     if model_day_len >= 60:
         features.extend(['RF_55', 'RF_60'])
         features.extend(['Turnover_55', 'Turnover_60'])
         features.extend(['price_55', 'price_60'])
+        features.extend(['bk_price_55', 'bk_price_60'])
     return features
 
 def reassign_code(code):
@@ -253,7 +273,7 @@ def banKuai(updateDB=False, debug=False):
 
 
 def banKuaiHangQing(symbol, start_date, end_date,
-                    period="日k", adjust="hfq",
+                    period="日k", adjust="qfq",
                     updateDB=False, debug=False):
     '''
     东方财富-指数-日频
@@ -329,7 +349,7 @@ def banKuaiChengFen(symbol, updateDB=False, debug=False):
     return df
 
 
-def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='hfq', timeout=None,
+def guPiaoHangQing(symbol, name, start_date, end_date, period='daily', adjust='qfq', timeout=None,
                    updateDB=False, debug=False):
     '''
     接口：stock_zh_a_hist

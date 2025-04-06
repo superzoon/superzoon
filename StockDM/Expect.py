@@ -54,8 +54,8 @@ class LoadGuPiaoHangQing(multiprocessing.Process):
 
 if __name__ == '__main__':
     你好('预测开启')
-
-    read_from_csv = True
+    os.system("pip install --upgrade akshare")
+    read_from_csv = False
     df = pd.DataFrame()
     data_space = dc.getDateSpace()
     print(data_space)
